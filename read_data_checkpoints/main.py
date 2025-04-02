@@ -1,13 +1,42 @@
 import os
 import glob
 import math
+import torch
+import numpy as np
 from torch.utils.data import DataLoader, ChainDataset
 from tfrecord.torch.dataset import TFRecordDataset
-import torch.optim as optim
-from torch.nn import functional as F
 from sentencepiece import sentencepiece_model_pb2
 import sentencepiece as sentencepiece_processor
+from tqdm import tqdm
 
+def pad_collate(batch, pad_value=0):
+    """
+    Collate function for zero-padding 1D sequences.
+    Assumes each item is a dict with keys like 'input_ids', 'label', etc.
+    """
+    out = {}
+    keys = batch[0].keys()
+
+    for key in keys:
+        values = [x[key] for x in batch]
+
+        if isinstance(values[0], (list, np.ndarray, torch.Tensor)) and len(values[0]) != 0:
+            lengths = [len(v) for v in values]
+            max_len = max(lengths)
+            padded = []
+            for v in values:
+                v_tensor = torch.tensor(v, dtype=torch.long)
+                if v_tensor.size(0) < max_len:
+                    pad = torch.full((max_len - v_tensor.size(0),), pad_value, dtype=torch.long)
+                    v_tensor = torch.cat([v_tensor, pad], dim=0)
+                padded.append(v_tensor)
+            out[key] = torch.stack(padded)
+        else:
+            # For scalars (e.g., labels)
+            out[key] = torch.tensor(values)
+    
+    return out
+ 
 def create_tfrecord_dataloader(
     tfrecord_dir,
     description,
@@ -33,6 +62,7 @@ def create_tfrecord_dataloader(
         combined_dataset,
         batch_size=batch_size,
         num_workers=num_workers,
+        collate_fn=pad_collate if batch_size > 1 else None,
     )
 
     return dataloader
@@ -99,4 +129,3 @@ if __name__ == "__main__":
         assert tokenizer.decode(inputs[0].tolist()) == batch["inputs_pretokenized"][0].decode("utf-8")
         assert tokenizer.decode(targets[0].tolist()) == batch["targets_pretokenized"][0].decode("utf-8")
         break
-    
