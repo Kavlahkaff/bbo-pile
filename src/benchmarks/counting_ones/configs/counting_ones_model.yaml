@@ -10,7 +10,7 @@ eval:
   max_iters: 100
   max_new_tokens: null
 initial_checkpoint_dir: null
-logger_name: csv
+logger_name: wandb
 model_config:
   bias: false
   block_size: 500

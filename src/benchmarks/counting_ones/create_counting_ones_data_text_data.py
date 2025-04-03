@@ -3,7 +3,7 @@ import argparse
 from pathlib import Path
 import numpy as np
 from syne_tune.config_space import choice
-from open_optformer.history import Study
+from src.open_optformer import Study
 
 
 def random_trajectories(iterations, dimensionality):

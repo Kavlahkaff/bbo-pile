@@ -1,5 +1,3 @@
-import json
-
 from dataclasses import dataclass, field
 
 from syne_tune.config_space import Categorical, Float, Integer

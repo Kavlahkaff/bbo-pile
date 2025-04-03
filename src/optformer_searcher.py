@@ -1,5 +1,6 @@
 import logging
 
+import numpy as np
 from typing import Optional, List, Dict, Any
 from pathlib import Path
 
@@ -8,7 +9,7 @@ from litgpt.config import Config
 from litgpt.tokenizer import Tokenizer
 from litgpt.model import GPT
 
-from open_optformer.history import Study
+from history import Study
 
 from syne_tune.config_space import Integer, Categorical, Float
 from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
