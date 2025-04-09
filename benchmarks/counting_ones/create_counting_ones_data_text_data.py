@@ -1,9 +1,11 @@
 import os
 import argparse
 from pathlib import Path
+from copy import deepcopy
 import numpy as np
 from syne_tune.config_space import choice
-from src.open_optformer import Study
+
+from open_optformer.history import Study
 
 
 def random_trajectories(iterations, dimensionality):
@@ -26,6 +28,33 @@ def random_trajectories(iterations, dimensionality):
 
     return prompt
 
+
+def local_search_trajectories(iterations, dimensionality):
+    config_space = {f"x_{i}": choice([0, 1]) for i in range(dimensionality)}
+    study = Study(config_space=config_space,
+                       name="counting_ones",
+                       algorithm="local_search",
+                       metric_names=["error"],
+                       )
+    prompt = study.get_prompt()
+
+    start_point = {k: v.sample() for k, v in config_space.items()}
+    metric = np.sum(list(start_point.values()))
+    prompt += ','.join(str(tij) for tij in list(start_point.values())) + '*' + str(metric) + '|'
+
+    for i in range(1, iterations):
+        # get actual hyperparameters from the search space
+        config = deepcopy(start_point)
+
+        hp_name = np.random.choice(list(config_space.keys()))
+        config[hp_name] = 1 - config[hp_name]
+        new_metric = np.sum(list(config.values()))
+        prompt += ','.join(str(tij) for tij in list(config.values())) + '*' + str(new_metric) + '|'
+        if new_metric > metric:
+            metric = new_metric
+            start_point = config
+
+    return prompt
 
 if __name__ == "__main__":
 
@@ -62,5 +91,8 @@ if __name__ == "__main__":
         with open(d / f'counting_ones_{mode}.txt', 'w') as fh:
             for i in range(args.num_trajectories):
                 dim = np.random.choice(dims)
-                prompt = random_trajectories(iterations, dim)
+                if np.random.rand() >= 0.5:
+                    prompt = random_trajectories(iterations, dim)
+                else:
+                    prompt = local_search_trajectories(iterations, dim)
                 fh.write(prompt + "\n")
