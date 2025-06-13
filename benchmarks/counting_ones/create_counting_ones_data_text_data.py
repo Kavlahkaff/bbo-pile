@@ -17,7 +17,7 @@ def random_trajectories(iterations, dimensionality):
     study = Study(config_space=config_space,
                        name="counting_ones",
                        algorithm="random_search",
-                       metric_names=["error"],
+                       metric_names=["feval"],
                        )
     prompt = study.get_prompt()
 
@@ -34,7 +34,7 @@ def local_search_trajectories(iterations, dimensionality):
     study = Study(config_space=config_space,
                        name="counting_ones",
                        algorithm="local_search",
-                       metric_names=["error"],
+                       metric_names=["feval"],
                        )
     prompt = study.get_prompt()
 
