@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     num_trajectories = args.num_trajectories
     iterations = args.iterations
-    dims = [5]
+    dims = [5, 10 , 20]
 
     d = Path(args.output_path) / 'data'
     os.makedirs(d, exist_ok=True)
