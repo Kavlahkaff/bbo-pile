@@ -61,7 +61,7 @@ def compute_best(dfs, metadatas):
             df_bench[key] = metadata[key]
         # TODO this avoids the need to rely on the mode stored in the metadata but hardcode the benchmark mode,
         #  we should pass it instead
-        if "lcbench" in benchmark or "nas301" in benchmark:
+        if benchmark in ["lcbench", "nas301", "co-5"]:
             mode = "max"
         else:
             mode = "min"

@@ -18,7 +18,7 @@ from syne_tune.blackbox_repository.simulated_tabular_backend import (
 )
 from syne_tune.stopping_criterion import StoppingCriterion
 from syne_tune.tuner import Tuner
-from syne_tune.backend import PythonBackend
+from syne_tune.backend import LocalBackend
 from syne_tune.config_space import randint, choice
 
 
@@ -45,11 +45,10 @@ def run(
 
         print(f"Starting experiment ({method}/{benchmark_name}/{seed})")
 
-        config_space = {f"x_{i}": choice([0, 1]) for i in range(benchmark.dim)}
+        config_space = {f"x{i}": choice([0, 1]) for i in range(benchmark.dim)}
         config_space['dim'] = benchmark.dim
 
-        trial_backend = PythonBackend(tune_function=benchmark.objective,
-                                      config_space=config_space)
+        trial_backend = LocalBackend(entry_point=benchmark.objective)
 
         # 5 candidates initially to be evaluated
         num_random_candidates = 1
@@ -71,16 +70,15 @@ def run(
             )
         )
 
-
         stop_criterion = StoppingCriterion(
-            max_num_evaluations=benchmark.max_num_evaluations,
+            max_num_trials_completed=benchmark.max_num_evaluations,
         )
         tuner = Tuner(
             trial_backend=trial_backend,
             scheduler=scheduler,
             stop_criterion=stop_criterion,
             n_workers=n_workers,
-            sleep_time=1,
+ #           sleep_time=1,
             results_update_interval=600,
             print_update_interval=30,
             # we set a convenient name for tuner to retrieve results easily

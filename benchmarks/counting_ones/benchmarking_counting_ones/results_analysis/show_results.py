@@ -238,7 +238,7 @@ def stack_benchmark_results(
             # (num_benchmarks, num_methods, num_min_seeds, num_time_steps)
             benchmark_results = np.stack(benchmark_results)
 
-            if benchmark_family in ["lcbench", "yahpo"]:
+            if benchmark_family in ["lcbench", "yahpo", "co"]:
                 # max instead of minimization, todo pass the mode somehow
                 benchmark_results *= -1
 
@@ -392,7 +392,8 @@ if __name__ == "__main__":
     methods_selected = [
         Methods.RS,
         Methods.OPT_RS,
-        Methods.OPT_LS
+        Methods.OPT_LS,
+        Methods.LS,
     ]
 
     single_fidelity = [x for x in methods_selected if not ("ASHA" in x or "BOHB" in x)]
@@ -407,7 +408,7 @@ if __name__ == "__main__":
     print(args.__dict__)
     assert Path(args.path).exists()
     max_seed = args.max_seed
-    num_time_steps = 50
+    num_time_steps = 200
 
     with catchtime("load benchmark results"):
         benchmark_results = load_and_cache(

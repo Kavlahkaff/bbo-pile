@@ -11,7 +11,7 @@ from syne_tune.optimizer.schedulers.single_objective_scheduler import (
     SingleObjectiveScheduler,
 )
 from open_optformer.optformer_searcher import OptformerScheduler
-
+from open_optformer.local_search import LocalSearch
 
 @dataclass
 class MethodArguments:
@@ -39,7 +39,15 @@ methods = {
         random_seed=method_arguments.random_seed,
         searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate},
     ),
-
+    Methods.LS: lambda method_arguments: SingleObjectiveScheduler(
+        config_space=method_arguments.config_space,
+        searcher=LocalSearch(config_space=method_arguments.config_space,
+                             points_to_evaluate=method_arguments.points_to_evaluate,
+                             random_seed=method_arguments.random_seed),
+        metric=method_arguments.metric,
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
+    ),
     Methods.OPT_RS: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
