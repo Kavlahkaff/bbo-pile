@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import Any, Dict
 
 import numpy as np
-from sagemaker.feature_store.dataset_builder import construct_feature_group_to_be_merged
 from syne_tune.config_space import Domain
 from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import (
     SingleObjectiveBaseSearcher,
