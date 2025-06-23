@@ -15,7 +15,7 @@ def random_trajectories(iterations, dimensionality):
 
     config_space = {f"x_{i}": choice([0, 1]) for i in range(dimensionality)}
     study = Study(config_space=config_space,
-                       name="counting_ones",
+                       name=f"counting_ones_{dimensionality}D",
                        algorithm="random_search",
                        metric_names=["feval"],
                        )
@@ -32,7 +32,7 @@ def random_trajectories(iterations, dimensionality):
 def local_search_trajectories(iterations, dimensionality):
     config_space = {f"x_{i}": choice([0, 1]) for i in range(dimensionality)}
     study = Study(config_space=config_space,
-                       name="counting_ones",
+                       name=f"counting_ones_{dimensionality}D",
                        algorithm="local_search",
                        metric_names=["feval"],
                        )
