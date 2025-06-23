@@ -26,6 +26,7 @@ def run(
     method_names,
     benchmark_names,
     seeds,
+    checkpoint_dir,
     max_num_evaluations=None,
     n_workers: int = 1,
 ):
@@ -66,6 +67,7 @@ def run(
                 metric=benchmark.metric,
                 mode=benchmark.mode,
                 random_seed=seed,
+                checkpoint_dir=checkpoint_dir,
                 points_to_evaluate=points_to_evaluate,
             )
         )
@@ -112,7 +114,13 @@ if __name__ == "__main__":
         default=0,
         help="If 1 runs all seeds between [0, args.seed] if 0 run only args.seed.",
     )
-
+    parser.add_argument(
+        "--checkpoint_dir",
+        type=str,
+        required=False,
+        default="",
+        help="directory for optformer model checkpoints",
+    )
     parser.add_argument(
         "--method",
         type=str,
@@ -145,6 +153,7 @@ if __name__ == "__main__":
     )
     run(
         method_names=method_names,
+        checkpoint_dir=args.checkpoint_dir,
         benchmark_names=benchmark_names,
         seeds=seeds,
         n_workers=args.n_workers,

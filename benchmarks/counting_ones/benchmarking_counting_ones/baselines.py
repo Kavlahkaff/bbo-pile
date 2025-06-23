@@ -21,6 +21,7 @@ class MethodArguments:
     random_seed: int
     points_to_evaluate: List[dict]
     verbose: Optional[bool] = False
+    checkpoint_dir: Optional[str] = None
 
 
 class Methods:
@@ -51,7 +52,7 @@ methods = {
     Methods.OPT_RS: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
-        checkpoint_dir=Path('/home/aaron/experiments/open_optformer/counting_ones/model/final/'),
+        checkpoint_dir=Path(method_arguments.checkpoint_dir),
         task_info={'name': 'counting_ones',
                     'algorithm': "random_search",
                     'metric_names': "feval"},
@@ -63,7 +64,8 @@ methods = {
     Methods.OPT_LS: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
-        checkpoint_dir=Path('/home/aaron/experiments/open_optformer/counting_ones/model/final/'),
+        checkpoint_dir=Path(method_arguments.checkpoint_dir),
+#        checkpoint_dir=Path('/home/aaron/experiments/open_optformer/counting_ones/model/final/'),
         task_info={'name': 'counting_ones',
                    'algorithm': "local_search",
                    'metric_names': "feval"},
