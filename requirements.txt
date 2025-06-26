@@ -1,0 +1,16 @@
+absl-py==2.3.0
+cached-property==2.0.1
+clu @ git+https://github.com/google/CommonLoopUtils@949e50380a67c934f1d10bcf241cb0c56d369289
+fiddle==0.3.0 
+gin-config==0.5.0
+jax==0.4.16 
+jaxlib==0.4.16 
+jestimator @ git+https://github.com/google-research/jestimator@326824a477feef6d92e6f44175000907a72899ca
+numpy<2
+orbax-checkpoint==0.5.16
+protobuf==3.20.3
+tensorflow-cpu==2.15.1
+tensorstore==0.1.74
+scipy>=1.6.0,<=1.12.0
+# t5x @ git+https://github.com/google-research/t5x.git@a9b8f1563eac10aa18f4fe384959733a6ae7e4ea
+# optformer @ git+https://github.com/google-research/optformer.git@12e2639954b0cd9bf824aab2d040650e6b32089c

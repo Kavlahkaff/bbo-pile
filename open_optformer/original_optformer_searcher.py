@@ -9,8 +9,10 @@ from vizier import algorithms as vza
 from optformer.t5x import inference_utils
 from optformer.t5x import policies
 
-from syne_tune.config_space import choice, Categorical
-# from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
+from syne_tune.util import dump_json_with_numpy
+from syne_tune.config_space import config_space_to_json_dict
+from syne_tune.config_space import choice, Categorical, Integer, Float, is_log_space
+from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +22,7 @@ BBOB_INFERENCE_MODEL_KWARGS = {
     'batch_size': 1,
 }
 
-class OriginalOptFormerSearcher(): # TODO: inherit from SingleObjectiveBaseSearcher
+class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher): # TODO: inherit from SingleObjectiveBaseSearcher
     """
 
     :param config_space: Configuration space
@@ -36,27 +38,44 @@ class OriginalOptFormerSearcher(): # TODO: inherit from SingleObjectiveBaseSearc
     def __init__(
         self,
         config_space: Dict[str, Any],
-        task_info: Dict = None,
-        points_to_evaluate: Optional[List[Dict[str, Any]]] = None,
+        metric: str = 'error',
+        do_minimize: bool = True,
         random_seed: int = None,
-        designer_name: str = 'designer_hill_climb'
+        task_info: Dict = None,
+        time_attr: str = 'time',
+        points_to_evaluate: Optional[List[Dict[str, Any]]] = None,
+        designer_name: str = 'designer_hill_climb',
+        searcher_kwargs: Optional[Dict[str, Any]] = None,
     ):
+        self.metric = metric
+        self.random_seed = random_seed
+        self.designer_name = designer_name
+        self.config_space = config_space
+        self.metric_names = [metric]
 
         problem = vz.ProblemStatement()
         for name, hp in config_space.items():
             print(f"Adding {name} to search space")
             if isinstance(hp, Categorical):
                 problem.search_space.root.add_categorical_param(name, hp.categories)
+            elif isinstance(hp, Integer):
+                scale_type = vz.ScaleType.LOG if is_log_space(hp) else vz.ScaleType.LINEAR
+                problem.search_space.root.add_int_param(name, hp.lower, hp.upper, scale_type=scale_type)
+            elif isinstance(hp, Float):
+                scale_type = vz.ScaleType.LOG if is_log_space(hp) else vz.ScaleType.LINEAR
+                problem.search_space.root.add_float_param(name, hp.lower, hp.upper, scale_type=scale_type)
             else:
-                raise NotImplemented(f"Unsupported hyperparameter type {type(hp)} for {name}. ")
+                raise Exception(f"Unsupported hyperparameter type {type(hp)} for {name}. ")
 
-        problem.metric_information.append(vz.MetricInformation(name='error', goal=vz.ObjectiveMetricGoal.MAXIMIZE))
+        do_minimize = vz.ObjectiveMetricGoal.MINIMIZE if do_minimize else vz.ObjectiveMetricGoal.MAXIMIZE
+
+        problem.metric_information.append(vz.MetricInformation(name=metric, goal=do_minimize))
 
         inference_model = inference_utils.InferenceModel.from_checkpoint(
             **BBOB_INFERENCE_MODEL_KWARGS
         )
         self.model = policies.OptFormerDesigner(
-            problem, inference_model=inference_model, designer_name=designer_name, temperature=0.9
+            problem, inference_model=inference_model, designer_name=self.designer_name, temperature=0.9
         )
 
         self.history = []
@@ -64,11 +83,9 @@ class OriginalOptFormerSearcher(): # TODO: inherit from SingleObjectiveBaseSearc
         if task_info is None:
             self.task_info = {'name': "tst",
                               "algorithm": "optformer",
-                              "metric_names": "error"}
+                              "metric_names": [metric]}
         else:
             self.task_info = task_info
-
-        self.history = []
 
     def suggest(self, **kwargs) -> Optional[Dict[str, Any]]:
         """Suggest a new configuration.
@@ -113,7 +130,7 @@ class OriginalOptFormerSearcher(): # TODO: inherit from SingleObjectiveBaseSearc
         :param metric: See :meth:`~syne_tune.optimizer.schedulers.TrialScheduler.on_trial_result`
         """
         trial = self.history[trial_id].to_trial()
-        trial.complete(vz.Measurement({'error': metric}))
+        trial.complete(vz.Measurement({self.metric: metric}))
 
         copied_trial = copy.deepcopy(trial)
         if self.model._metric_flipped:
@@ -130,17 +147,30 @@ class OriginalOptFormerSearcher(): # TODO: inherit from SingleObjectiveBaseSearc
         :param trial_id: ID of trial whose evaluated failed
         """
         return
+    
+    def metadata(self) -> Dict[str, Any]:
+        """
+        :return: Metadata for the scheduler
+        """
+        metadata = {}
+        config_space_json = dump_json_with_numpy(
+            config_space_to_json_dict(self.config_space)
+        )
+        metadata["config_space"] = config_space_json
+        metadata["metric"] = self.metric
+        return {}
 
 if __name__ == '__main__':
 
     import numpy as np
+    import time
 
     config_space = {"a": choice([0, 1, 2, 3, 4])}
-
     searcher = OriginalOptFormerSearcher(config_space=config_space)
 
     for trial_id in range(5):
+        start = time.time()
         config = searcher.suggest()
-        print(config)
+        print(f"Iteration {trial_id}: ", config, "time :", time.time() - start)
         metric = np.random.rand()
         searcher.on_trial_complete(trial_id, config, metric)
