@@ -1,18 +1,24 @@
 import logging
+from itertools import takewhile
 
+import torch
 import numpy as np
+
 from typing import Optional, List, Dict, Any
 from pathlib import Path
 
-import torch
+
 from litgpt.config import Config
 from litgpt.tokenizer import Tokenizer
 from litgpt.model import GPT
 
-from history import Study
+from open_optformer.history import Study
 
 from syne_tune.config_space import Integer, Categorical, Float
 from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
+from syne_tune.optimizer.schedulers.single_objective_scheduler import (
+    SingleObjectiveScheduler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +38,36 @@ def select_token(logits, pos):
     m = np.random.choice(np.arange(pos.shape[0]), p=probs)
     token = pos[m]
     return token
+
+class OptformerScheduler(SingleObjectiveScheduler):
+    """
+   """
+
+    def __init__(
+        self,
+        config_space: Dict[str, Any],
+        metric: str,
+        checkpoint_dir: Path,
+        task_info: Dict = None,
+        do_minimize: Optional[bool] = True,
+        random_seed: Optional[int] = None,
+        points_to_evaluate: Optional[List[dict]] = None,
+    ):
+        super(OptformerScheduler, self).__init__(
+            config_space=config_space,
+            metric=metric,
+            do_minimize=do_minimize,
+            searcher=OptFormerSearcher(
+                config_space=config_space,
+                points_to_evaluate=points_to_evaluate,
+                random_seed=random_seed,
+                checkpoint_dir=checkpoint_dir,
+                task_info=task_info
+            ),
+            random_seed=random_seed,
+        )
+
+
 
 
 class OptFormerSearcher(SingleObjectiveBaseSearcher):
@@ -110,9 +146,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
             if isinstance(hp, Float) or isinstance(hp, Integer):
                 # pick value in [0, Q] with the highest probability
                 idx = torch.tensor([self.tokenizer.encode(str(i))[-1] for i in range(1000)], dtype=torch.int)
-                m = logits[:, idx].argmax(dim=-1)
-                token_id = idx[m]
-                token = int(self.tokenizer.decode(token_id))
+                token = select_token(logits, idx)
                 config[hp_name] = token / 1000 * (hp.upper - hp.lower) + hp.lower
 
             elif isinstance(hp, Categorical):
