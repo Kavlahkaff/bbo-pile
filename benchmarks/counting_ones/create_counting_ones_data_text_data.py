@@ -82,7 +82,8 @@ if __name__ == "__main__":
 
     num_trajectories = args.num_trajectories
     iterations = args.iterations
-    dims = [5, 10 , 20]
+    #dims = [5, 10 , 20]
+    dims = [5, 20]
 
     d = Path(args.output_path) / 'data'
     os.makedirs(d, exist_ok=True)
@@ -90,7 +91,7 @@ if __name__ == "__main__":
     for mode in ['train', 'valid']:
         with open(d / f'counting_ones_{mode}.txt', 'w') as fh:
             for i in range(args.num_trajectories):
-                dim = np.random.choice(dims)
+                dim = np.random.randint(dims[0], dims[1])
                 if np.random.rand() >= 0.5:
                     prompt = random_trajectories(iterations, dim)
                 else:
