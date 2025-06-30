@@ -2,6 +2,8 @@ import copy
 import logging
 import os
 
+from pathlib import Path
+
 from typing import Optional, List, Dict, Any
 
 from vizier.service import pyvizier as vz
@@ -17,13 +19,13 @@ logger = logging.getLogger(__name__)
 
 BBOB_INFERENCE_MODEL_KWARGS = {
     'checkpoint_path_or_model_dir': os.environ['CHECKPOINT_DIR'] + '/bbob/checkpoint_700000',
-    'model_gin_file': 'bbob.gin',
+    'model_gin_file': str(Path(__file__).parent / 'bbob.gin'),
     'batch_size': 1,
 }
 
 HPOB_INFERENCE_MODEL_KWARGS = {
     'checkpoint_path_or_model_dir': os.environ['CHECKPOINT_DIR'] + 'hpob/checkpoint_400000',
-    'model_gin_file': 'hpob.gin',
+    'model_gin_file': str(Path(__file__).parent / 'hpob.gin'),
     'batch_size': 1,
 }
 
