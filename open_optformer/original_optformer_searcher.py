@@ -1,28 +1,32 @@
 import copy
 import logging
 
-import numpy as np
 from typing import Optional, List, Dict, Any
 
 from vizier.service import pyvizier as vz
-from vizier import algorithms as vza
 from optformer.t5x import inference_utils
 from optformer.t5x import policies
 
 from syne_tune.util import dump_json_with_numpy
-from syne_tune.config_space import config_space_to_json_dict
+from syne_tune.config_space import config_space_to_json_dict, FiniteRange
 from syne_tune.config_space import choice, Categorical, Integer, Float, is_log_space
 from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
 
 logger = logging.getLogger(__name__)
 
 BBOB_INFERENCE_MODEL_KWARGS = {
-    'checkpoint_path_or_model_dir': '/home/rakotoah/code/rakotoah-llmhpo/data/model_checkpoints/bbob/checkpoint_700000',
-    'model_gin_file': '/home/rakotoah/code/rakotoah-llmhpo/code/optformer/optformer/t5x/configs/tasks/bbob.gin',
+    'checkpoint_path_or_model_dir': '/home/aaron/experiments/optformer/model_checkpoints/hpob/checkpoint_700000',
+    'model_gin_file': 'bbob.gin',
     'batch_size': 1,
 }
 
-class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher): # TODO: inherit from SingleObjectiveBaseSearcher
+HPOB_INFERENCE_MODEL_KWARGS = {
+    'checkpoint_path_or_model_dir': '/home/aaron/experiments/optformer/model_checkpoints/hpob/checkpoint_400000',
+    'model_gin_file': '/home/aaron/git/open_optformer/open_optformer/hpob.gin',
+    'batch_size': 1,
+}
+
+class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher):
     """
 
     :param config_space: Configuration space
@@ -42,11 +46,16 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher): # TODO: inherit fr
         do_minimize: bool = True,
         random_seed: int = None,
         task_info: Dict = None,
-        time_attr: str = 'time',
         points_to_evaluate: Optional[List[Dict[str, Any]]] = None,
         designer_name: str = 'designer_hill_climb',
+        model = 'hpob',
         searcher_kwargs: Optional[Dict[str, Any]] = None,
     ):
+
+        super().__init__(config_space=config_space,
+                         points_to_evaluate=points_to_evaluate,
+                         random_seed=random_seed)
+
         self.metric = metric
         self.random_seed = random_seed
         self.designer_name = designer_name
@@ -64,6 +73,9 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher): # TODO: inherit fr
             elif isinstance(hp, Float):
                 scale_type = vz.ScaleType.LOG if is_log_space(hp) else vz.ScaleType.LINEAR
                 problem.search_space.root.add_float_param(name, hp.lower, hp.upper, scale_type=scale_type)
+            elif isinstance(hp, FiniteRange):
+                scale_type = vz.ScaleType.LOG if is_log_space(hp) else vz.ScaleType.LINEAR
+                problem.search_space.root.add_float_param(name, hp.lower, hp.upper, scale_type=scale_type)
             else:
                 raise Exception(f"Unsupported hyperparameter type {type(hp)} for {name}. ")
 
@@ -71,21 +83,19 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher): # TODO: inherit fr
 
         problem.metric_information.append(vz.MetricInformation(name=metric, goal=do_minimize))
 
-        inference_model = inference_utils.InferenceModel.from_checkpoint(
-            **BBOB_INFERENCE_MODEL_KWARGS
-        )
+        if model == 'bbob':
+            inference_model = inference_utils.InferenceModel.from_checkpoint(
+                **BBOB_INFERENCE_MODEL_KWARGS
+            )
+        elif model == 'hpob':
+            inference_model = inference_utils.InferenceModel.from_checkpoint(
+                **HPOB_INFERENCE_MODEL_KWARGS
+            )
         self.model = policies.OptFormerDesigner(
             problem, inference_model=inference_model, designer_name=self.designer_name, temperature=0.9
         )
 
         self.history = []
-
-        if task_info is None:
-            self.task_info = {'name': "tst",
-                              "algorithm": "optformer",
-                              "metric_names": [metric]}
-        else:
-            self.task_info = task_info
 
     def suggest(self, **kwargs) -> Optional[Dict[str, Any]]:
         """Suggest a new configuration.
@@ -103,6 +113,10 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher): # TODO: inherit fr
 
         """
 
+        config = self._next_points_to_evaluate()
+        if config is not None:
+            # If there are initial configs, return them first
+            return config
         suggestion = self.model.suggest(1)
         self.history.append(suggestion[0])
 
