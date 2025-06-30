@@ -1,5 +1,6 @@
 import copy
 import logging
+import os
 
 from typing import Optional, List, Dict, Any
 
@@ -15,14 +16,14 @@ from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import S
 logger = logging.getLogger(__name__)
 
 BBOB_INFERENCE_MODEL_KWARGS = {
-    'checkpoint_path_or_model_dir': '/home/aaron/experiments/optformer/model_checkpoints/hpob/checkpoint_700000',
+    'checkpoint_path_or_model_dir': os.environ['CHECKPOINT_DIR'] + '/bbob/checkpoint_700000',
     'model_gin_file': 'bbob.gin',
     'batch_size': 1,
 }
 
 HPOB_INFERENCE_MODEL_KWARGS = {
-    'checkpoint_path_or_model_dir': '/home/aaron/experiments/optformer/model_checkpoints/hpob/checkpoint_400000',
-    'model_gin_file': '/home/aaron/git/open_optformer/open_optformer/hpob.gin',
+    'checkpoint_path_or_model_dir': os.environ['CHECKPOINT_DIR'] + 'hpob/checkpoint_400000',
+    'model_gin_file': 'hpob.gin',
     'batch_size': 1,
 }
 
