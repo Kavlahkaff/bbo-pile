@@ -129,6 +129,9 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
             exhausted.
 
         """
+        config = self._next_points_to_evaluate()
+        if config is not None:
+            return config
 
         prompt = preprocess(self.study.get_prompt())
         token = self.tokenizer.encode(prompt)
