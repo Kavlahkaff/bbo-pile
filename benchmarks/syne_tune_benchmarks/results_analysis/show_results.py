@@ -9,13 +9,13 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from benchmarking.baselines import (
+from benchmarks.syne_tune_benchmarks.baselines import (
     Methods,
 )
-from benchmarking.results_analysis.load_experiments_parallel import (
+from benchmarks.syne_tune_benchmarks.results_analysis.load_experiments_parallel import (
     load_benchmark_results,
 )
-from benchmarking.results_analysis.method_styles import (
+from benchmarks.syne_tune_benchmarks.results_analysis.method_styles import (
     plot_range,
 )
 from syne_tune.util import catchtime
@@ -27,7 +27,7 @@ from syne_tune.util import catchtime
 def figure_folder(path):
     import syne_tune
 
-    root = Path(syne_tune.__path__[0]).parent
+    root = Path('./')
     figure_path = root / path
     figure_path.mkdir(exist_ok=True, parents=True)
     print(figure_path)
@@ -41,27 +41,27 @@ benchmark_families = [
     "fcnet",
     "lcbench",
     "nas201",
-    "tabrepo-ExtraTrees",
-    "tabrepo-RandomForest",
-    "tabrepo-LightGBM",
-    "tabrepo-CatBoost",
-    # "yahpo"
-    "hpob_4796",
-    "hpob_5527",
-    "hpob_5636",
-    "hpob_5859",
-    "hpob_5860",
-    "hpob_5891",
-    "hpob_5906",
-    "hpob_5965",
-    "hpob_5970",
-    "hpob_5971",
-    "hpob_6766",
-    "hpob_6767",
-    "hpob_6794",
-    "hpob_7607",
-    "hpob_7609",
-    "hpob_5889",
+#    "tabrepo-ExtraTrees",
+#    "tabrepo-RandomForest",
+#    "tabrepo-LightGBM",
+#    "tabrepo-CatBoost",
+#    # "yahpo"
+#    "hpob_4796",
+#    "hpob_5527",
+#    "hpob_5636",
+#    "hpob_5859",
+#    "hpob_5860",
+#    "hpob_5891",
+#    "hpob_5906",
+#    "hpob_5965",
+#    "hpob_5970",
+#    "hpob_5971",
+#    "hpob_6766",
+#    "hpob_6767",
+#    "hpob_6794",
+#    "hpob_7607",
+#    "hpob_7609",
+#    "hpob_5889",
 ]
 benchmark_names = {
     "fcnet": "\\FCNet{}",
@@ -436,15 +436,17 @@ if __name__ == "__main__":
 
     methods_selected = [
         Methods.RS,
-        Methods.REA,
-        Methods.BORE,
-        Methods.TPE,
-        Methods.CQR,
-        Methods.BOTorch,
-        Methods.BOHB,
-        Methods.ASHA,
-        Methods.ASHACQR,
-        Methods.ASHABORE,
+        Methods.OptFormerHillClimb,
+        Methods.OptFormerGPUCB,
+#        Methods.REA,
+#        Methods.BORE,
+#        Methods.TPE,
+#        Methods.CQR,
+#        Methods.BOTorch,
+
+
+
+
     ]
 
     single_fidelity = [x for x in methods_selected if not ("ASHA" in x or "BOHB" in x)]
