@@ -5,11 +5,11 @@ from argparse import ArgumentParser
 import numpy as np
 from tqdm import tqdm
 
-from benchmarking.baselines import (
+from baselines import (
     MethodArguments,
     methods,
 )
-from benchmarking.benchmarks import (
+from benchmarks import (
     benchmark_definitions,
 )
 from syne_tune.backend.simulator_backend.simulator_callback import SimulatorCallback

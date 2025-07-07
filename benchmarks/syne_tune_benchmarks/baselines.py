@@ -5,7 +5,6 @@ from syne_tune.blackbox_repository.simulated_tabular_backend import (
     BlackboxRepositoryBackend,
 )
 from syne_tune.optimizer.scheduler import TrialScheduler
-from syne_tune.optimizer.schedulers.asha import AsynchronousSuccessiveHalving
 from syne_tune.optimizer.schedulers.single_objective_scheduler import (
     SingleObjectiveScheduler,
 )
@@ -36,7 +35,8 @@ class Methods:
     REA = "REA"
     BOTorch = "BOTorch"
     CQR = "CQR"
-    OptFormer = "OptFormer"
+    OptFormerHillClimb = "OptFormerHillClimb"
+    OptFormerGPUCB = "OptFormerGPUCB"
 
 
 methods = {
@@ -88,13 +88,24 @@ methods = {
         random_seed=method_arguments.random_seed,
         searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate},
     ),
-    Methods.OptFormer:  lambda method_arguments: SingleObjectiveScheduler(
+    Methods.OptFormerHillClimb:  lambda method_arguments: SingleObjectiveScheduler(
         config_space=method_arguments.config_space,
         searcher=OriginalOptFormerSearcher(points_to_evaluate=method_arguments.points_to_evaluate,
                                    config_space=method_arguments.config_space,
                                    random_seed=method_arguments.random_seed,
-
+                                           designer_name='designer_hill_climb',
                                    ),
+        metric=method_arguments.metric,
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
+    ),
+    Methods.OptFormerGPUCB: lambda method_arguments: SingleObjectiveScheduler(
+        config_space=method_arguments.config_space,
+        searcher=OriginalOptFormerSearcher(points_to_evaluate=method_arguments.points_to_evaluate,
+                                           config_space=method_arguments.config_space,
+                                           random_seed=method_arguments.random_seed,
+                                           designer_name='designer_recursive_gp',
+                                           ),
         metric=method_arguments.metric,
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
