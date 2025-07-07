@@ -119,11 +119,13 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher):
         config = self._next_points_to_evaluate()
         if config is not None:
             # If there are initial configs, return them first
-            return config
-        suggestion = self.model.suggest(1)
-        self.history.append(suggestion[0])
+            suggestion = vz.TrialSuggestion(parameters=config,
+            )
+        else:
+            suggestion = self.model.suggest(1)[0]
+        self.history.append(suggestion)
 
-        return suggestion[0].to_trial().parameters.as_dict()
+        return suggestion.to_trial().parameters.as_dict()
 
     def on_trial_complete(
             self,
@@ -147,6 +149,8 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher):
         :param metric: See :meth:`~syne_tune.optimizer.schedulers.TrialScheduler.on_trial_result`
         """
         trial = self.history[trial_id].to_trial()
+        if isinstance(metric, list):
+            metric = metric[0]  # If multiple metrics, take the first one
         trial.complete(vz.Measurement({self.metric: metric}))
 
         copied_trial = copy.deepcopy(trial)
