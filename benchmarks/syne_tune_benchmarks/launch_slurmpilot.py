@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from baselines import (
     Methods,
 )
 from benchmarking.benchmarks import benchmark_definitions
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -44,11 +46,8 @@ if __name__ == "__main__":
         Methods.TPE,
         Methods.BORE,
         Methods.CQR,
-        Methods.BOTorch,
-        Methods.BOHB,
-        Methods.ASHA,
-        Methods.ASHACQR,
-        Methods.ASHABORE,
+        Methods.OptFormerGPUCB,
+        Methods.OptFormerHillClimb
     ]
     print(f"{len(methods_selected)} methods selected: {methods_selected}")
 
@@ -61,16 +60,18 @@ if __name__ == "__main__":
     for method in tqdm(methods_selected):
         assert method in methods, f"{method} not in {methods}"
         for benchmark in benchmarks_selected:
-            python_args.append(
-                {
-                    "method": method,
-                    "n_workers": args.n_workers,
-                    "benchmark": benchmark,
-                    # run all seeds in [0, seed-1]
-                    "seed": num_seeds,
-                    "run_all_seed": 1,
-                }
-            )
+            # To avoid memory issues, we run only one seed per job
+            for seed in range(num_seeds):
+                python_args.append(
+                    {
+                        "method": method,
+                        "n_workers": args.n_workers,
+                        "benchmark": benchmark,
+                        # run all seeds in [0, seed-1]
+                        "seed": seed,
+                        "run_all_seed": 0,
+                    }
+                )
 
     jobname = unify(f"synetune/{experiment_tag}", method="date")
 
@@ -85,17 +86,21 @@ if __name__ == "__main__":
         src_dir=str(Path(__file__).parent),
         python_binary="python",
         python_libraries=[
-            str(Path(__file__).parent.parent / "syne_tune"),
+            str(Path(__file__).parent.parent.parent / "open_optformer"),
         ],
-        n_cpus=8,
-        mem=1024 * 8,
+        n_cpus=4,
+        n_gpus=0,
+        mem=1024 * 128,
+        nodes=1,
         max_runtime_minutes=max_runtime_minutes,
         bash_setup_command="source ~/.bashrc; conda activate syne_tune",
         env={
             # write tuner files in Slurmpilot folder corresponding to `jobname`
+            "CHECKPOINT_DIR": os.environ['CHECKPOINT_DIR'],
+            "CURL_CA_BUNDLE": "/etc/ssl/certs/ca-bundle.crt",
             "SYNETUNE_FOLDER": f"{slurmpilot_folder}/{jobname}",
         },
-        n_concurrent_jobs=128,  # max number of jobs to run at the same time
+        n_concurrent_jobs=20,  # max number of jobs to run at the same time, setting this number to high will lead to throttling by huggingface
     )
     if not args.dry_run:
         jobid = slurm.schedule_job(jobinfo)
