@@ -12,8 +12,7 @@ from vizier.service import pyvizier as vz
 from optformer.t5x import inference_utils
 from optformer.t5x import policies
 
-from syne_tune.util import dump_json_with_numpy
-from syne_tune.config_space import config_space_to_json_dict, FiniteRange
+from syne_tune.config_space import FiniteRange
 from syne_tune.config_space import choice, Categorical, Integer, Float, is_log_space
 from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
 
@@ -47,8 +46,6 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher):
     def __init__(
         self,
         config_space: Dict[str, Any],
-        metric: str = 'error',
-        do_minimize: bool = True,
         random_seed: int = None,
         task_info: Dict = None,
         points_to_evaluate: Optional[List[Dict[str, Any]]] = None,
@@ -61,11 +58,10 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher):
                          points_to_evaluate=points_to_evaluate,
                          random_seed=random_seed)
 
-        self.metric = metric
+        self.metric = "error"
         self.random_seed = random_seed
         self.designer_name = designer_name
         self.config_space = config_space
-        self.metric_names = [metric]
 
         problem = vz.ProblemStatement()
         for name, hp in config_space.items():
@@ -84,9 +80,9 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher):
             else:
                 raise Exception(f"Unsupported hyperparameter type {type(hp)} for {name}. ")
 
-        do_minimize = vz.ObjectiveMetricGoal.MINIMIZE if do_minimize else vz.ObjectiveMetricGoal.MAXIMIZE
+        do_minimize = vz.ObjectiveMetricGoal.MINIMIZE
 
-        problem.metric_information.append(vz.MetricInformation(name=metric, goal=do_minimize))
+        problem.metric_information.append(vz.MetricInformation(name='error', goal=do_minimize))
 
         if model == 'bbob':
             inference_model = inference_utils.InferenceModel.from_checkpoint(
@@ -173,17 +169,6 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher):
         """
         return
     
-    def metadata(self) -> Dict[str, Any]:
-        """
-        :return: Metadata for the scheduler
-        """
-        metadata = {}
-        config_space_json = dump_json_with_numpy(
-            config_space_to_json_dict(self.config_space)
-        )
-        metadata["config_space"] = config_space_json
-        metadata["metric"] = self.metric
-        return {}
 
 if __name__ == '__main__':
 
