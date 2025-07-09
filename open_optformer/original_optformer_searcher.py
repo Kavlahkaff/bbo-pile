@@ -2,6 +2,8 @@ import copy
 import logging
 import os
 
+import gc
+import jax
 from pathlib import Path
 
 from typing import Optional, List, Dict, Any
@@ -123,6 +125,8 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher):
             )
         else:
             suggestion = self.model.suggest(1)[0]
+            jax.clear_caches()  # Clear JAX caches to avoid memory leaks
+            gc.collect()  # Collect garbage to free memory
         self.history.append(suggestion)
 
         return suggestion.to_trial().parameters.as_dict()
