@@ -48,12 +48,12 @@ class Study:
         string += '&'
         for trial in self.trials:
 #            string += "trial:{"
-            for i, hp in enumerate(self.config_space):
+            for i, (hp_name, hp) in enumerate(self.config_space.items()):
                 if not isinstance(hp, Domain):
                     continue
                 if i > 0:
                         string += ","
-                string += str(trial.config[hp])
+                string += str(trial.config[hp_name])
             string += f"*"
             string += f"{trial.metric}"
             string += f"|"
