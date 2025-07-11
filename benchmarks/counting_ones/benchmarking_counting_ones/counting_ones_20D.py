@@ -133,7 +133,7 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     args = vars(args)
     reporter = Reporter()
-    config = [args[f'x{i}'] for i in range(20)]
+    config = [args[f'x_{i}'] for i in range(20)]
     ones = np.sum(config)
 
     reporter(feval=ones)
