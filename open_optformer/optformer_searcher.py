@@ -133,7 +133,8 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         if config is not None:
             return config
 
-        prompt = preprocess(self.study.get_prompt())
+        prompt = self.study.get_prompt()
+#        prompt = preprocess(prompt)
         token = self.tokenizer.encode(prompt)
         prompt_size = token.size(0)
         input_pos = torch.arange(0, token.size(0))
@@ -190,8 +191,10 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         :param config: See :meth:`~syne_tune.optimizer.schedulers.TrialScheduler.on_trial_result`
         :param metric: See :meth:`~syne_tune.optimizer.schedulers.TrialScheduler.on_trial_result`
         """
-        self.study.add_trial(config, metric)
-
+        if isinstance(metric, list):
+            self.study.add_trial(config, metric[0])
+        else:
+            self.study.add_trial(config, metric)
 
     def on_trial_error(self, trial_id: int):
         """Called by scheduler if an evaluation job for a trial failed.
