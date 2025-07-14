@@ -8,31 +8,31 @@ if __name__ == "__main__":
 
     parser = ArgumentParser()
     parser.add_argument(
-        "--x0",
+        "--x_0",
         type=int,
         required=False,
         default=0,
     )
     parser.add_argument(
-        "--x1",
+        "--x_1",
         type=int,
         required=False,
         default=0,
     )
     parser.add_argument(
-        "--x2",
+        "--x_2",
         type=int,
         required=False,
         default=0,
     )
     parser.add_argument(
-        "--x3",
+        "--x_3",
         type=int,
         required=False,
         default=0,
     )
     parser.add_argument(
-        "--x4",
+        "--x_4",
         type=int,
         required=False,
         default=0,

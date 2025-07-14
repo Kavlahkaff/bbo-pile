@@ -46,7 +46,7 @@ def run(
 
         print(f"Starting experiment ({method}/{benchmark_name}/{seed})")
 
-        config_space = {f"x{i}": choice([0, 1]) for i in range(benchmark.dim)}
+        config_space = {f"x_{i}": choice([0, 1]) for i in range(benchmark.dim)}
         config_space['dim'] = benchmark.dim
 
         trial_backend = LocalBackend(entry_point=benchmark.objective)
