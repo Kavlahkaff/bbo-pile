@@ -56,7 +56,7 @@ def run(
         random_state = np.random.RandomState(seed)
         points_to_evaluate = [
             {
-                k: v.sample(random_state=random_state) if hasattr(v, "sample") else v
+                k: 0 if hasattr(v, "sample") else v
                 for k, v in config_space.items()
             }
             for _ in range(num_random_candidates)
