@@ -1,6 +1,37 @@
+import json
+
 from dataclasses import dataclass, field
 
-from syne_tune.config_space import Categorical, Float, Integer, Domain
+from syne_tune.config_space import Categorical, Float, Integer, Domain, config_space_from_json_dict
+from syne_tune.experiments import ExperimentResult
+
+
+def preprocess(prompt: str):
+    prompt = prompt.replace('parameter', "")
+    prompt = prompt.replace('trial', "")
+    prompt = prompt.replace('\"', "")
+    prompt = prompt.replace(' ', "")
+    return prompt
+
+
+def quantize(x, x_min, x_max, q=1000):
+    """
+    Quantize a value x to be in [0, q] based on the range [x_min, x_max].
+    """
+    x_norm = (x - x_min)/(x_max - x_min)
+    return int(x_norm * q)
+
+
+def encode(x, hp: Domain):
+    """
+    Encode a value x based on the type of hyperparameter hp.
+    """
+    if isinstance(hp, Categorical):
+        return hp.categories.index(x)
+    elif isinstance(hp, Float) or isinstance(hp, Integer):
+        return quantize(x, hp.lower, hp.upper)
+    else:
+        raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
 
 
 @dataclass
@@ -10,7 +41,7 @@ class Trial:
 
 
 @dataclass
-class Study:
+class History:
     name: str
     algorithm: str
     config_space: dict
@@ -29,12 +60,12 @@ class Study:
         for hp_name, hp in self.config_space.items():
             string += f"parameter:"
             string += "{"
-            string += f"name:{hp_name}, "
+            string += f"name:{hp_name},"
 
             if isinstance(hp, Categorical):
 
                 string += f"type:CAT,"
-                string += f"categories:{hp.categories},"
+                string += f"categories:{hp.categories},".replace(" ", "")
             elif isinstance(hp, Float):
                     string += f"type:UNI,"
                     string += f"min_value:{hp.lower},"
@@ -46,6 +77,9 @@ class Study:
             string += "}"
 
         string += '&'
+
+        y_min = min(trial.metric for trial in self.trials)
+        y_max = max(trial.metric for trial in self.trials)
         for trial in self.trials:
 #            string += "trial:{"
             for i, (hp_name, hp) in enumerate(self.config_space.items()):
@@ -53,9 +87,35 @@ class Study:
                     continue
                 if i > 0:
                         string += ","
-                string += str(trial.config[hp_name])
+
+                hp_encoded = encode(trial.config[hp_name], hp)
+                string += str(hp_encoded)
             string += f"*"
-            string += f"{trial.metric}"
+            string += f"{quantize(trial.metric, y_min, y_max)}"
             string += f"|"
  #           string += "},"
         return string
+    
+    @classmethod
+    def from_syne_tune_experiment(cls, experiment: ExperimentResult):
+        """
+        Create a History object from a Syne Tune ExperimentResult.
+        """
+        metadata = experiment.metadata
+        config_space = config_space_from_json_dict(json.loads(metadata['config_space']))
+        metric_name = metadata["metric_names"][0]
+        results = experiment.results
+
+        benchmark_name = metadata['benchmark'] if 'benchmark' in metadata else metadata['entrypoint']
+        algorithm_name = metadata['algorithm'] if 'algorithm' in metadata else metadata['scheduler_name']
+        hist = cls(config_space=config_space,
+                        name=benchmark_name,
+                        algorithm=algorithm_name,
+                        metric_names=metric_name)
+        results = results[results['st_status'] == 'Completed']
+        for iter, row in results.iterrows():
+            config = {k: row[f"config_{k}"] for k in config_space.keys()}
+            result = row[metric_name]
+            hist.add_trial(config, result)
+
+        return hist
