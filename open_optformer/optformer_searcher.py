@@ -1,8 +1,6 @@
 import logging
-from itertools import takewhile
 
 import torch
-import numpy as np
 
 from typing import Optional, List, Dict, Any
 from pathlib import Path
@@ -12,7 +10,7 @@ from litgpt.config import Config
 from litgpt.tokenizer import Tokenizer
 from litgpt.model import GPT
 
-from open_optformer.history import Study
+from open_optformer.history import History, preprocess
 
 from syne_tune.config_space import Integer, Categorical, Float
 from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
@@ -21,15 +19,6 @@ from syne_tune.optimizer.schedulers.single_objective_scheduler import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def preprocess(prompt: str):
-    prompt = prompt.replace('parameter', "")
-    prompt = prompt.replace('trial', "")
-    prompt = prompt.replace('\"', "")
-    prompt = prompt.replace(' ', "")
-    return prompt
-
 
 
 def select_token(logits, pos):
@@ -108,11 +97,11 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         else:
             self.task_info = task_info
 
-        self.study = Study(config_space=config_space,
-                           name=self.task_info['name'],
-                           algorithm=self.task_info['algorithm'],
-                           metric_names=[self.task_info['metric_names']],
-        )
+        self.study = History(config_space=config_space,
+                             name=self.task_info['name'],
+                             algorithm=self.task_info['algorithm'],
+                             metric_names=[self.task_info['metric_names']],
+                             )
 
     def suggest(self, **kwargs) -> Optional[Dict[str, Any]]:
         """Suggest a new configuration.
@@ -134,7 +123,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
             return config
 
         prompt = self.study.get_prompt()
-#        prompt = preprocess(prompt)
+        prompt = preprocess(prompt)
         token = self.tokenizer.encode(prompt)
         prompt_size = token.size(0)
         input_pos = torch.arange(0, token.size(0))
