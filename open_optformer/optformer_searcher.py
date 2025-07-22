@@ -1,5 +1,5 @@
 import logging
-
+import numpy as np
 import torch
 
 from typing import Optional, List, Dict, Any
@@ -10,7 +10,7 @@ from litgpt.config import Config
 from litgpt.tokenizer import Tokenizer
 from litgpt.model import GPT
 
-from open_optformer.history import History, preprocess
+from open_optformer.history import History, preprocess, dequantize
 
 from syne_tune.config_space import Integer, Categorical, Float
 from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
@@ -87,7 +87,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
 #        self.tokenizer = Tokenizer(str(Path(__file__).parent / "data" / "tokenizer"))
         self.tokenizer = Tokenizer(str(checkpoint_dir))
-        self.model.load_state_dict(torch.load(str(checkpoint_dir / 'lit_model.pth'), weights_only=True)['model'])
+        self.model.load_state_dict(torch.load(str(checkpoint_dir / 'lit_model.pth'), weights_only=True))
         self.history = []
 
         if task_info is None:
@@ -140,7 +140,8 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                 # pick value in [0, Q] with the highest probability
                 idx = torch.tensor([self.tokenizer.encode(str(i))[-1] for i in range(1000)], dtype=torch.int)
                 token = select_token(logits, idx)
-                config[hp_name] = token / 1000 * (hp.upper - hp.lower) + hp.lower
+                value = int(self.tokenizer.decode(token))
+                config[hp_name] = dequantize(value, hp.lower, hp.upper, q=1000)
 
             elif isinstance(hp, Categorical):
                 #  pick the category with the highest probability
@@ -197,7 +198,6 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
 if __name__ == '__main__':
 
-    import numpy as np
     import pathlib
     from syne_tune.config_space import randint, choice
 
