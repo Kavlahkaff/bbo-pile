@@ -22,6 +22,13 @@ def quantize(x, x_min, x_max, q=1000):
     return int(x_norm * q)
 
 
+def dequantize(x, x_min, x_max, q=1000):
+    """
+    Dequantize a value x from [0, q] to the range [x_min, x_max].
+    """
+    return x / q * (x_max - x_min) + x_min
+
+
 def encode(x, hp: Domain):
     """
     Encode a value x based on the type of hyperparameter hp.
@@ -78,22 +85,24 @@ class History:
 
         string += '&'
 
-        y_min = min(trial.metric for trial in self.trials)
-        y_max = max(trial.metric for trial in self.trials)
-        for trial in self.trials:
-#            string += "trial:{"
-            for i, (hp_name, hp) in enumerate(self.config_space.items()):
-                if not isinstance(hp, Domain):
-                    continue
-                if i > 0:
+        if len(self.trials) > 0:
+            y_min = min(trial.metric for trial in self.trials)
+            y_max = max(trial.metric for trial in self.trials)
+            if y_min == y_max:
+                y_max += 1  # Avoid division by zero in quantization
+            for trial in self.trials:
+                for i, (hp_name, hp) in enumerate(self.config_space.items()):
+                    if not isinstance(hp, Domain):
+                        continue
+                    if i > 0:
                         string += ","
 
-                hp_encoded = encode(trial.config[hp_name], hp)
-                string += str(hp_encoded)
-            string += f"*"
-            string += f"{quantize(trial.metric, y_min, y_max)}"
-            string += f"|"
- #           string += "},"
+                    hp_encoded = encode(trial.config[hp_name], hp)
+                    string += str(hp_encoded)
+                string += f"*"
+
+                string += f"{quantize(trial.metric, y_min, y_max)}"
+                string += f"|"
         return string
     
     @classmethod
@@ -112,7 +121,8 @@ class History:
                         name=benchmark_name,
                         algorithm=algorithm_name,
                         metric_names=metric_name)
-        results = results[results['st_status'] == 'Completed']
+        if 'st_status' in results.columns:
+            results = results[results['st_status'] == 'Completed']
         for iter, row in results.iterrows():
             config = {k: row[f"config_{k}"] for k in config_space.keys()}
             result = row[metric_name]
