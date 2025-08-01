@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional, List
 
 from syne_tune.blackbox_repository.simulated_tabular_backend import (
@@ -10,7 +11,7 @@ from syne_tune.optimizer.schedulers.single_objective_scheduler import (
 )
 
 from open_optformer.original_optformer_searcher import OriginalOptFormerSearcher
-
+from open_optformer.optformer_searcher import OptformerScheduler
 
 @dataclass
 class MethodArguments:
@@ -25,6 +26,8 @@ class MethodArguments:
     use_surrogates: bool = False
     num_brackets: Optional[int] = 1
     verbose: Optional[bool] = False
+    checkpoint_dir: Optional[str] = None
+    benchmark_name: Optional[str] = None
 
 
 class Methods:
@@ -38,6 +41,8 @@ class Methods:
     OptFormerHillClimb = "OptFormerHillClimb"
     OptFormerGPUCB = "OptFormerGPUCB"
     OptFormerRS = "OptFormerRS"
+    OPT_RS = "OPT-RS"
+    OPT_REA = "OPT-REA"
 
 methods = {
     Methods.RS: lambda method_arguments: SingleObjectiveScheduler(
@@ -120,6 +125,30 @@ methods = {
         metric=method_arguments.metric,
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
+    ),
+    
+    Methods.OPT_RS: lambda method_arguments: OptformerScheduler(
+        config_space=method_arguments.config_space,
+        metric=method_arguments.metric,
+        checkpoint_dir=Path(method_arguments.checkpoint_dir),
+        task_info = {'name': method_arguments.benchmark_name,
+                    'algorithm': "RS",
+                    'metric_names': "feval"},
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
+        points_to_evaluate=method_arguments.points_to_evaluate,
+    ),
+
+    Methods.OPT_REA: lambda method_arguments: OptformerScheduler(
+        config_space=method_arguments.config_space,
+        metric=method_arguments.metric,
+        checkpoint_dir=Path(method_arguments.checkpoint_dir),
+        task_info={'name': method_arguments.benchmark_name,
+                   'algorithm': "REA",
+                   'metric_names': "feval"},
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
+        points_to_evaluate=method_arguments.points_to_evaluate,
     ),
 }
 
