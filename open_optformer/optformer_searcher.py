@@ -87,7 +87,10 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
 #        self.tokenizer = Tokenizer(str(Path(__file__).parent / "data" / "tokenizer"))
         self.tokenizer = Tokenizer(str(checkpoint_dir))
-        self.model.load_state_dict(torch.load(str(checkpoint_dir / 'lit_model.pth'), weights_only=True))
+        state_dict = torch.load(str(checkpoint_dir / 'lit_model.pth'), weights_only=True)
+        if 'model' in state_dict:
+            state_dict = state_dict['model']
+        self.model.load_state_dict(state_dict)
         self.history = []
 
         if task_info is None:
