@@ -78,7 +78,7 @@ class History:
                     string += f"min_value:{hp.lower},"
                     string += f"max_value:{hp.upper},"
             elif isinstance(hp, Integer):
-                    string += f"type:Int,"
+                    string += f"type:INT,"
                     string += f"min_value:{hp.lower},"
                     string += f"max_value:{hp.upper},"
             string += "}"
@@ -106,7 +106,7 @@ class History:
         return string
     
     @classmethod
-    def from_syne_tune_experiment(cls, experiment: ExperimentResult):
+    def from_syne_tune_experiment(cls, experiment: ExperimentResult, max_num_trials: int = None):
         """
         Create a History object from a Syne Tune ExperimentResult.
         """
@@ -123,6 +123,9 @@ class History:
                         metric_names=metric_name)
         if 'st_status' in results.columns:
             results = results[results['st_status'] == 'Completed']
+
+        if max_num_trials is not None:
+            results = results[:max_num_trials]
         for iter, row in results.iterrows():
             config = {k: row[f"config_{k}"] for k in config_space.keys()}
             result = row[metric_name]
