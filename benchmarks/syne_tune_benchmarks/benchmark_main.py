@@ -9,7 +9,7 @@ from baselines import (
     MethodArguments,
     methods,
 )
-from benchmarks import (
+from hpob_benchmarks import (
     benchmark_definitions,
 )
 from syne_tune.backend.simulator_backend.simulator_callback import SimulatorCallback
@@ -24,6 +24,7 @@ def run(
     method_names,
     benchmark_names,
     seeds,
+    checkpoint_dir,
     max_num_evaluations=None,
     n_workers: int = 4,
 ):
@@ -67,6 +68,7 @@ def run(
         ]
         scheduler = methods[method](
             MethodArguments(
+                benchmark_name=benchmark.blackbox_name + '_' + benchmark.dataset_name,
                 config_space=backend.blackbox.configuration_space,
                 metric=benchmark.metric,
                 mode=benchmark.mode,
@@ -74,8 +76,10 @@ def run(
                 max_t=max_t,
                 resource_attr=resource_attr,
                 num_brackets=1,
+                checkpoint_dir=checkpoint_dir,
                 use_surrogates="lcbench" in benchmark_name,
                 points_to_evaluate=points_to_evaluate,
+
             )
         )
 
@@ -144,7 +148,13 @@ if __name__ == "__main__":
         type=int,
         default=4,
     )
-
+    parser.add_argument(
+        "--checkpoint_dir",
+        type=str,
+        required=False,
+        default="",
+        help="directory for optformer model checkpoints",
+    )
     args, _ = parser.parse_known_args()
     if args.run_all_seeds:
         seeds = list(range(args.seed))
@@ -158,6 +168,7 @@ if __name__ == "__main__":
     )
     run(
         method_names=method_names,
+        checkpoint_dir=args.checkpoint_dir,
         benchmark_names=benchmark_names,
         seeds=seeds,
         n_workers=args.n_workers,
