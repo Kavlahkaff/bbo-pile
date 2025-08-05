@@ -127,7 +127,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
         prompt = self.study.get_prompt()
         prompt = preprocess(prompt)
-        token = self.tokenizer.encode(prompt)
+        token = self.tokenizer.encode(prompt)[-self.model.max_seq_length:]
         prompt_size = token.size(0)
         input_pos = torch.arange(0, token.size(0))
         input_pos_maxp1 = torch.tensor([prompt_size])
@@ -137,7 +137,9 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         config = {}
 
         for hp_name, hp in self.config_space.items():
-            logits = self.model(token.view(1, -1), input_pos, input_pos_maxp1=input_pos_maxp1)[:, -1]
+            logits = self.model(token.view(1, -1),
+                                input_pos,
+                                input_pos_maxp1=input_pos_maxp1)[:, -1]
 
             if isinstance(hp, Float) or isinstance(hp, Integer):
                 # pick value in [0, Q] with the highest probability
