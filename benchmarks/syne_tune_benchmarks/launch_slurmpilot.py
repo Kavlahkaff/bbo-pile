@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_seeds", type=int, required=False, default=1)
     parser.add_argument("--dry-run", action="store_true")
 
-    parser.add_argument("--checkpoint_dir", type=str, required=True)
+    parser.add_argument("--checkpoint_dir", type=str, required=False, default="")
     parser.add_argument("--cluster", type=str, required=True)
     parser.add_argument("--partition", type=str, required=True)
     parser.add_argument(
@@ -45,26 +45,25 @@ if __name__ == "__main__":
 
     if args.run_hpob_only:
         from hpob_benchmarks import hpob_benchmark_definitions
-        benchmark_names =  list(hpob_benchmark_definitions.keys())
+        benchmarks_selected  =  list(hpob_benchmark_definitions.keys())
     else:
-        from benchmarks import benchmark_definitions
-        benchmark_names =  list(benchmark_definitions.keys())
+        from blackbox_benchmarks import benchmark_definitions
+        benchmarks_selected =  list(benchmark_definitions.keys())
 
     methods_selected = [
-        Methods.RS,
-        Methods.OPT_REA,
-        Methods.OPT_RS,
-        Methods.REA,
-        Methods.TPE,
-        Methods.BORE,
-        Methods.CQR,
-        Methods.OriginalOptFormerGPUCB,
+#        Methods.RS,
+#        Methods.OPT_REA,
+#        Methods.OPT_RS,
+#        Methods.REA,
+#        Methods.TPE,
+#        Methods.BORE,
+#        Methods.CQR,
+#        Methods.OriginalOptFormerGPUCB,
         Methods.OriginalOptFormerRS,
-        Methods.OriginalOptFormerHillClimb
+#        Methods.OriginalOptFormerHillClimb
     ]
     print(f"{len(methods_selected)} methods selected: {methods_selected}")
 
-    benchmarks_selected = list(benchmark_definitions.keys())
     config = load_config()
 
     slurm = SlurmPilot(config=config, clusters=[cluster], ssh_engine="ssh")

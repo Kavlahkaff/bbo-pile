@@ -5,13 +5,6 @@ from argparse import ArgumentParser
 import numpy as np
 from tqdm import tqdm
 
-from baselines import (
-    MethodArguments,
-    methods,
-)
-from hpob_benchmarks import (
-    benchmark_definitions,
-)
 from syne_tune.backend.simulator_backend.simulator_callback import SimulatorCallback
 from syne_tune.blackbox_repository.simulated_tabular_backend import (
     BlackboxRepositoryBackend,
@@ -19,6 +12,11 @@ from syne_tune.blackbox_repository.simulated_tabular_backend import (
 from syne_tune.stopping_criterion import StoppingCriterion
 from syne_tune.tuner import Tuner
 
+from baselines import (
+    MethodArguments,
+    methods,
+)
+from blackbox_benchmarks import benchmark_definitions
 
 def run(
     method_names,
@@ -144,7 +142,7 @@ if __name__ == "__main__":
         "--benchmark",
         type=str,
         required=False,
-        help="a benchmark to run from benchmarks.py, run all by default.",
+        help="a benchmark to run from blackbox_benchmarks.py, run all by default.",
     )
     parser.add_argument(
         "--n_workers",
@@ -165,7 +163,7 @@ if __name__ == "__main__":
     else:
         seeds = [args.seed]
         
-    if args.methods is None or args.method.startswith("OriginalOptFormer"):
+    if args.method is None or args.method.startswith("OriginalOptFormer"):
         # avoid importing nasty google vizier dependencies if we don't need them
         from original_optformer_methods import original_optformer_methods
         methods  = original_optformer_methods | methods
