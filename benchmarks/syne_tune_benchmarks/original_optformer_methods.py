@@ -7,7 +7,7 @@ from baselines import Methods
 
 original_optformer_methods = {
 
-    Methods.OptFormerHillClimb:  lambda method_arguments: SingleObjectiveScheduler(
+    Methods.OriginalOptFormerHillClimb:  lambda method_arguments: SingleObjectiveScheduler(
         config_space=method_arguments.config_space,
         searcher=OriginalOptFormerSearcher(points_to_evaluate=method_arguments.points_to_evaluate,
                                    config_space=method_arguments.config_space,
@@ -18,7 +18,7 @@ original_optformer_methods = {
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
     ),
-    Methods.OptFormerGPUCB: lambda method_arguments: SingleObjectiveScheduler(
+    Methods.OriginalOptFormerGPUCB: lambda method_arguments: SingleObjectiveScheduler(
         config_space=method_arguments.config_space,
         searcher=OriginalOptFormerSearcher(points_to_evaluate=method_arguments.points_to_evaluate,
                                            config_space=method_arguments.config_space,
@@ -29,7 +29,7 @@ original_optformer_methods = {
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
     ),
-    Methods.OptFormerRS: lambda method_arguments: SingleObjectiveScheduler(
+    Methods.OriginalOptFormerRS: lambda method_arguments: SingleObjectiveScheduler(
         config_space=method_arguments.config_space,
         searcher=OriginalOptFormerSearcher(points_to_evaluate=method_arguments.points_to_evaluate,
                                            config_space=method_arguments.config_space,

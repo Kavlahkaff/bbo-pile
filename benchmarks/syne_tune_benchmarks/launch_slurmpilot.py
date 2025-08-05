@@ -58,9 +58,9 @@ if __name__ == "__main__":
         Methods.TPE,
         Methods.BORE,
         Methods.CQR,
-        Methods.OptFormerGPUCB,
-        Methods.OptFormerRS,
-        Methods.OptFormerHillClimb
+        Methods.OriginalOptFormerGPUCB,
+        Methods.OriginalOptFormerRS,
+        Methods.OriginalOptFormerHillClimb
     ]
     print(f"{len(methods_selected)} methods selected: {methods_selected}")
 
