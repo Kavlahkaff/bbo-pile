@@ -83,20 +83,6 @@ def tabrepo_benchmark(blackbox_name: str, dataset_name: str, datasets: list[str]
     )
 
 
-def hpob_benchmark(blackbox_name: str, dataset_name: str):
-    return BenchmarkDefinition(
-        max_wallclock_time=36000,
-        max_num_evaluations=1 * n_full_evals,
-        n_workers=4,
-        elapsed_time_attr="metric_elapsed_time",
-        metric="metric_accuracy",
-        mode="max",
-        blackbox_name=blackbox_name,
-        dataset_name=dataset_name,
-        surrogate="KNeighborsRegressor",
-        surrogate_kwargs={"n_neighbors": 1},
-    )
-
 
 benchmark_definitions = {
     "fcnet-protein": fcnet_benchmark("protein_structure"),
@@ -106,17 +92,6 @@ benchmark_definitions = {
     "nas201-cifar10": nas201_benchmark("cifar10"),
     "nas201-cifar100": nas201_benchmark("cifar100"),
     "nas201-ImageNet16-120": nas201_benchmark("ImageNet16-120"),
-    # TODO currently fails
-    # "nas301-yahpo": BenchmarkDefinition(
-    #     max_wallclock_time=3600 * 100,
-    #     elapsed_time_attr="runtime",
-    #     metric="val_accuracy",
-    #     blackbox_name="yahpo-nb301",
-    #     dataset_name="CIFAR10",
-    #     mode="max",
-    #     n_workers=4,
-    #     max_num_evaluations=97 * n_full_evals,
-    # ),
 }
 
 
@@ -133,54 +108,6 @@ for task in lc_bench_datasets:
         "lcbench-" + task.replace("_", "-").replace(".", "")
     ] = lcbench_benchmark(task, datasets=lc_bench_datasets)
 
-
-# We select a sublist of search spaces
-#tabrepo_search_spaces = [
-#    "RandomForest",
-#    "CatBoost",
-#    "LightGBM",
-#    "NeuralNetTorch",
-#    "ExtraTrees",
-#]
-## TODO find list of 10 representative datasets among the 200+ available
-#tabrepo_datasets = TABREPO_DATASETS[:10]
-#for task in tabrepo_datasets:
-#    for search_space in tabrepo_search_spaces:
-#        benchmark_definitions[
-#            f"tabrepo-{search_space}-" + task.replace("_", "-").replace(".", "")
-#        ] = tabrepo_benchmark(
-#            blackbox_name=f"tabrepo_{search_space}",
-#            dataset_name=task,
-#            datasets=tabrepo_datasets,
-#        )
-
-#hpob_search_spaces = [
-#    "hpob_4796",
-#    "hpob_5527",
-#    "hpob_5636",
-#    "hpob_5859",
-#    "hpob_5860",
-#    "hpob_5891",
-#    "hpob_5906",
-#    "hpob_5965",
-#    "hpob_5970",
-#    "hpob_5971",
-#    "hpob_6766",
-#    "hpob_6767",
-#    "hpob_6794",
-#    "hpob_7607",
-#    "hpob_7609",
-#    "hpob_5889",
-#]
-
-
-# add all datasets for all search spaces to benchmark definitions
-#for ss in hpob_search_spaces:
-#    from syne_tune.blackbox_repository import load_blackbox
-#
-#    blackboxes = load_blackbox(ss)
-#    for ds in list(blackboxes.keys()):
-#        benchmark_definitions[ss + "_" + ds] = hpob_benchmark(ss, ds)
 
 if __name__ == "__main__":
     from syne_tune.blackbox_repository import load_blackbox

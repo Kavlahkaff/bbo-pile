@@ -129,6 +129,11 @@ if __name__ == "__main__":
         default=0,
         help="If 1 runs all seeds between [0, args.seed] if 0 run only args.seed.",
     )
+    parser.add_argument(
+        "--run_hpob_only",
+        action = 'store_true',
+        help="If set, only runs hpobench benchmarks, otherwise runs all benchmarks.",
+    )
 
     parser.add_argument(
         "--method",
@@ -166,11 +171,15 @@ if __name__ == "__main__":
         from original_optformer_methods import original_optformer_methods
         methods  = original_optformer_methods | methods
     method_names = [args.method] if args.method is not None else list(methods.keys())
-    benchmark_names = (
-        [args.benchmark]
-        if args.benchmark is not None
-        else list(benchmark_definitions.keys())
-    )
+
+    if args.benchmark is not None:
+       benchmark_names = [args.benchmark]
+
+    if args.run_hpob_only:
+        from hpob_benchmarks import hpob_benchmark_definitions
+        benchmark_names =  list(hpob_benchmark_definitions.keys())
+    else:
+        benchmark_names =  list(benchmark_definitions.keys())
     run(
         method_names=method_names,
         checkpoint_dir=args.checkpoint_dir,
