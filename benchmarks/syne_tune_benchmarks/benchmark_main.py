@@ -172,7 +172,7 @@ if __name__ == "__main__":
     if args.benchmark is not None:
        benchmark_names = [args.benchmark]
 
-    if args.run_hpob_only:
+    elif args.run_hpob_only:
         from hpob_benchmarks import hpob_benchmark_definitions
         benchmark_names =  list(hpob_benchmark_definitions.keys())
     else:
