@@ -1,4 +1,4 @@
-from benchmarks import BenchmarkDefinition
+from blackbox_benchmarks import BenchmarkDefinition
 
 n_full_evals = 100
 
