@@ -19,7 +19,7 @@ from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import S
 logger = logging.getLogger(__name__)
 
 BBOB_INFERENCE_MODEL_KWARGS = {
-    'checkpoint_path_or_model_dir': os.environ['CHECKPOINT_DIR'] + '/bbob/checkpoint_700000',
+    'checkpoint_path_or_model_dir': os.environ['CHECKPOINT_DIR'] + 'bbob/checkpoint_700000',
     'model_gin_file': str(Path(__file__).parent / 'bbob.gin'),
     'batch_size': 1,
 }
@@ -50,7 +50,7 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher):
         task_info: Dict = None,
         points_to_evaluate: Optional[List[Dict[str, Any]]] = None,
         designer_name: str = 'designer_hill_climb',
-        model = 'hpob',
+        model = 'bbob',
         searcher_kwargs: Optional[Dict[str, Any]] = None,
     ):
 
@@ -58,7 +58,7 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher):
                          points_to_evaluate=points_to_evaluate,
                          random_seed=random_seed)
 
-        self.metric = "error"
+        self.metric = "bbob_eval"
         self.random_seed = random_seed
         self.designer_name = designer_name
         self.config_space = config_space
@@ -82,7 +82,7 @@ class OriginalOptFormerSearcher(SingleObjectiveBaseSearcher):
 
         do_minimize = vz.ObjectiveMetricGoal.MINIMIZE
 
-        problem.metric_information.append(vz.MetricInformation(name='error', goal=do_minimize))
+        problem.metric_information.append(vz.MetricInformation(name=self.metric, goal=do_minimize))
 
         if model == 'bbob':
             inference_model = inference_utils.InferenceModel.from_checkpoint(
