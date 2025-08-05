@@ -160,6 +160,11 @@ if __name__ == "__main__":
         seeds = list(range(args.seed))
     else:
         seeds = [args.seed]
+        
+    if args.methods is None or args.method.startswith("OriginalOptFormer"):
+        # avoid importing nasty google vizier dependencies if we don't need them
+        from original_optformer_methods import original_optformer_methods
+        methods  = original_optformer_methods | methods
     method_names = [args.method] if args.method is not None else list(methods.keys())
     benchmark_names = (
         [args.benchmark]
