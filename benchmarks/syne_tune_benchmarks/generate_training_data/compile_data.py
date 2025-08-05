@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     path = Path(args.path)
     output_path = Path(args.output_path)
-    os.makedirs(output_path)
+    os.makedirs(output_path, exist_ok=True)
     experiment_filter = None
 
     with catchtime("load benchmark results"):
