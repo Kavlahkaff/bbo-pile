@@ -134,7 +134,6 @@ if __name__ == "__main__":
         action = 'store_true',
         help="If set, only runs hpobench benchmarks, otherwise runs all benchmarks.",
     )
-
     parser.add_argument(
         "--method",
         type=str,

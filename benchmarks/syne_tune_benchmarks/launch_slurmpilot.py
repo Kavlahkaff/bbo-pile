@@ -8,10 +8,8 @@ from slurmpilot.util import unify
 from tqdm import tqdm
 
 from baselines import (
-    methods,
     Methods,
 )
-from benchmarking.benchmarks import benchmark_definitions
 
 
 if __name__ == "__main__":
@@ -21,12 +19,17 @@ if __name__ == "__main__":
     parser.add_argument("--num_seeds", type=int, required=False, default=1)
     parser.add_argument("--dry-run", action="store_true")
 
+    parser.add_argument("--checkpoint_dir", type=str, required=True)
     parser.add_argument("--cluster", type=str, required=True)
     parser.add_argument("--partition", type=str, required=True)
     parser.add_argument(
         "--slurmpilot_folder", type=str, required=False, default="~/slurmpilot/jobs"
     )
-
+    parser.add_argument(
+        "--run_hpob_only",
+        action='store_true',
+        help="If set, only runs hpobench benchmarks, otherwise runs all benchmarks.",
+    )
     parser.add_argument("--sbatch_arguments", type=str, required=False)
 
     args, _ = parser.parse_known_args()
@@ -39,9 +42,18 @@ if __name__ == "__main__":
     sbatch_arguments = args.sbatch_arguments
     slurmpilot_folder = args.slurmpilot_folder
 
-    print(f"Methods defined: {list(methods.keys())}")
+
+    if args.run_hpob_only:
+        from hpob_benchmarks import hpob_benchmark_definitions
+        benchmark_names =  list(hpob_benchmark_definitions.keys())
+    else:
+        from benchmarks import benchmark_definitions
+        benchmark_names =  list(benchmark_definitions.keys())
+
     methods_selected = [
         Methods.RS,
+        Methods.OPT_REA,
+        Methods.OPT_RS,
         Methods.REA,
         Methods.TPE,
         Methods.BORE,
@@ -59,7 +71,6 @@ if __name__ == "__main__":
     max_runtime_minutes = 60 * 24 - 1
     python_args = []
     for method in tqdm(methods_selected):
-        assert method in methods, f"{method} not in {methods}"
         for benchmark in benchmarks_selected:
             # To avoid memory issues, we run only one seed per job
             for seed in range(num_seeds):
@@ -68,6 +79,7 @@ if __name__ == "__main__":
                         "method": method,
                         "n_workers": args.n_workers,
                         "benchmark": benchmark,
+                        "checkpoint_dir": args.checkpoint_dir,
                         # run all seeds in [0, seed-1]
                         "seed": seed,
                         "run_all_seed": 0,
@@ -90,11 +102,11 @@ if __name__ == "__main__":
             str(Path(__file__).parent.parent.parent / "open_optformer"),
         ],
         n_cpus=4,
-        n_gpus=0,
-        mem=1024 * 128,
+        n_gpus=0 if cluster == 'barnard' else 1,  # barnard has no GPU
+        mem=1024 * 128 if cluster == 'barnard' else 1024 * 16,
         nodes=1,
         max_runtime_minutes=max_runtime_minutes,
-        bash_setup_command="source ~/.bashrc; conda activate syne_tune",
+        bash_setup_command="source ~/.bashrc; conda activate optformer",
         env={
             # write tuner files in Slurmpilot folder corresponding to `jobname`
             "CHECKPOINT_DIR": os.environ['CHECKPOINT_DIR'],
