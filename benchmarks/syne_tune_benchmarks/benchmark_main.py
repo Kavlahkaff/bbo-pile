@@ -38,7 +38,11 @@ def run(
     exp_names = []
     for method, seed, benchmark_name in tqdm(combinations):
         np.random.seed(seed)
-        benchmark = benchmark_definitions[benchmark_name]
+        if benchmark_name.startswith("hpob_"):
+            from hpob_benchmarks import hpob_benchmark_definitions
+            benchmark = hpob_benchmark_definitions[benchmark_name]
+        else:
+            benchmark = benchmark_definitions[benchmark_name]
 
         print(f"Starting experiment ({method}/{benchmark_name}/{seed})")
 
@@ -82,7 +86,7 @@ def run(
         )
 
         stop_criterion = StoppingCriterion(
-            max_wallclock_time=benchmark.max_wallclock_time,
+#            max_wallclock_time=benchmark.max_wallclock_time,
             max_num_evaluations=max_num_evaluations
             if max_num_evaluations
             else benchmark.max_num_evaluations,
