@@ -41,6 +41,9 @@ def run(
         if benchmark_name.startswith("hpob_"):
             from hpob_benchmarks import hpob_benchmark_definitions
             benchmark = hpob_benchmark_definitions[benchmark_name]
+        elif benchmark_name.startswith("tabrepo_"):
+            from tabrepo_benchmarks import tabrepo_benchmark_definitions
+            benchmark = tabrepo_benchmark_definitions[benchmark_name]
         else:
             benchmark = benchmark_definitions[benchmark_name]
 

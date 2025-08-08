@@ -30,6 +30,11 @@ if __name__ == "__main__":
         action='store_true',
         help="If set, only runs hpobench benchmarks, otherwise runs all benchmarks.",
     )
+    parser.add_argument(
+        "--run_tabrepo_only",
+        action='store_true',
+        help="If set, only runs tabrepo benchmarks, otherwise runs all benchmarks.",
+    )
     parser.add_argument("--sbatch_arguments", type=str, required=False)
 
     args, _ = parser.parse_known_args()
@@ -45,6 +50,9 @@ if __name__ == "__main__":
     if args.run_hpob_only:
         from hpob_benchmarks import hpob_benchmark_definitions
         benchmarks_selected  =  list(hpob_benchmark_definitions.keys())
+    elif args.run_tabrepo_only:
+        from tabrepo_benchmarks import tabrepo_benchmark_definitions
+        benchmarks_selected = list(tabrepo_benchmark_definitions.keys())
     else:
         from blackbox_benchmarks import benchmark_definitions
         benchmarks_selected =  list(benchmark_definitions.keys())
@@ -53,10 +61,10 @@ if __name__ == "__main__":
         Methods.RS,
 #        Methods.OPT_REA,
 #        Methods.OPT_RS,
-#        Methods.REA,
-#        Methods.TPE,
-#        Methods.BORE,
-#        Methods.CQR,
+        Methods.REA,
+        Methods.TPE,
+        Methods.BORE,
+        Methods.CQR,
 #        Methods.OriginalOptFormerGPUCB,
 #        Methods.OriginalOptFormerRS,
 #        Methods.OriginalOptFormerHillClimb
