@@ -42,7 +42,6 @@ if __name__ == "__main__":
     sbatch_arguments = args.sbatch_arguments
     slurmpilot_folder = args.slurmpilot_folder
 
-
     if args.run_hpob_only:
         from hpob_benchmarks import hpob_benchmark_definitions
         benchmarks_selected  =  list(hpob_benchmark_definitions.keys())
@@ -51,7 +50,7 @@ if __name__ == "__main__":
         benchmarks_selected =  list(benchmark_definitions.keys())
 
     methods_selected = [
-#        Methods.RS,
+        Methods.RS,
 #        Methods.OPT_REA,
 #        Methods.OPT_RS,
 #        Methods.REA,
@@ -59,7 +58,7 @@ if __name__ == "__main__":
 #        Methods.BORE,
 #        Methods.CQR,
 #        Methods.OriginalOptFormerGPUCB,
-        Methods.OriginalOptFormerRS,
+#        Methods.OriginalOptFormerRS,
 #        Methods.OriginalOptFormerHillClimb
     ]
     print(f"{len(methods_selected)} methods selected: {methods_selected}")
@@ -88,6 +87,10 @@ if __name__ == "__main__":
     jobname = unify(f"synetune/{experiment_tag}", method="date")
 
     print(f"Going to launch {len(python_args)} jobs, jobname: {jobname}")
+    bash_setup_command = "source ~/.bashrc; source /home/aakl689g/original_optformer/bin/activate;"
+
+    if cluster == 'barnard':
+        bash_setup_command += " export PYTHONPATH=''"
     jobinfo = JobCreationInfo(
         cluster=cluster,
         partition=partition,
@@ -105,7 +108,8 @@ if __name__ == "__main__":
         mem=1024 * 128 if cluster == 'barnard' else 1024 * 16,
         nodes=1,
         max_runtime_minutes=max_runtime_minutes,
-        bash_setup_command="source ~/.bashrc; conda activate optformer",
+#        bash_setup_command="source ~/.bashrc; conda activate optformer",
+        bash_setup_command=bash_setup_command,
         env={
             # write tuner files in Slurmpilot folder corresponding to `jobname`
             "CHECKPOINT_DIR": os.environ['CHECKPOINT_DIR'],
