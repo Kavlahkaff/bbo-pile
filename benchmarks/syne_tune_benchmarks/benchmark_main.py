@@ -140,6 +140,11 @@ if __name__ == "__main__":
         help="If set, only runs hpobench benchmarks, otherwise runs all benchmarks.",
     )
     parser.add_argument(
+        "--run_tabrepo_only",
+        action='store_true',
+        help="If set, only runs tabrepo benchmarks, otherwise runs all benchmarks.",
+    )
+    parser.add_argument(
         "--method",
         type=str,
         required=False,
@@ -182,6 +187,9 @@ if __name__ == "__main__":
     elif args.run_hpob_only:
         from hpob_benchmarks import hpob_benchmark_definitions
         benchmark_names =  list(hpob_benchmark_definitions.keys())
+    elif args.run_tabrepo_only:
+        from tabrepo_benchmarks import tabrepo_benchmark_definitions
+        benchmark_names = list(tabrepo_benchmark_definitions.keys())
     else:
         benchmark_names =  list(benchmark_definitions.keys())
     run(
