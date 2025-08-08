@@ -30,6 +30,11 @@ if __name__ == "__main__":
         action='store_true',
         help="If set, only runs hpobench benchmarks, otherwise runs all benchmarks.",
     )
+    parser.add_argument(
+        "--run_tabrepo_only",
+        action='store_true',
+        help="If set, only runs tabrepo benchmarks, otherwise runs all benchmarks.",
+    )
     parser.add_argument("--sbatch_arguments", type=str, required=False)
 
     args, _ = parser.parse_known_args()
@@ -46,20 +51,23 @@ if __name__ == "__main__":
     if args.run_hpob_only:
         from hpob_benchmarks import hpob_benchmark_definitions
         benchmarks_selected  =  list(hpob_benchmark_definitions.keys())
+    elif args.run_tabrepo_only:
+        from tabrepo_benchmarks import tabrepo_benchmark_definitions
+        benchmarks_selected = list(tabrepo_benchmark_definitions.keys())
     else:
         from blackbox_benchmarks import benchmark_definitions
         benchmarks_selected =  list(benchmark_definitions.keys())
 
     methods_selected = [
-#        Methods.RS,
+        Methods.RS,
 #        Methods.OPT_REA,
 #        Methods.OPT_RS,
-#        Methods.REA,
-#        Methods.TPE,
-#        Methods.BORE,
-#        Methods.CQR,
+        Methods.REA,
+        Methods.TPE,
+        Methods.BORE,
+        Methods.CQR,
 #        Methods.OriginalOptFormerGPUCB,
-        Methods.OriginalOptFormerRS,
+#        Methods.OriginalOptFormerRS,
 #        Methods.OriginalOptFormerHillClimb
     ]
     print(f"{len(methods_selected)} methods selected: {methods_selected}")
@@ -108,9 +116,7 @@ if __name__ == "__main__":
         bash_setup_command="source ~/.bashrc; conda activate optformer",
         env={
             # write tuner files in Slurmpilot folder corresponding to `jobname`
-            "CHECKPOINT_DIR": os.environ['CHECKPOINT_DIR'],
-            "CURL_CA_BUNDLE": "/etc/ssl/certs/ca-bundle.crt",
-            "SYNETUNE_FOLDER": f"{slurmpilot_folder}/{jobname}",
+            "SYNETUNE_FOLDER": f"slurmpilot/jobs/{jobname}",
         },
         n_concurrent_jobs=20,  # max number of jobs to run at the same time, setting this number to high will lead to throttling by huggingface
     )
