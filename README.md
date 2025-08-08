@@ -1,5 +1,5 @@
 
-# Syne Tune Benchmarks
+# Open Optformer
 
 ## Installation
 
@@ -13,7 +13,7 @@ Furthermore, you need to install the following packages, if you want to install 
     pip install git+https://github.com/google-research/t5x.git@a9b8f1563eac10aa18f4fe384959733a6ae7e4ea --no-deps
     pip install git+https://github.com/google-research/optformer.git@12e2639954b0cd9bf824aab2d040650e6b32089c tensorflow-cpu==2.15.1
 
-## Benchmarking
+## Syne Tune Benchmarks
 
 To run the benchmark locally, first go to the syne_tune_benchmarks folder
 
