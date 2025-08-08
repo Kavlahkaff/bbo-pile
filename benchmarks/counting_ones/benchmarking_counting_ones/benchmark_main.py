@@ -131,7 +131,7 @@ if __name__ == "__main__":
         "--benchmark",
         type=str,
         required=False,
-        help="a benchmark to run from benchmarks.py, run all by default.",
+        help="a benchmark to run from blackbox_benchmarks.py, run all by default.",
     )
     parser.add_argument(
         "--n_workers",
