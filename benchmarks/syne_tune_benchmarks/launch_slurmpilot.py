@@ -116,6 +116,8 @@ if __name__ == "__main__":
         bash_setup_command="source ~/.bashrc; conda activate optformer",
         env={
             # write tuner files in Slurmpilot folder corresponding to `jobname`
+            "CHECKPOINT_DIR": os.environ['CHECKPOINT_DIR'],
+            "CURL_CA_BUNDLE": "/etc/ssl/certs/ca-bundle.crt",
             "SYNETUNE_FOLDER": f"{slurmpilot_folder}/{jobname}",
         },
         n_concurrent_jobs=20,  # max number of jobs to run at the same time, setting this number to high will lead to throttling by huggingface
