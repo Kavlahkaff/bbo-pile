@@ -44,6 +44,9 @@ def run(
         elif benchmark_name.startswith("tabrepo_"):
             from tabrepo_benchmarks import tabrepo_benchmark_definitions
             benchmark = tabrepo_benchmark_definitions[benchmark_name]
+        elif benchmark_name.startswith("pd1_"):
+            from pd1_benchmarks import pd1_benchmark_definitions
+            benchmark = pd1_benchmark_definitions[benchmark_name]
         else:
             benchmark = benchmark_definitions[benchmark_name]
 
@@ -82,7 +85,7 @@ def run(
                 resource_attr=resource_attr,
                 num_brackets=1,
                 checkpoint_dir=checkpoint_dir,
-                use_surrogates="lcbench" in benchmark_name,
+                use_surrogates=benchmark.use_surrogate,
                 points_to_evaluate=points_to_evaluate,
 
             )
@@ -90,7 +93,7 @@ def run(
 
         stop_criterion = StoppingCriterion(
 #            max_wallclock_time=benchmark.max_wallclock_time,
-            max_num_evaluations=max_num_evaluations
+            max_num_trials_completed=max_num_evaluations
             if max_num_evaluations
             else benchmark.max_num_evaluations,
         )
@@ -145,6 +148,11 @@ if __name__ == "__main__":
         help="If set, only runs tabrepo benchmarks, otherwise runs all benchmarks.",
     )
     parser.add_argument(
+        "--run_pd1_only",
+        action='store_true',
+        help="If set, only runs PD1 benchmarks, otherwise runs all benchmarks.",
+    )
+    parser.add_argument(
         "--method",
         type=str,
         required=False,
@@ -190,6 +198,9 @@ if __name__ == "__main__":
     elif args.run_tabrepo_only:
         from tabrepo_benchmarks import tabrepo_benchmark_definitions
         benchmark_names = list(tabrepo_benchmark_definitions.keys())
+    elif args.run_pd1_only:
+        from pd1_benchmarks import pd1_benchmark_definitions
+        benchmark_names = list(pd1_benchmark_definitions.keys())
     else:
         benchmark_names =  list(benchmark_definitions.keys())
     run(

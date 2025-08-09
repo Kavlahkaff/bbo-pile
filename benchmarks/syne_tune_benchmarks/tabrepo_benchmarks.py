@@ -13,6 +13,7 @@ def tabrepo_benchmark(blackbox_name: str, dataset_name: str):
         mode="min",
         blackbox_name=blackbox_name,
         dataset_name=dataset_name,
+        use_surrogate=True,
         surrogate="KNeighborsRegressor",
         surrogate_kwargs={"n_neighbors": 1},
     )

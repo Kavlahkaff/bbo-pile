@@ -35,6 +35,11 @@ if __name__ == "__main__":
         action='store_true',
         help="If set, only runs tabrepo benchmarks, otherwise runs all benchmarks.",
     )
+    parser.add_argument(
+        "--run_pd1_only",
+        action='store_true',
+        help="If set, only runs PD1 benchmarks, otherwise runs all benchmarks.",
+    )
     parser.add_argument("--sbatch_arguments", type=str, required=False)
 
     args, _ = parser.parse_known_args()
@@ -50,6 +55,9 @@ if __name__ == "__main__":
     if args.run_hpob_only:
         from hpob_benchmarks import hpob_benchmark_definitions
         benchmarks_selected  =  list(hpob_benchmark_definitions.keys())
+    elif args.run_pd1_only:
+        from pd1_benchmarks import pd1_benchmark_definitions
+        benchmarks_selected = list(pd1_benchmark_definitions.keys())
     elif args.run_tabrepo_only:
         from tabrepo_benchmarks import tabrepo_benchmark_definitions
         benchmarks_selected = list(tabrepo_benchmark_definitions.keys())

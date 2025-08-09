@@ -17,6 +17,7 @@ class BenchmarkDefinition:
     dataset_name: str
     max_num_evaluations: Optional[int] = None
     surrogate: Optional[str] = None
+    use_surrogate: Optional[bool] = True,
     surrogate_kwargs: Optional[Dict] = None
     datasets: Optional[List[str]] = None
 
@@ -33,19 +34,21 @@ def fcnet_benchmark(dataset_name):
         mode="min",
         blackbox_name="fcnet",
         dataset_name=dataset_name,
+        use_surrogate=True,
         # allow to stop after having seen the equivalent of `n_full_evals` evaluations
-        max_num_evaluations=100 * n_full_evals,
+        max_num_evaluations=n_full_evals,
     )
 
 
 def nas201_benchmark(dataset_name):
     return BenchmarkDefinition(
         max_wallclock_time=72000 if dataset_name == "ImageNet16-120" else 36000,
-        max_num_evaluations=200 * n_full_evals,
+        max_num_evaluations=n_full_evals,
         n_workers=4,
         elapsed_time_attr="metric_elapsed_time",
         metric="metric_valid_error",
         mode="min",
+        use_surrogate=True,
         blackbox_name="nasbench201",
         dataset_name=dataset_name,
     )
@@ -54,13 +57,14 @@ def nas201_benchmark(dataset_name):
 def lcbench_benchmark(dataset_name, datasets):
     return BenchmarkDefinition(
         max_wallclock_time=36000,
-        max_num_evaluations=52 * n_full_evals,
+        max_num_evaluations=n_full_evals,
         n_workers=4,
         elapsed_time_attr="time",
         metric="val_accuracy",
         mode="max",
         blackbox_name="lcbench",
         dataset_name=dataset_name,
+        use_surrogate=True,
         surrogate="KNeighborsRegressor",
         surrogate_kwargs={"n_neighbors": 1},
         datasets=datasets,

@@ -13,6 +13,7 @@ def hpob_benchmark(blackbox_name: str, dataset_name: str):
         mode="max",
         blackbox_name=blackbox_name,
         dataset_name=dataset_name,
+        use_surrogate=True,
         surrogate="KNeighborsRegressor",
         surrogate_kwargs={"n_neighbors": 1},
     )
