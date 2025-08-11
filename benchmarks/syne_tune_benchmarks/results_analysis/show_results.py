@@ -41,10 +41,14 @@ benchmark_families = [
     "fcnet",
     "lcbench",
     "nas201",
-#    "tabrepo-ExtraTrees",
-#    "tabrepo-RandomForest",
-#    "tabrepo-LightGBM",
-#    "tabrepo-CatBoost",
+#    "tabrepo_RandomForest",
+#    "tabrepo_LinearModel",
+#    "tabrepo_CatBoost",
+#    "tabrepo_XGBoost",
+#    "tabrepo_ExtraTrees",
+#    "tabrepo_NeuralNetTorch",
+#    "tabrepo_LightGBM",
+#    "tabrepo_KNeighbors"
 #    # "yahpo"
 #    "hpob_4796",
 #    "hpob_5527",
