@@ -2,7 +2,7 @@ import json
 
 from dataclasses import dataclass, field
 
-from syne_tune.config_space import Categorical, Float, Integer, Domain, config_space_from_json_dict
+from syne_tune.config_space import Categorical, Float, Integer, Domain, config_space_from_json_dict, FiniteRange
 from syne_tune.experiments import ExperimentResult
 
 
@@ -35,7 +35,7 @@ def encode(x, hp: Domain):
     """
     if isinstance(hp, Categorical):
         return hp.categories.index(x)
-    elif isinstance(hp, Float) or isinstance(hp, Integer):
+    elif isinstance(hp, (Float, Integer, FiniteRange)):
         return quantize(x, hp.lower, hp.upper)
     else:
         raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
@@ -81,6 +81,15 @@ class History:
                     string += f"type:INT,"
                     string += f"min_value:{hp.lower},"
                     string += f"max_value:{hp.upper},"
+            elif isinstance(hp, FiniteRange):
+                if hp.cast_int:
+                    string += f"type:INT,"
+                else:
+                    string += f"type:UNI,"
+                string += f"min_value:{hp.lower},"
+                string += f"max_value:{hp.upper},"
+            else:
+                raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
             string += "}"
 
         string += '&'
