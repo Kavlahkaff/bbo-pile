@@ -38,7 +38,7 @@ class Methods:
     BOTorch = "BOTorch"
     CQR = "CQR"
     OriginalOptFormerHillClimb = "OptFormerHillClimb"
-    OriginalOptFormerGPUCB = "OriginalOptFormerGPUCB"
+    OriginalOptFormerGP = "OriginalOptFormerGP"
     OriginalOptFormerRS = "OriginalOptFormerRS"
     OPT_RS = "OPT-RS"
     OPT_REA = "OPT-REA"
