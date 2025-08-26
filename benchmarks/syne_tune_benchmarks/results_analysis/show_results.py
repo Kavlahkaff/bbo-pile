@@ -49,6 +49,7 @@ benchmark_families = [
 #    "tabrepo_NeuralNetTorch",
 #    "tabrepo_LightGBM",
 #    "tabrepo_KNeighbors"
+#    "pd1"
 #    # "yahpo"
 #    "hpob_4796",
 #    "hpob_5527",
@@ -249,6 +250,7 @@ def stack_benchmark_results(
     else:
         res = {}
         for benchmark_family in benchmark_families:
+            print(benchmark_family)
             # list of the benchmark of the current family
             benchmarks_family = [
                 benchmark
@@ -407,7 +409,7 @@ def plot_average_normalized_regret(
     plt.xlabel("% Budget Used")
     ax.set_ylabel("Average normalized regret")
     plt.xlim(0, 1)
-    plt.ylim(6e-3, None)
+    plt.ylim(1e-3, None)
     plt.grid()
     plt.title(title)
     plt.legend(loc="upper right")
@@ -440,12 +442,16 @@ if __name__ == "__main__":
 
     methods_selected = [
         Methods.RS,
-        Methods.OptFormerHillClimb,
-        Methods.OptFormerGPUCB,
-#        Methods.REA,
-#        Methods.BORE,
-#        Methods.TPE,
-#        Methods.CQR,
+        Methods.OPT_RS,
+        Methods.OPT_REA,
+#        Methods.OptFormerHillClimb,
+#        Methods.OptFormerGPUCB,
+#        Methods.OptFormerRS,
+        Methods.REA,
+#        Methods.OPT_RS
+        Methods.BORE,
+        Methods.TPE,
+        Methods.CQR,
 #        Methods.BOTorch,
 
 

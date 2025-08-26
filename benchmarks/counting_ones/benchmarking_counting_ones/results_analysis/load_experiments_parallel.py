@@ -15,7 +15,7 @@ from syne_tune.util import catchtime
 
 
 def load_result(name, metadata, path):
-    usecols = [metadata["metric_names"][0], "st_tuner_time", "trial_id", "st_decision"]
+    usecols = [metadata["metric_names"][0], "trial_id", "st_decision"]
     try:
         return pd.read_csv(path / name / "results.csv.zip", usecols=usecols)
     except Exception:
@@ -25,8 +25,8 @@ def load_result(name, metadata, path):
 def convert_to_numpy(benchmark_df, num_time_steps: int = 20):
     t_min = 0
     # the last time step is the median of the stopping time of all algorithms
-    t_max = benchmark_df.groupby(["algorithm"]).max().st_tuner_time.median()
-    t_range = np.linspace(t_min, t_max, num_time_steps)
+    t_max = benchmark_df.groupby(["algorithm"]).max().trial_id.max()
+    t_range = np.arange(t_min, t_max)
     seed_results = {}
     for algorithm in benchmark_df["algorithm"].unique():
         ts = []
@@ -34,18 +34,11 @@ def convert_to_numpy(benchmark_df, num_time_steps: int = 20):
         df_scheduler = benchmark_df[benchmark_df["algorithm"] == algorithm]
         for seed in sorted(df_scheduler["seed"].unique()):
             sub_df = df_scheduler[df_scheduler["seed"] == seed]
-            ts.append(sub_df.loc[:, ST_TUNER_TIME].values)
-            ys.append(sub_df.loc[:, "best"].values)
-
-        # for each seed, find the best value at each regularly spaced time-step
-        y_ranges = []
-        for t, y in zip(ts, ys):
-            indices = np.searchsorted(t, t_range, side="left")
-            y_range = y[np.clip(indices, 0, len(y) - 1)]
-            y_ranges.append(y_range)
+            sub_df = sub_df.sort_values("trial_id")
+            ys.append(sub_df.loc[:, "best"].values[:t_max])
 
         # (num_seeds, num_time_steps)
-        y_ranges = np.stack(y_ranges)
+        y_ranges = np.stack(ys)
         seed_results[algorithm] = y_ranges
     return t_range, seed_results
 

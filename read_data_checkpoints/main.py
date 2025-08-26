@@ -8,6 +8,7 @@ from tfrecord.torch.dataset import TFRecordDataset
 from sentencepiece import sentencepiece_model_pb2
 import sentencepiece as sentencepiece_processor
 from tqdm import tqdm
+import litdata as ld
 
 def pad_collate(batch, pad_value=0):
     """
@@ -68,8 +69,8 @@ def create_tfrecord_dataloader(
     return dataloader
 
 if __name__ == "__main__":
-    tfrecord_dir = "/work/dlclarge1/rakotoah-llmhpo/data/datasets/cached_bbob_train/"
-    tfrecord_dir_eval = "/work/dlclarge1/rakotoah-llmhpo/data/datasets/cached_bbob_eval/"
+    tfrecord_dir = "/home/aaron/datasets/optformer/cached_bbob_train/"
+    tfrecord_dir_eval = "/home/aaron/datasets/optformer/cached_bbob_eval/"
 
     # copy from https://github.com/google-research/optformer/blob/neurips22/optformer/t5x/vocabularies.py
     with open("sentencepiece.model", "rb") as f:

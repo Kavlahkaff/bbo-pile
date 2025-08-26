@@ -66,7 +66,7 @@ methods = {
         metric=method_arguments.metric,
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
-        searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate},
+        searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate, 'min_bandwidth': 1e-1},
     ),
     Methods.CQR: lambda method_arguments: SingleObjectiveScheduler(
         config_space=method_arguments.config_space,

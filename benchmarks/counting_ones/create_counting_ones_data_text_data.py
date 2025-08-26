@@ -5,7 +5,7 @@ from copy import deepcopy
 import numpy as np
 from syne_tune.config_space import choice
 
-from open_optformer.history import Study
+from open_optformer.history import History, preprocess
 
 
 def random_trajectories(iterations, dimensionality):
@@ -14,11 +14,11 @@ def random_trajectories(iterations, dimensionality):
     metric = np.sum(trajectory, axis=1)
 
     config_space = {f"x_{i}": choice([0, 1]) for i in range(dimensionality)}
-    study = Study(config_space=config_space,
-                       name=f"counting_ones_{dimensionality}D",
-                       algorithm="random_search",
-                       metric_names=["feval"],
-                       )
+    study = History(config_space=config_space,
+                    name=f"counting_ones_{dimensionality}D",
+                    algorithm="random_search",
+                    metric_names=["feval"],
+                    )
     prompt = study.get_prompt()
 
     for i in range(iterations):
@@ -31,17 +31,17 @@ def random_trajectories(iterations, dimensionality):
 
 def local_search_trajectories(iterations, dimensionality):
     config_space = {f"x_{i}": choice([0, 1]) for i in range(dimensionality)}
-    study = Study(config_space=config_space,
-                       name=f"counting_ones_{dimensionality}D",
-                       algorithm="local_search",
-                       metric_names=["feval"],
-                       )
+    study = History(config_space=config_space,
+                    name=f"counting_ones_{dimensionality}D",
+                    algorithm="local_search",
+                    metric_names=["feval"],
+                    )
     prompt = study.get_prompt()
 
-    start_point = {k: v.sample() for k, v in config_space.items()}
+#    start_point = {k: v.sample() for k, v in config_space.items()}
+    start_point = {k: 0 for k, v in config_space.items()}
     metric = np.sum(list(start_point.values()))
     prompt += ','.join(str(tij) for tij in list(start_point.values())) + '*' + str(metric) + '|'
-
     for i in range(1, iterations):
         # get actual hyperparameters from the search space
         config = deepcopy(start_point)
@@ -73,6 +73,12 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument(
+        "--ratio",
+        type=float,
+        default=0.8,
+        help="",
+    )
+    parser.add_argument(
         "--num_trajectories",
         type=int,
         default=60000,
@@ -82,18 +88,24 @@ if __name__ == "__main__":
 
     num_trajectories = args.num_trajectories
     iterations = args.iterations
-    #dims = [5, 10 , 20]
-    dims = [5, 20]
+#    dims = [5, 10, 20]
+    dims = [5]
 
     d = Path(args.output_path) / 'data'
     os.makedirs(d, exist_ok=True)
 
-    for mode in ['train', 'valid']:
+    for mode in ['train', 'valid'][:1]:
         with open(d / f'counting_ones_{mode}.txt', 'w') as fh:
-            for i in range(args.num_trajectories):
-                dim = np.random.randint(dims[0], dims[1])
-                if np.random.rand() >= 0.5:
-                    prompt = random_trajectories(iterations, dim)
-                else:
-                    prompt = local_search_trajectories(iterations, dim)
+
+            if mode == 'train':
+                N = num_trajectories
+            else:
+                N = 500
+            for i in range(N):
+                dim = np.random.choice(dims)
+#                if np.random.rand() >= args.ratio:
+#                    prompt = random_trajectories(iterations, dim)
+ #               else:
+                prompt = local_search_trajectories(iterations, dim)
+                prompt = preprocess(prompt)
                 fh.write(prompt + "\n")

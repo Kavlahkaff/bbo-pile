@@ -20,33 +20,25 @@ from benchmarks.counting_ones.benchmarking_counting_ones.results_analysis.method
 )
 from syne_tune.util import catchtime
 
-
-# matplotlib.rcParams["pdf.fonttype"] = 42
-
-
 def figure_folder(path):
-
     root = Path('./')
     figure_path = root / path
     figure_path.mkdir(exist_ok=True, parents=True)
     print(figure_path)
     return figure_path
 
-
 lw = 2.5
 alpha = 0.7
 matplotlib.rcParams.update({"font.size": 15})
 benchmark_families = [
     "co",
-
 ]
 benchmark_names = {
     "co": "\\Counting-Ones{}",
 }
 
-
 def plot_result_benchmark(
-    t_range: np.array,
+    num_trials: int,
     method_dict: Dict[str, np.array],
     title: str,
     rename_dict: dict,
@@ -67,25 +59,25 @@ def plot_result_benchmark(
     if len(method_dict) > 0:
         if ax is None:
             fig, ax = plt.subplots()
+        x_range = np.arange(num_trials)
         for algorithm in method_dict.keys():
             if methods_to_show is not None and algorithm not in methods_to_show:
                 continue
             renamed_algorithm = rename_dict.get(algorithm, algorithm)
 
-            # (num_seeds, num_time_steps)
             y_ranges = method_dict[algorithm]
             if plot_regret:
                 y_ranges = (y_ranges - best_result) / (worse_result - best_result)
             mean = y_ranges.mean(axis=0)
             std = y_ranges.std(axis=0, ddof=1) / np.sqrt(y_ranges.shape[0])
             ax.fill_between(
-                t_range,
+                x_range,
                 mean - std,
                 mean + std,
                 alpha=0.1,
             )
             ax.plot(
-                t_range,
+                x_range,
                 mean,
                 label=renamed_algorithm,
                 alpha=alpha,
@@ -93,13 +85,12 @@ def plot_result_benchmark(
 
             agg_results[algorithm] = mean
 
-        ax.set_xlabel("Wallclock time")
+        ax.set_xlabel("Trials")
         ax.legend()
         ax.set_title(title)
     return ax
 
-
-def plot_task_performance_over_time(
+def plot_task_performance_over_trials(
     benchmark_results: Dict[str, Tuple[np.array, Dict[str, np.array]]],
     rename_dict: dict,
     result_folder: Path,
@@ -108,10 +99,11 @@ def plot_task_performance_over_time(
     methods_to_show: list = None,
     plot_regret: bool = False,
 ):
-    print(f"plot rank through time on {result_folder}")
+    print(f"plot rank through trials on {result_folder}")
     for benchmark, (t_range, method_dict) in benchmark_results.items():
+        num_trials = t_range.shape[0] if hasattr(t_range, "shape") else len(t_range)
         ax = plot_result_benchmark(
-            t_range=t_range,
+            num_trials=num_trials,
             method_dict=method_dict,
             title=benchmark,
             ax=ax,
@@ -133,7 +125,6 @@ def plot_task_performance_over_time(
             filepath = result_folder / f"{benchmark}.pdf"
             plt.savefig(filepath)
         ax = None
-
 
 def load_and_cache(
     path: Path,
@@ -164,7 +155,6 @@ def load_and_cache(
 
     return benchmark_results
 
-
 def plot_ranks(
     ranks,
     benchmark_results,
@@ -174,9 +164,8 @@ def plot_ranks(
     methods_to_show: List[str],
 ):
     plt.figure()
-    # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
     ys = ranks.reshape(benchmark_results.shape).mean(axis=(1, 2))
-    xs = np.linspace(0, 1, ys.shape[-1])
+    xs = np.arange(ys.shape[-1])
     for i, method in enumerate(methods_to_show):
         plt.plot(
             xs,
@@ -185,28 +174,20 @@ def plot_ranks(
             alpha=alpha,
             lw=lw,
         )
-    plt.xlabel("% Budget Used")
+    plt.xlabel("Trials")
     plt.ylabel("Method rank")
-    plt.xlim(0, 1)
+    plt.xlim(0, xs[-1])
     plt.grid()
     plt.title(title)
     plt.legend(loc="upper left")
     plt.tight_layout()
     plt.savefig(result_folder / f"{title}.pdf")
 
-
 def stack_benchmark_results(
     benchmark_results_dict: Dict[str, Tuple[np.array, Dict[str, np.array]]],
     methods_to_show: Optional[List[str]],
     benchmark_families: List[str],
 ) -> Dict[str, np.array]:
-    """
-    Stack benchmark results between benchmarks of the same family.
-    :param benchmark_results_dict:
-    :param methods_to_show:
-    :return: dictionary from benchmark family to tensor results with shape
-    (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
-    """
     for benchmark, (t_range, method_dict) in benchmark_results_dict.items():
         for method in methods_to_show:
             if method not in method_dict:
@@ -219,7 +200,6 @@ def stack_benchmark_results(
     else:
         res = {}
         for benchmark_family in benchmark_families:
-            # list of the benchmark of the current family
             benchmarks_family = [
                 benchmark
                 for benchmark in benchmark_results_dict.keys()
@@ -235,18 +215,14 @@ def stack_benchmark_results(
                 benchmark_result = np.stack(benchmark_result)
                 benchmark_results.append(benchmark_result)
 
-            # (num_benchmarks, num_methods, num_min_seeds, num_time_steps)
             benchmark_results = np.stack(benchmark_results)
 
             if benchmark_family in ["lcbench", "yahpo", "co"]:
-                # max instead of minimization, todo pass the mode somehow
                 benchmark_results *= -1
 
-            # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
             res[benchmark_family] = benchmark_results.swapaxes(0, 1)
 
         return res
-
 
 def generate_rank_results(
     benchmark_families: List[str],
@@ -258,16 +234,12 @@ def generate_rank_results(
     rows = []
     for benchmark_family in benchmark_families:
         print(benchmark_family)
-        # list of the benchmark of the current family
-        # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
         benchmark_results = stacked_benchmark_results[benchmark_family]
 
         ranks = pd.DataFrame(
             benchmark_results.reshape(len(benchmark_results), -1)
         ).rank()
-        # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
         ranks = ranks.values.reshape(benchmark_results.shape)
-        # (num_methods, num_benchmarks)
         avg_ranks_per_tasks = ranks.mean(axis=(2, 3))
         for i in range(benchmark_results.shape[1]):
             row = {"benchmark": f"{benchmark_family}-{i}"}
@@ -283,11 +255,8 @@ def generate_rank_results(
             methods_to_show,
         )
 
-    # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
     all_results = np.concatenate(list(stacked_benchmark_results.values()), axis=1)
     all_ranks = pd.DataFrame(all_results.reshape(len(all_results), -1)).rank()
-    # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
-    # all_ranks = all_ranks.values.reshape(all_results.shape)
     plot_ranks(
         all_ranks.values,
         all_results,
@@ -296,7 +265,6 @@ def generate_rank_results(
         result_folder,
         methods_to_show,
     )
-
 
 def plot_average_normalized_regret(
     stacked_benchmark_results,
@@ -309,22 +277,15 @@ def plot_average_normalized_regret(
 ):
     normalized_regrets = []
     for benchmark_family in benchmark_families:
-        # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
         benchmark_results = stacked_benchmark_results[benchmark_family]
-        # uncomment to remove outliers
-        # benchmark_results = np.clip(benchmark_results, a_min=None, a_max=np.percentile(benchmark_results, 99))
         benchmark_results_best = benchmark_results.min(axis=(0, 2, 3), keepdims=True)
         benchmark_results_worse = benchmark_results.max(axis=(0, 2, 3), keepdims=True)
-        # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
         normalized_regret = (benchmark_results - benchmark_results_best) / (
             benchmark_results_worse - benchmark_results_best
         )
         normalized_regrets.append(normalized_regret)
 
-    # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
     normalized_regrets = np.concatenate(normalized_regrets, axis=1)
-
-    # (num_methods, num_time_steps)
     avg_regret = normalized_regrets.mean(axis=(1, 2))
     std_regret = normalized_regrets.std(axis=2).mean(axis=1) if show_ci else None
 
@@ -332,14 +293,11 @@ def plot_average_normalized_regret(
         fig, ax = plt.subplots()
     for i, algorithm in enumerate(methods_to_show):
         renamed_algorithm = rename_dict.get(algorithm, algorithm)
-        # (num_seeds, num_time_steps)
         mean = avg_regret[i]
+        xs = np.arange(len(mean))
         ax.plot(
-            np.arange(len(mean)) / len(mean),
+            xs,
             mean,
-            # color=method_style.color,
-            # linestyle=method_style.linestyle,
-            # marker=method_style.marker,
             label=renamed_algorithm,
             lw=lw,
             alpha=alpha,
@@ -347,25 +305,22 @@ def plot_average_normalized_regret(
         if show_ci:
             std = std_regret[i]
             ax.fill_between(
-                np.arange(len(mean)) / len(mean),
+                xs,
                 mean - std,
                 mean + std,
-                # color=method_style.color,
                 alpha=0.1,
             )
         ax.set_yscale("log")
 
-    plt.xlabel("% Budget Used")
+    plt.xlabel("Trials")
     ax.set_ylabel("Average normalized regret")
-    plt.xlim(0, 1)
+    plt.xlim(0, xs[-1])
     plt.ylim(6e-3, None)
     plt.grid()
     plt.title(title)
     plt.legend(loc="upper right")
     plt.tight_layout()
     plt.savefig(result_folder / f"{title}.pdf")
-    # plt.show()
-
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
@@ -444,7 +399,7 @@ if __name__ == "__main__":
                     )
 
                 with catchtime("generating plots per task"):
-                    plot_task_performance_over_time(
+                    plot_task_performance_over_trials(
                         benchmark_results=benchmark_results,
                         methods_to_show=methods,
                         rename_dict=rename_dict,

@@ -66,13 +66,13 @@ if __name__ == "__main__":
         benchmarks_selected =  list(benchmark_definitions.keys())
 
     methods_selected = [
-        Methods.RS,
+#        Methods.RS,
 #        Methods.OPT_REA,
 #        Methods.OPT_RS,
-        Methods.REA,
+#        Methods.REA,
         Methods.TPE,
-        Methods.BORE,
-        Methods.CQR,
+#        Methods.BORE,
+#        Methods.CQR,
 #        Methods.OriginalOptFormerGPUCB,
 #        Methods.OriginalOptFormerRS,
 #        Methods.OriginalOptFormerHillClimb
