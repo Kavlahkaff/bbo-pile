@@ -183,7 +183,7 @@ if __name__ == "__main__":
     else:
         seeds = [args.seed]
         
-    if args.method is None or args.method.startswith("OriginalOptFormer"):
+    if args.method is None or args.method.startswith("OptFormer"):
         # avoid importing nasty google vizier dependencies if we don't need them
         from original_optformer_methods import original_optformer_methods
         methods  = original_optformer_methods | methods

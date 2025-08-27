@@ -38,7 +38,7 @@ TRAIN_STEPS = 1_000_000
 LEARNING_RATE = 0.3
 DROPOUT_RATE = 0.3
 
-TARGET_LENGTHS = 1024
+TARGET_LENGTHS = 4096
 TASK_FEATURE_LENGTHS = {
     'inputs': 512,  # Maximum input seq after tokenizatio is 312.
     'targets': %TARGET_LENGTHS,

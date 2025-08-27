@@ -439,9 +439,10 @@ if __name__ == "__main__":
     )
 
     methods_selected = [
-        Methods.RS,
-        Methods.OptFormerHillClimb,
-        Methods.OptFormerGPUCB,
+        # Methods.RS,
+        Methods.OptFormerBBOB_HillClimb,
+        Methods.OptFormerBBOB_GP,
+        Methods.OptFormerBBOB_REGEVO,
 #        Methods.REA,
 #        Methods.BORE,
 #        Methods.TPE,
