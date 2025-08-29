@@ -442,21 +442,15 @@ if __name__ == "__main__":
 
     methods_selected = [
         Methods.RS,
-        Methods.OPT_RS,
-        Methods.OPT_REA,
-#        Methods.OptFormerHillClimb,
-#        Methods.OptFormerGPUCB,
-#        Methods.OptFormerRS,
+ #       Methods.OPT_RS,
+ #       Methods.OPT_REA,
         Methods.REA,
-#        Methods.OPT_RS
         Methods.BORE,
         Methods.TPE,
         Methods.CQR,
-#        Methods.BOTorch,
-
-
-
-
+        Methods.OptFormerBBOB_HillClimb,
+        Methods.OptFormerBBOB_GP,
+        Methods.OptFormerBBOB_REGEVO,
     ]
 
     single_fidelity = [x for x in methods_selected if not ("ASHA" in x or "BOHB" in x)]
