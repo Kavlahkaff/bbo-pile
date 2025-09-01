@@ -56,7 +56,7 @@ Now we can train the tokenizer
 
 And pre-process the dataset to a litdata format, which is required for training the model
 
-    python benchmarks/syne-tune-benchmarks/preprocess_dataset.py --dataset_path $BASE_PATH/data/raw --output_path $BASE_PATH/data/preprocessed --tokenizer_path $BASE_PATH/tokenizer
+    python benchmarks/syne-tune-benchmarks/generate_training_data/preprocess_dataset.py --dataset_path $BASE_PATH/data/raw --output_path $BASE_PATH/data/preprocessed --tokenizer_path $BASE_PATH/tokenizer
 
 ### Pre-training
 
