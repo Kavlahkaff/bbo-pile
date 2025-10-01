@@ -92,7 +92,7 @@ methods = {
         metric=method_arguments.metric,
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
-        searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate},
+        searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate, "population_size": 20, "sample_size": 10},
     ),
     Methods.OPT_RS: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
