@@ -40,6 +40,9 @@ if __name__ == "__main__":
 
     methods = [
         "REA",
+        "TPE",
+        "BORE",
+        "CQR",
         "RS"
     ]
 
