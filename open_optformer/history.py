@@ -2,6 +2,7 @@ import json
 
 from dataclasses import dataclass, field
 
+import numpy as np
 from syne_tune.config_space import Categorical, Float, Integer, Domain, config_space_from_json_dict, FiniteRange
 from syne_tune.experiments import ExperimentResult
 
@@ -18,6 +19,8 @@ def quantize(x, x_min, x_max, q=1000):
     """
     Quantize a value x to be in [0, q] based on the range [x_min, x_max].
     """
+    if x_min == x_max:
+        return 0
     x_norm = (x - x_min)/(x_max - x_min)
     return int(x_norm * q)
 
@@ -34,7 +37,11 @@ def encode(x, hp: Domain):
     Encode a value x based on the type of hyperparameter hp.
     """
     if isinstance(hp, Categorical):
-        return hp.categories.index(x)
+       if isinstance(x, float) and np.isnan(x):
+           x = 'None'
+       if isinstance(x, float):
+           x = str(x)
+       return hp.categories.index(x)
     elif isinstance(hp, (Float, Integer, FiniteRange)):
         return quantize(x, hp.lower, hp.upper)
     else:
