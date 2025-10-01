@@ -32,7 +32,7 @@ tabrepo_search_spaces = [
 tabrepo_benchmark_definitions = {}
 
 #Currently runs only a subset of tabrepo. Adapt as needed.
-for ss in tabrepo_search_spaces[:1]:
+for ss in tabrepo_search_spaces:
     blackboxes = load_blackbox(ss)
-    for ds in list(blackboxes.keys())[:11]:
+    for ds in list(blackboxes.keys()):
         tabrepo_benchmark_definitions[ss + "_" + ds] = tabrepo_benchmark(ss, ds)
