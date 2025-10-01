@@ -22,7 +22,7 @@ class BenchmarkDefinition:
     datasets: Optional[List[str]] = None
 
 
-n_full_evals = 200
+n_full_evals = 100
 
 
 def fcnet_benchmark(dataset_name):
