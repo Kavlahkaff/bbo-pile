@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 from typing import Optional, List, Dict, Any
 from pathlib import Path
@@ -12,7 +13,7 @@ from litgpt.model import GPT
 
 from open_optformer.history import History, preprocess, dequantize
 
-from syne_tune.config_space import Integer, Categorical, Float
+from syne_tune.config_space import Integer, Categorical, Float, FiniteRange
 from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
 from syne_tune.optimizer.schedulers.single_objective_scheduler import (
     SingleObjectiveScheduler,
@@ -27,6 +28,43 @@ def select_token(logits, pos):
     m = np.random.choice(np.arange(pos.shape[0]), p=probs)
     token = pos[m]
     return token
+
+
+def get_probability(logits, classes):
+    # Convert logits to probabilities
+    probs = F.softmax(logits, dim=0)  # shape: [vocab_size]
+
+    # --- Vectorized approach ---
+
+    # 1. Pad classes to same length (max length)
+    max_len = max(len(c) for c in classes)
+    padded_classes = [c + [-1] * (max_len - len(c)) for c in classes]  # pad with -1
+    class_tensor = torch.tensor(padded_classes)  # shape: [num_classes, max_len]
+
+    # 2. Mask for padded tokens
+    mask = class_tensor != -1  # True for real tokens, False for padding
+
+    # 3. Replace -1 with 0 for indexing (will be masked out)
+    class_tensor_for_index = class_tensor.clone()
+    class_tensor_for_index[class_tensor_for_index == -1] = 0
+
+    # 4. Gather probabilities
+    token_probs = probs[class_tensor_for_index]  # shape: [num_classes, max_len]
+
+    # 5. Apply mask to ignore padding (set padding probs to 1)
+    token_probs = torch.where(mask, token_probs, torch.ones_like(token_probs))
+
+    # 6. Compute joint probability (product across token dimension)
+    joint_probs = token_probs.prod(dim=1)  # shape: [num_classes]
+    
+    return joint_probs
+
+def sample_category_hparam(logits, positions_per_category):
+    probs_per_category = get_probability(logits, positions_per_category).detach().numpy()
+    probs_per_category /= probs_per_category.sum()
+    category_index = np.random.choice(np.arange(len(positions_per_category)), p=probs_per_category)
+    return torch.tensor(positions_per_category[category_index])
+
 
 class OptformerScheduler(SingleObjectiveScheduler):
     """
@@ -141,28 +179,31 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                                 input_pos,
                                 input_pos_maxp1=input_pos_maxp1)[:, -1]
 
-            if isinstance(hp, Float) or isinstance(hp, Integer):
+            if isinstance(hp, (Float, Integer, FiniteRange)):
                 # pick value in [0, Q] with the highest probability
                 idx = torch.tensor([self.tokenizer.encode(str(i))[-1] for i in range(1000)], dtype=torch.int)
                 token = select_token(logits, idx)
                 value = int(self.tokenizer.decode(token))
+                token = torch.tensor([token])
                 config[hp_name] = dequantize(value, hp.lower, hp.upper, q=1000)
 
             elif isinstance(hp, Categorical):
                 #  pick the category with the highest probability
-                idx = torch.tensor([self.tokenizer.encode(str(cat))[-1] for cat in hp.categories], dtype=torch.int)
-                token = select_token(logits, idx)
-                value = int(self.tokenizer.decode(token))
-                config[hp_name] = hp.categories[value]
+                tokens_per_category = [self.tokenizer.encode(str(cat)).tolist() for cat in hp.categories]
+                if len(logits.shape) == 2:
+                    logits = logits.squeeze(0)
+                token = sample_category_hparam(logits, tokens_per_category)
+                category = self.tokenizer.decode(token)
+                config[hp_name] = category
             if prefill_token:
                 prefill_token = False
-                input_pos = torch.tensor([prompt_size],dtype=torch.int64)
-            else:
-                input_pos.add_(1)
-            input_pos_maxp1.add_(1)
+#                input_pos = torch.tensor([prompt_size],dtype=torch.int64)
+#            else:
+            input_pos = torch.arange(start=int(input_pos[-1]) + 1, end=int(input_pos[-1] + token.size(0) + 1))
+            input_pos_maxp1 = input_pos.max() + 1
             self.model(token.view(1, -1), input_pos, input_pos_maxp1=input_pos_maxp1)
-            input_pos.add_(1)
-            token = torch.tensor([1012])
+            input_pos = torch.tensor([input_pos_maxp1])
+            token = self.tokenizer.encode(',')[-1:]
         return config
 
     def on_trial_complete(
