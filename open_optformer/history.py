@@ -32,15 +32,15 @@ def dequantize(x, x_min, x_max, q=1000):
     return x / q * (x_max - x_min) + x_min
 
 
-def encode(x, hp: Domain):
+def encode(x, hp: Domain, hp_name: str = ""):
     """
     Encode a value x based on the type of hyperparameter hp.
     """
     if isinstance(hp, Categorical):
-       if isinstance(x, float) and np.isnan(x):
-           x = 'None'
-       if isinstance(x, float):
-           x = str(x)
+       if hp_name == 'proc.skew_threshold' and np.isnan(x):
+            x = 'None'
+       if hp_name == 'proc.skew_threshold' and isinstance(x, float):
+               x = str(x)
        return hp.categories.index(x)
     elif isinstance(hp, (Float, Integer, FiniteRange)):
         return quantize(x, hp.lower, hp.upper)
@@ -113,7 +113,7 @@ class History:
                     if i > 0:
                         string += ","
 
-                    hp_encoded = encode(trial.config[hp_name], hp)
+                    hp_encoded = encode(trial.config[hp_name], hp, hp_name)
                     string += str(hp_encoded)
                 string += f"*"
 
@@ -137,14 +137,13 @@ class History:
                         name=benchmark_name,
                         algorithm=algorithm_name,
                         metric_names=metric_name)
-        if 'st_status' in results.columns:
-            results = results[results['st_status'] == 'Completed']
 
-        if max_num_trials is not None:
-            results = results[:max_num_trials]
-        for iter, row in results.iterrows():
+        for i, (trial_id, trial) in enumerate(results.groupby('trial_id')):
+            row = trial.iloc[-1]
             config = {k: row[f"config_{k}"] for k in config_space.keys()}
             result = row[metric_name]
             hist.add_trial(config, result)
+            if i >= max_num_trials - 1 and max_num_trials is not None:
+                break
 
         return hist
