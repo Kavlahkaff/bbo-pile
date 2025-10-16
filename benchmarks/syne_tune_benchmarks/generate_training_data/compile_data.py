@@ -51,7 +51,7 @@ if __name__ == "__main__":
     print(args.__dict__)
     assert Path(args.path).exists()
     max_seed = args.max_seed
-    max_num_trials = 50
+    max_num_trials = 100
 
     path = Path(args.path)
     output_path = Path(args.output_path)
@@ -81,11 +81,11 @@ if __name__ == "__main__":
 
             hist = []
             for name, metadata in metadatas.items():
-                try:
+#                try:
                     hist.append(create_history_from_results(name, metadata, path, max_num_trials))
-                except Exception as e:
-                    print(f"Error processing {name}: {e}")
-                    continue
+#                except Exception as e:
+#                    print(f"Error processing {name}: {e}")
+#                    continue
             #        hist = parfor(
             #            lambda name, metadata: create_history_from_results(name, metadata, path),
             #            inputs=list(metadatas.items()),
