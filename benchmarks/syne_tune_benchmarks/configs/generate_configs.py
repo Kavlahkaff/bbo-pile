@@ -23,9 +23,15 @@ def generate_configs():
             "800M": 800_000_000,
             "1B": 1_000_000_000,
         }
-        lr_grid = {"1e-5": 1e-5,
-              "5e-5": 5e-5,
-              "1e-4": 1e-4}
+        lr_grid = {
+            "1e-5": 1e-5,
+            "3e-5": 3e-5,
+            "6e-5": 6e-5,
+            "1e-4": 1e-4,
+            "3e-4": 3e-4,
+            "6e-4": 6e-4,
+            "1e-3": 1e-3,
+        }
 
         base_path = Path(BASE_PATH_CLUSTER)
 
