@@ -251,7 +251,7 @@ def main(
 
         _root_pre_forward(model._forward_module._orig_mod, model._forward_module._orig_mod, [], {})
 
-    loss_weights = None # data.loss_weights
+    loss_weights = data.loss_weights
     if loss_weights is not None:
         loss_weights = torch.tensor(loss_weights, dtype=torch.float, device=fabric.device).detach().clone()
 
