@@ -44,7 +44,7 @@ from chuncked_cross_entropy import chunked_cross_entropy
 
 def setup(
     model_name: str,
-    model_config: Optional[Config] = None,
+    model_config: Optional[Config | dict] = None,
     out_dir: Path = Path("out/pretrain"),
     precision: Literal["bf16-true", "bf16-mixed", "32-true", None] = None,
     initial_checkpoint_dir: Optional[Path] = None,
@@ -106,6 +106,9 @@ def setup(
 
     if tokenizer_dir is not None:
         tokenizer_dir = extend_checkpoint_dir(tokenizer_dir)
+    
+    if isinstance(model_config, dict):
+        model_config = Config(**model_config)
 
     if model_config is None:
         # Support both model_name options: meta-llama/Meta-Llama-3-8B & Meta-Llama-3-8B
@@ -248,7 +251,7 @@ def main(
 
         _root_pre_forward(model._forward_module._orig_mod, model._forward_module._orig_mod, [], {})
 
-    loss_weights = data.loss_weights
+    loss_weights = None # data.loss_weights
     if loss_weights is not None:
         loss_weights = torch.tensor(loss_weights, dtype=torch.float, device=fabric.device).detach().clone()
 

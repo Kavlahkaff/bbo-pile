@@ -4,6 +4,8 @@
   huggingface-hub
   scikit-learn
   dill
-  litgpt
+  litgpt>=0.5.9
+  litdata
   syne-tune[extra]
   pyparfor
+  sentencepiece
