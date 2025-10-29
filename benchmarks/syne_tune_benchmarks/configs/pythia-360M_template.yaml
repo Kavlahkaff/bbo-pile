@@ -1,0 +1,63 @@
+data:
+  class_path: open_optformer.training.syne_tune_data.SyneTuneData
+  init_args:
+    data_path: /data/tokenized_data/
+    split_names: ['train', 'valid']
+devices: auto
+eval:
+  final_validation: false
+  initial_validation: false
+  interval: 20
+  max_iters: 100
+  max_new_tokens: null
+initial_checkpoint_dir: null
+logger_name: wandb
+model_config:
+  bias: false
+  mlp_class_name: LLaMAMLP
+  hf_config: {}
+  intermediate_size: 2048
+  block_size: 2048
+  n_embd: 2048
+  n_head: 8
+  n_layer: 24
+  head_size: 64
+  n_query_groups: 1
+  name: pythia-360m
+  norm_class_name: RMSNorm
+  padded_vocab_size: 1074
+  parallel_residual: false
+  rotary_percentage: 1.0
+  scale_embeddings: false
+model_name: pythia-160m
+num_nodes: 1
+optimizer:
+  class_path: torch.optim.AdamW
+  init_args:
+    betas:
+    - 0.9
+    - 0.95
+    lr: 1e-5
+    weight_decay: 0.1
+out_dir: model/
+precision: bf16-mixed
+resume: false
+seed: 42
+tokenizer_dir: tokenizer/
+train:
+  epochs: null
+  global_batch_size: 8
+  log_interval: 10
+  lr_warmup_steps: 0
+  max_norm: 1.0
+  max_seq_length: 2048
+  max_steps: null
+  max_tokens: 1000000
+  micro_batch_size: 8
+  min_lr: 0.0000
+  save_interval: 500
+  tie_embeddings: true
+log:
+  project: "open-optformer"
+  run: "pythia-200M_token_1M"
+  group: 'concat'
