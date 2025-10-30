@@ -48,7 +48,7 @@ From the root of the repository, run the following commands to process the data:
 
 First to compile the results into a dataset
 
-    python benchmarks/syne-tune-benchmarks/generate_training_data/compile_data.py --path $RESULTS_PATH --output_path $BASE_PATH/data/raw
+    python benchmarks/syne_tune_benchmarks/generate_training_data/compile_data.py --path $RESULTS_PATH --output_path $BASE_PATH/data/raw
 
 Now we can train the tokenizer
 
@@ -56,10 +56,12 @@ Now we can train the tokenizer
 
 And pre-process the dataset to a litdata format, which is required for training the model
 
-    python benchmarks/syne-tune-benchmarks/generate_training_data/preprocess_dataset.py --dataset_path $BASE_PATH/data/raw --output_path $BASE_PATH/data/preprocessed --tokenizer_path $BASE_PATH/tokenizer
+    python benchmarks/syne_tune_benchmarks/generate_training_data/preprocess_data.py --input_path $BASE_PATH/data/raw --output_path $BASE_PATH/data/tokenized_data --tokenizer_dir $BASE_PATH/tokenizer
 
 ### Pre-training
 
+First, update BASE_PATH_CLUSTER, DATASET_NAME, and WANDB_PROJECT from ``benchmarks/syne_tune_benchmarks/configs/generate_configs.py`` based on your setup. Then, run the script to generate configuration files.
+
 At the end we can start the model training:
 
-    python open_optformer/training/pretrain.py pythia410M --config benchmarks/syne_tune_benchmarks/configs/syne_tune_benchmarks_model_local.yaml
+    python open_optformer/training/pretrain.py pythia410M --config benchmarks/syne_tune_benchmarks/configs/NAME_OF_YOUR_CONFIG.yaml
