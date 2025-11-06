@@ -1,4 +1,5 @@
 import json
+import random
 
 from dataclasses import dataclass, field
 
@@ -67,11 +68,14 @@ class History:
         trial = Trial(config, result)
         self.trials.append(trial)
 
-    def get_prompt(self):
+    def get_prompt(self, shuffle=False):
         string = f"benchmark:{self.name},"
         string += f"algorithm:{self.algorithm},"
 
-        for hp_name, hp in self.config_space.items():
+        hypers = list(self.config_space.items())
+        if shuffle:
+            random.shuffle(hypers)
+        for hp_name, hp in hypers:
             string += f"parameter:"
             string += "{"
             string += f"name:{hp_name},"
@@ -107,7 +111,7 @@ class History:
             if y_min == y_max:
                 y_max += 1  # Avoid division by zero in quantization
             for trial in self.trials:
-                for i, (hp_name, hp) in enumerate(self.config_space.items()):
+                for i, (hp_name, hp) in enumerate(hypers):
                     if not isinstance(hp, Domain):
                         continue
                     if i > 0:
