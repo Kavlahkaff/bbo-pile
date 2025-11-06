@@ -1,11 +1,13 @@
-numpy==1.26.3
-coolname
-pandas
-huggingface-hub
-scikit-learn
-dill
-litgpt
-syne-tune[extra]
-pyparfor
-wandb
-matplotlib
+  numpy==1.26.3
+  coolname
+  pandas
+  huggingface-hub
+  scikit-learn
+  dill
+  litgpt>=0.5.9
+  litdata
+  syne-tune[extra]
+  pyparfor
+  sentencepiece
+  wandb
+  matplotlib
