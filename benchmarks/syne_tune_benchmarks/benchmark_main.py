@@ -47,6 +47,9 @@ def run(
         elif benchmark_name.startswith("pd1_"):
             from pd1_benchmarks import pd1_benchmark_definitions
             benchmark = pd1_benchmark_definitions[benchmark_name]
+        elif benchmark_name.startswith("deepar_"):
+            from deepar_benchmarks import deepar_benchmark_definitions
+            benchmark = deepar_benchmark_definitions[benchmark_name]
         else:
             benchmark = benchmark_definitions[benchmark_name]
 
@@ -59,10 +62,6 @@ def run(
             surrogate=benchmark.surrogate,
             surrogate_kwargs=benchmark.surrogate_kwargs,
         )
-
-        # todo move into benchmark definition
-        max_t = max(backend.blackbox.fidelity_values)
-        resource_attr = next(iter(backend.blackbox.fidelity_space.keys()))
 
         # 5 candidates initially to be evaluated
         num_random_candidates = 5
@@ -81,8 +80,6 @@ def run(
                 metric=benchmark.metric,
                 mode=benchmark.mode,
                 random_seed=seed,
-                max_t=max_t,
-                resource_attr=resource_attr,
                 num_brackets=1,
                 checkpoint_dir=checkpoint_dir,
                 use_surrogates=benchmark.use_surrogate,
@@ -152,6 +149,12 @@ if __name__ == "__main__":
         action='store_true',
         help="If set, only runs PD1 benchmarks, otherwise runs all benchmarks.",
     )
+
+    parser.add_argument(
+        "--run_deepar_only",
+        action='store_true',
+        help="If set, only runs deepar benchmarks, otherwise runs all benchmarks.",
+    )
     parser.add_argument(
         "--method",
         type=str,
@@ -201,6 +204,9 @@ if __name__ == "__main__":
     elif args.run_pd1_only:
         from pd1_benchmarks import pd1_benchmark_definitions
         benchmark_names = list(pd1_benchmark_definitions.keys())
+    elif args.run_deepar_only:
+        from deepar_benchmarks import deepar_benchmark_definitions
+        benchmark_names = list(deepar_benchmark_definitions.keys())
     else:
         benchmark_names =  list(benchmark_definitions.keys())
     run(

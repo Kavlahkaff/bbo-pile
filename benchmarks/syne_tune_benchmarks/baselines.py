@@ -18,10 +18,7 @@ class MethodArguments:
     metric: str
     mode: str
     random_seed: int
-    resource_attr: str
     points_to_evaluate: List[dict]
-    max_t: Optional[int] = None
-    max_resource_attr: Optional[str] = None
     use_surrogates: bool = False
     num_brackets: Optional[int] = 1
     verbose: Optional[bool] = False

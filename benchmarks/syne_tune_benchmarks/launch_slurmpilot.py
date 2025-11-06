@@ -40,6 +40,11 @@ if __name__ == "__main__":
         action='store_true',
         help="If set, only runs PD1 benchmarks, otherwise runs all benchmarks.",
     )
+    parser.add_argument(
+        "--run_deepar_only",
+        action='store_true',
+        help="If set, only runs DeepAR benchmarks, otherwise runs all benchmarks.",
+    )
     parser.add_argument("--sbatch_arguments", type=str, required=False)
 
     args, _ = parser.parse_known_args()
@@ -61,28 +66,26 @@ if __name__ == "__main__":
     elif args.run_tabrepo_only:
         from tabrepo_benchmarks import tabrepo_benchmark_definitions
         benchmarks_selected = list(tabrepo_benchmark_definitions.keys())
+    elif args.run_deepar_only:
+        from deepar_benchmarks import deepar_benchmark_definitions
+        benchmarks_selected = list(deepar_benchmark_definitions.keys())
     else:
         from blackbox_benchmarks import benchmark_definitions
         benchmarks_selected =  list(benchmark_definitions.keys())
 
     methods_selected = [
-#        Methods.RS,
-#        Methods.OPT_REA,
-#        Methods.OPT_RS,
-#        Methods.REA,
+        Methods.RS,
+        Methods.REA,
         Methods.TPE,
-#        Methods.BORE,
-#        Methods.CQR,
-#        Methods.OriginalOptFormerGPUCB,
-#        Methods.OriginalOptFormerRS,
-#        Methods.OriginalOptFormerHillClimb
+        Methods.BORE,
+        Methods.CQR,
     ]
     print(f"{len(methods_selected)} methods selected: {methods_selected}")
 
     config = load_config()
 
     slurm = SlurmPilot(config=config, clusters=[cluster], ssh_engine="ssh")
-    max_runtime_minutes = 60 * 24 - 1
+    max_runtime_minutes = 60 * 2
     python_args = []
     for method in tqdm(methods_selected):
         for benchmark in benchmarks_selected:
@@ -132,7 +135,7 @@ if __name__ == "__main__":
             "CURL_CA_BUNDLE": "/etc/ssl/certs/ca-bundle.crt",
             "SYNETUNE_FOLDER": f"{slurmpilot_folder}/{jobname}",
         },
-        n_concurrent_jobs=20,  # max number of jobs to run at the same time, setting this number to high will lead to throttling by huggingface
+        n_concurrent_jobs=200,  # max number of jobs to run at the same time, setting this number to high will lead to throttling by huggingface
     )
     if not args.dry_run:
         jobid = slurm.schedule_job(jobinfo)
