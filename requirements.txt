@@ -1,9 +1,11 @@
-  numpy==1.26.3
-  coolname
-  pandas
-  huggingface-hub
-  scikit-learn
-  dill
-  litgpt
-  syne-tune[extra]
-  pyparfor
+numpy==1.26.3
+coolname
+pandas
+huggingface-hub
+scikit-learn
+dill
+litgpt
+syne-tune[extra]
+pyparfor
+wandb
+matplotlib
