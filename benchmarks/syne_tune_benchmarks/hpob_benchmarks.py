@@ -1,6 +1,4 @@
-from blackbox_benchmarks import BenchmarkDefinition
-
-n_full_evals = 100
+from benchmark_definitions import BenchmarkDefinition, n_full_evals
 
 
 def hpob_benchmark(blackbox_name: str, dataset_name: str):

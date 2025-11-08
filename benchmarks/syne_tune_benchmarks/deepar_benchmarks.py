@@ -1,4 +1,4 @@
-from blackbox_benchmarks import BenchmarkDefinition
+from fcnet_benchmarks import BenchmarkDefinition
 
 n_full_evals = 100
 

@@ -1,7 +1,5 @@
-from blackbox_benchmarks import BenchmarkDefinition
+from benchmark_definitions import BenchmarkDefinition, n_full_evals
 from syne_tune.blackbox_repository import load_blackbox
-
-n_full_evals = 100
 
 def tabrepo_benchmark(blackbox_name: str, dataset_name: str):
     return BenchmarkDefinition(
@@ -31,7 +29,6 @@ tabrepo_search_spaces = [
 
 tabrepo_benchmark_definitions = {}
 
-#Currently runs only a subset of tabrepo. Adapt as needed.
 for ss in tabrepo_search_spaces:
     blackboxes = load_blackbox(ss)
     for ds in list(blackboxes.keys()):
