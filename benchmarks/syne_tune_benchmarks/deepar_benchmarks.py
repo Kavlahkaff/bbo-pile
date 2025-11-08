@@ -1,6 +1,4 @@
-from fcnet_benchmarks import BenchmarkDefinition
-
-n_full_evals = 100
+from benchmark_definitions import BenchmarkDefinition, n_full_evals
 
 
 def deepar_benchmark(dataset_name: str):

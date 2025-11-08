@@ -25,28 +25,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--slurmpilot_folder", type=str, required=False, default="~/slurmpilot/jobs"
     )
-    parser.add_argument(
-        "--run_hpob_only",
-        action='store_true',
-        help="If set, only runs hpobench benchmarks, otherwise runs all benchmarks.",
-    )
-    parser.add_argument(
-        "--run_tabrepo_only",
-        action='store_true',
-        help="If set, only runs tabrepo benchmarks, otherwise runs all benchmarks.",
-    )
-    parser.add_argument(
-        "--run_pd1_only",
-        action='store_true',
-        help="If set, only runs PD1 benchmarks, otherwise runs all benchmarks.",
-    )
-    parser.add_argument(
-        "--run_deepar_only",
-        action='store_true',
-        help="If set, only runs DeepAR benchmarks, otherwise runs all benchmarks.",
-    )
     parser.add_argument("--sbatch_arguments", type=str, required=False)
-
+    parser.add_argument("--benchmark_family", type=str, required=False, default='fcnet')
     args, _ = parser.parse_known_args()
 
     experiment_tag = args.experiment_tag
@@ -57,28 +37,37 @@ if __name__ == "__main__":
     sbatch_arguments = args.sbatch_arguments
     slurmpilot_folder = args.slurmpilot_folder
 
-    if args.run_hpob_only:
+    if args.benchmark_family == "hpob":
         from hpob_benchmarks import hpob_benchmark_definitions
-        benchmarks_selected  =  list(hpob_benchmark_definitions.keys())
-    elif args.run_pd1_only:
-        from pd1_benchmarks import pd1_benchmark_definitions
-        benchmarks_selected = list(pd1_benchmark_definitions.keys())
-    elif args.run_tabrepo_only:
+        benchmarks_selected = hpob_benchmark_definitions
+    elif args.benchmark_family == "tabrepo":
         from tabrepo_benchmarks import tabrepo_benchmark_definitions
-        benchmarks_selected = list(tabrepo_benchmark_definitions.keys())
-    elif args.run_deepar_only:
+        benchmarks_selected = tabrepo_benchmark_definitions
+    elif args.benchmark_family == "pd1":
+        from pd1_benchmarks import pd1_benchmark_definitions
+        benchmarks_selected = pd1_benchmark_definitions
+    elif args.benchmark_family == "deepar":
         from deepar_benchmarks import deepar_benchmark_definitions
-        benchmarks_selected = list(deepar_benchmark_definitions.keys())
-    else:
-        from blackbox_benchmarks import benchmark_definitions
-        benchmarks_selected =  list(benchmark_definitions.keys())
+        benchmarks_selected = deepar_benchmark_definitions
+    elif args.benchmark_family == "lcbench":
+        from lcbench_benchmarks import lcbench_benchmark_definitions
+        benchmarks_selected = lcbench_benchmark_definitions
+    elif args.benchmark_family == "fcnet":
+        from fcnet_benchmarks import fcnet_benchmark_definitions
+        benchmarks_selected = fcnet_benchmark_definitions
+    elif args.benchmark_family == "nas201":
+        from nas201_benchmarks import nas201_benchmark_definitions
+        benchmarks_selected = nas201_benchmark_definitions
 
     methods_selected = [
+#        Methods.OPT_RS,
+#        Methods.OPT_REA,
         Methods.RS,
         Methods.REA,
         Methods.TPE,
         Methods.BORE,
         Methods.CQR,
+        Methods.BOTorch
     ]
     print(f"{len(methods_selected)} methods selected: {methods_selected}")
 

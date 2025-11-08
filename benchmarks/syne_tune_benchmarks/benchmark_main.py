@@ -16,7 +16,6 @@ from baselines import (
     MethodArguments,
     methods,
 )
-from fcnet_benchmarks import benchmark_definitions
 
 def run(
     method_names,
@@ -50,8 +49,15 @@ def run(
         elif benchmark_name.startswith("deepar_"):
             from deepar_benchmarks import deepar_benchmark_definitions
             benchmark = deepar_benchmark_definitions[benchmark_name]
-        else:
-            benchmark = benchmark_definitions[benchmark_name]
+        elif benchmark_name.startswith("fcnet_"):
+            from fcnet_benchmarks import fcnet_benchmark_definitions
+            benchmark = fcnet_benchmark_definitions[benchmark_name]
+        elif benchmark_name.startswith("nas201_"):
+            from nas201_benchmarks import nas201_benchmark_definitions
+            benchmark = nas201_benchmark_definitions[benchmark_name]
+        elif benchmark_name.startswith("lcbench_"):
+            from lcbench_benchmarks import lcbench_benchmark_definitions
+            benchmark = lcbench_benchmark_definitions[benchmark_name]
 
         print(f"Starting experiment ({method}/{benchmark_name}/{seed})")
 
@@ -144,13 +150,7 @@ if __name__ == "__main__":
         "--benchmark",
         type=str,
         required=False,
-        help="a benchmark to run from blackbox_benchmarks.py, run all by default.",
-    )
-    parser.add_argument(
-        "--benchmark_family",
-        type=str,
-        required=False,
-        help="run all benchmarks of the specified family only (e.g., 'hpob', 'tabrepo')",
+        help="a benchmark to run",
     )
     parser.add_argument(
         "--n_workers",
@@ -177,38 +177,10 @@ if __name__ == "__main__":
         methods  = original_optformer_methods | methods
     method_names = [args.method] if args.method is not None else list(methods.keys())
 
-    if args.benchmark is not None:
-       benchmark_names = [args.benchmark]
-
-    else:
-        # this avoids downloading all benchmarks
-        if args.benchmark_family == 'hpob':
-            from hpob_benchmarks import hpob_benchmark_definitions
-            benchmark_names = list(hpob_benchmark_definitions.keys())
-        elif args.benchmark_family == 'tabrepo':
-            from tabrepo_benchmarks import tabrepo_benchmark_definitions
-            benchmark_names = list(tabrepo_benchmark_definitions.keys())
-        elif args.benchmark_family == 'pd1':
-            from pd1_benchmarks import pd1_benchmark_definitions
-            benchmark_names = list(pd1_benchmark_definitions.keys())
-        elif args.benchmark_family == 'deepar':
-            from deepar_benchmarks import deepar_benchmark_definitions
-            benchmark_names = list(deepar_benchmark_definitions.keys())
-        elif args.benchmark_family == 'fcnet':
-            from fcnet_benchmarks import fcnet_benchmark_definitions
-            benchmark_names = list(fcnet_benchmark_definitions.keys())
-        elif args.benchmark_family == 'nas201':
-            from nas201_benchmarks import nas201_benchmark_definitions
-            benchmark_names = list(nas201_benchmark_definitions.keys())
-        elif args.benchmark_family == 'lcbench':
-            from lcbench_benchmarks import lcbench_benchmark_definitions
-            benchmark_names = list(lcbench_benchmark_definitions.keys())
-
-        benchmark_names =  list(benchmark_definitions.keys())
     run(
         method_names=method_names,
         checkpoint_dir=args.checkpoint_dir,
-        benchmark_names=benchmark_names,
+        benchmark_names=args.benchmark,
         seeds=seeds,
         n_workers=args.n_workers,
     )
