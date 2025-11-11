@@ -37,25 +37,25 @@ def run(
     exp_names = []
     for method, seed, benchmark_name in tqdm(combinations):
         np.random.seed(seed)
-        if benchmark_name.startswith("hpob_"):
+        if benchmark_name.startswith("hpob"):
             from hpob_benchmarks import hpob_benchmark_definitions
             benchmark = hpob_benchmark_definitions[benchmark_name]
-        elif benchmark_name.startswith("tabrepo_"):
+        elif benchmark_name.startswith("tabrepo"):
             from tabrepo_benchmarks import tabrepo_benchmark_definitions
             benchmark = tabrepo_benchmark_definitions[benchmark_name]
-        elif benchmark_name.startswith("pd1_"):
+        elif benchmark_name.startswith("pd1"):
             from pd1_benchmarks import pd1_benchmark_definitions
             benchmark = pd1_benchmark_definitions[benchmark_name]
-        elif benchmark_name.startswith("deepar_"):
+        elif benchmark_name.startswith("deepar"):
             from deepar_benchmarks import deepar_benchmark_definitions
             benchmark = deepar_benchmark_definitions[benchmark_name]
-        elif benchmark_name.startswith("fcnet_"):
+        elif benchmark_name.startswith("fcnet"):
             from fcnet_benchmarks import fcnet_benchmark_definitions
             benchmark = fcnet_benchmark_definitions[benchmark_name]
-        elif benchmark_name.startswith("nas201_"):
+        elif benchmark_name.startswith("nas201"):
             from nas201_benchmarks import nas201_benchmark_definitions
             benchmark = nas201_benchmark_definitions[benchmark_name]
-        elif benchmark_name.startswith("lcbench_"):
+        elif benchmark_name.startswith("lcbench"):
             from lcbench_benchmarks import lcbench_benchmark_definitions
             benchmark = lcbench_benchmark_definitions[benchmark_name]
 
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     run(
         method_names=method_names,
         checkpoint_dir=args.checkpoint_dir,
-        benchmark_names=args.benchmark,
+        benchmark_names=[args.benchmark],
         seeds=seeds,
         n_workers=args.n_workers,
     )
