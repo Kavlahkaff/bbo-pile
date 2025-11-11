@@ -26,6 +26,12 @@ if __name__ == "__main__":
         default=30,
     )
     parser.add_argument(
+        "--num_permutation",
+        type=int,
+        required=False,
+        default=5,
+    )
+    parser.add_argument(
         "--output_path",
         type=str,
         required=True,
@@ -82,7 +88,7 @@ if __name__ == "__main__":
             hist = []
             for name, metadata in metadatas.items():
 #                try:
-                    hist.append(create_history_from_results(name, metadata, path, max_num_trials))
+                    hist.extend(create_history_from_results(name, metadata, path, max_num_trials, args.num_permutation))
 #                except Exception as e:
 #                    print(f"Error processing {name}: {e}")
 #                    continue

@@ -1,16 +1,12 @@
-import dill
 import json
-import numpy as np
 import pandas as pd
 
 from pathlib import Path
-from typing import List, Optional, Dict, Tuple
 from pyparfor import parfor
 
 from json import JSONDecodeError
 
 from syne_tune.experiments import ExperimentResult
-from syne_tune.util import catchtime
 from syne_tune.config_space import config_space_from_json_dict
 from open_optformer.history import History, preprocess
 
@@ -24,7 +20,7 @@ def load_result(name, metric_name, config_space, path):
         return None
 
 
-def create_history_from_results(name, metadata, path: Path, max_num_trials: int) -> str:
+def create_history_from_results(name, metadata, path: Path, max_num_trials: int, n_permutation: int = 0) -> [str]:
     config_space = config_space_from_json_dict(json.loads(metadata['config_space']))
     metric_name = metadata["metric_names"][0]
     res = load_result(name, metric_name, config_space, path)
@@ -35,8 +31,11 @@ def create_history_from_results(name, metadata, path: Path, max_num_trials: int)
                                                               path=path,
                                                               tuner=None),
                                              max_num_trials=max_num_trials)
-    return preprocess(hist.get_prompt())
-
+    traj = []
+    traj.append(preprocess(hist.get_prompt()))
+    for i in range(n_permutation):
+        traj.append(preprocess(hist.get_prompt(shuffle=True)))
+    return traj
 
 def get_metadata(root: Path):
     metadatas = {}
