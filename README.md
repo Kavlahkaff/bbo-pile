@@ -21,16 +21,21 @@ To run the benchmark locally, first go to the syne_tune_benchmarks folder
 
 and run the following command:
 
-    python benchmark_main.py --seed 5 --run_all_seeds 1 --n_workers 1 --method RS
+    python benchmark_main.py --seed 5 --run_all_seeds 1 --n_workers 1 --method RS --benchmark fcnet-protein
 
-This will run random search with 5 seeds on the following benchmarks: FCNet, NASBench201 and LCBench.
-If you only want to run on HPO-B benchmarks or TabRepo, add the --run_hpob_only or --run_tabrepo_only flag, respectively, to the command:
+This will run random search with 5 seeds on the fcnet-protein benchmark.
 
-    python benchmark_main.py --seed 5 --run_all_seeds 1 --n_workers 1 --method RS --run_hpob_only
+Alternatively, you can run the following command to submit the job to a cluster, which will run all benchmarks in the fcnet family:
 
-Alternatively, you can run the following command to submit the job to a cluster:
+    python launch_slurmpilot.py --seed 5 --run_all_seeds 1 --n_workers 1 --benchmark_family fcnet --partition <your_partition> --cluster <your_cluster>
 
-    python launch_slurmpilot.py --seed 5 --run_all_seeds 1 --n_workers 1 --run_hpob_only --partition <your_partition> --cluster <your_cluster>
+Available benchmark families are: 
+- fcnet 
+- nas201
+- lcbench
+- pd1
+- hpob
+- tabrepo
 
 ## Model Training
 
