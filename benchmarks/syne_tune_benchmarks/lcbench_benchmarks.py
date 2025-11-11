@@ -1,5 +1,4 @@
 from benchmark_definitions import BenchmarkDefinition, n_full_evals
-from syne_tune.blackbox_repository import load_blackbox
 
 
 def lcbench_benchmark(dataset_name):
@@ -19,6 +18,6 @@ def lcbench_benchmark(dataset_name):
 
 lcbench_benchmark_definitions = {}
 
-blackboxes = load_blackbox('lcbench')
-for ds in list(blackboxes.keys()):
+datasets = ['APSFailure', 'Amazon_employee_access', 'Australian', 'Fashion-MNIST', 'KDDCup09_appetency', 'MiniBooNE', 'adult', 'airlines', 'albert', 'bank-marketing', 'blood-transfusion-service-center', 'car', 'christine', 'cnae-9', 'connect-4', 'covertype', 'credit-g', 'dionis', 'fabert', 'helena', 'higgs', 'jannis', 'jasmine', 'jungle_chess_2pcs_raw_endgame_complete', 'kc1', 'kr-vs-kp', 'mfeat-factors', 'nomao', 'numerai28.6', 'phoneme', 'segment', 'shuttle', 'sylvine', 'vehicle', 'volkert']
+for ds in list(datasets):
     lcbench_benchmark_definitions["lcbench_" + ds] = lcbench_benchmark(ds)
