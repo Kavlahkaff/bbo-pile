@@ -5,6 +5,7 @@ from pathlib import Path
 from slurmpilot import SlurmPilot, JobCreationInfo
 from slurmpilot.config import load_config
 from slurmpilot.util import unify
+from tensorflow.python.platform.benchmark import benchmarks_main
 from tqdm import tqdm
 
 from baselines import (
@@ -37,6 +38,7 @@ if __name__ == "__main__":
     sbatch_arguments = args.sbatch_arguments
     slurmpilot_folder = args.slurmpilot_folder
 
+    benchmarks_selected = None
     if args.benchmark_family == "hpob":
         from hpob_benchmarks import hpob_benchmark_definitions
         benchmarks_selected = hpob_benchmark_definitions
@@ -59,6 +61,8 @@ if __name__ == "__main__":
         from nas201_benchmarks import nas201_benchmark_definitions
         benchmarks_selected = nas201_benchmark_definitions
 
+    if benchmarks_selected is None:
+        raise ValueError(f"Unknown benchmark family: {args.benchmark_family}")
     methods_selected = [
 #        Methods.OPT_RS,
 #        Methods.OPT_REA,
