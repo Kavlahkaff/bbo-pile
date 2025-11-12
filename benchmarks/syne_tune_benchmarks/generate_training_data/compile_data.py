@@ -8,6 +8,7 @@ from syne_tune.util import catchtime
 
 from load_data import get_metadata, create_history_from_results
 
+validation_benchmarks = ['fcnet-protein']
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
@@ -85,10 +86,15 @@ if __name__ == "__main__":
         with catchtime("Load results dataframes"):
             # load results in parallel
 
-            hist = []
+            hist_train = []
+            hist_valid = []
             for name, metadata in metadatas.items():
 #                try:
-                    hist.extend(create_history_from_results(name, metadata, path, max_num_trials, args.num_permutation))
+                    benchmark_name = metadata['benchmark']
+                    if benchmark_name in validation_benchmarks:
+                        hist_valid.extend(create_history_from_results(name, metadata, path, max_num_trials, args.num_permutation))
+                    else:
+                        hist_train.extend(create_history_from_results(name, metadata, path, max_num_trials, args.num_permutation))
 #                except Exception as e:
 #                    print(f"Error processing {name}: {e}")
 #                    continue
@@ -97,12 +103,12 @@ if __name__ == "__main__":
             #            inputs=list(metadatas.items()),
             #            engine=engine,
             #        )
-            random.shuffle(hist)
+            random.shuffle(hist_train)
             for split in ['train', 'valid']:
                 file_name = f"{split}.txt"
                 if split == 'train':
-                    hist_split = hist[:int(len(hist) * args.train_ratio)]
+                    hist_split = hist_train
                 else:
-                    hist_split = hist[int(len(hist) * args.train_ratio):]
+                    hist_split = hist_valid
                 with open(str(output_path / file_name), 'w', encoding='utf-8') as f:
                     f.write('\n'.join(hist_split))
