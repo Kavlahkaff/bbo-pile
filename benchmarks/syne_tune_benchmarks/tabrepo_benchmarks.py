@@ -1,5 +1,4 @@
 from benchmark_definitions import BenchmarkDefinition, n_full_evals
-from syne_tune.blackbox_repository import load_blackbox
 
 def tabrepo_benchmark(blackbox_name: str, dataset_name: str):
     return BenchmarkDefinition(
