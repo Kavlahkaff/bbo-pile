@@ -42,7 +42,7 @@ model_config:
   norm_eps: 1.0e-06
   norm_qk: true
   norm_qk_type: default
-  padded_vocab_size: 151936
+  padded_vocab_size: 1074
   padding_multiple: 512
   parallel_residual: false
   post_attention_norm: false
@@ -57,7 +57,7 @@ model_config:
   shared_attention_norm: false
   sliding_window_indices: null
   sliding_window_size: null
-  vocab_size: 151643
+  vocab_size: 1074
 num_nodes: 1
 optimizer:
   class_path: torch.optim.AdamW
