@@ -58,7 +58,8 @@ def run(
         elif benchmark_name.startswith("lcbench"):
             from lcbench_benchmarks import lcbench_benchmark_definitions
             benchmark = lcbench_benchmark_definitions[benchmark_name]
-
+        else:
+            raise NotImplementedError(f"Unknown benchmark name: {benchmark_name}")    
         print(f"Starting experiment ({method}/{benchmark_name}/{seed})")
 
         backend = BlackboxRepositoryBackend(
