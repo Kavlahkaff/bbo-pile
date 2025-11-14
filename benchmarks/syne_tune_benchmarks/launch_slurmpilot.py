@@ -5,7 +5,7 @@ from pathlib import Path
 from slurmpilot import SlurmPilot, JobCreationInfo
 from slurmpilot.config import load_config
 from slurmpilot.util import unify
-from tensorflow.python.platform.benchmark import benchmarks_main
+
 from tqdm import tqdm
 
 from baselines import (

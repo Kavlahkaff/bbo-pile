@@ -149,7 +149,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--benchmark",
         type=str,
-        required=False,
+        required=True,
         help="a benchmark to run",
     )
     parser.add_argument(

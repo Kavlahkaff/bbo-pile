@@ -27,7 +27,7 @@ This will run random search with 5 seeds on the fcnet-protein benchmark.
 
 Alternatively, you can run the following command to submit the job to a cluster, which will run all benchmarks in the fcnet family:
 
-    python launch_slurmpilot.py --seed 5 --run_all_seeds 1 --n_workers 1 --benchmark_family fcnet --partition <your_partition> --cluster <your_cluster>
+    python launch_slurmpilot.py --num_seeds 5 --n_workers 1 --benchmark_family fcnet --partition <your_partition> --cluster <your_cluster>
 
 Available benchmark families are: 
 - fcnet 
