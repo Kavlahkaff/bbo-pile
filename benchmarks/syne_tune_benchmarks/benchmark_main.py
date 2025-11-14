@@ -16,7 +16,6 @@ from baselines import (
     MethodArguments,
     methods,
 )
-from blackbox_benchmarks import benchmark_definitions
 
 def run(
     method_names,
@@ -38,21 +37,29 @@ def run(
     exp_names = []
     for method, seed, benchmark_name in tqdm(combinations):
         np.random.seed(seed)
-        if benchmark_name.startswith("hpob_"):
+        if benchmark_name.startswith("hpob"):
             from hpob_benchmarks import hpob_benchmark_definitions
             benchmark = hpob_benchmark_definitions[benchmark_name]
-        elif benchmark_name.startswith("tabrepo_"):
+        elif benchmark_name.startswith("tabrepo"):
             from tabrepo_benchmarks import tabrepo_benchmark_definitions
             benchmark = tabrepo_benchmark_definitions[benchmark_name]
-        elif benchmark_name.startswith("pd1_"):
+        elif benchmark_name.startswith("pd1"):
             from pd1_benchmarks import pd1_benchmark_definitions
             benchmark = pd1_benchmark_definitions[benchmark_name]
-        elif benchmark_name.startswith("deepar_"):
+        elif benchmark_name.startswith("deepar"):
             from deepar_benchmarks import deepar_benchmark_definitions
             benchmark = deepar_benchmark_definitions[benchmark_name]
+        elif benchmark_name.startswith("fcnet"):
+            from fcnet_benchmarks import fcnet_benchmark_definitions
+            benchmark = fcnet_benchmark_definitions[benchmark_name]
+        elif benchmark_name.startswith("nas201"):
+            from nas201_benchmarks import nas201_benchmark_definitions
+            benchmark = nas201_benchmark_definitions[benchmark_name]
+        elif benchmark_name.startswith("lcbench"):
+            from lcbench_benchmarks import lcbench_benchmark_definitions
+            benchmark = lcbench_benchmark_definitions[benchmark_name]
         else:
-            benchmark = benchmark_definitions[benchmark_name]
-
+            raise NotImplementedError(f"Unknown benchmark name: {benchmark_name}")    
         print(f"Starting experiment ({method}/{benchmark_name}/{seed})")
 
         backend = BlackboxRepositoryBackend(
@@ -135,27 +142,6 @@ if __name__ == "__main__":
         help="If 1 runs all seeds between [0, args.seed] if 0 run only args.seed.",
     )
     parser.add_argument(
-        "--run_hpob_only",
-        action = 'store_true',
-        help="If set, only runs hpobench benchmarks, otherwise runs all benchmarks.",
-    )
-    parser.add_argument(
-        "--run_tabrepo_only",
-        action='store_true',
-        help="If set, only runs tabrepo benchmarks, otherwise runs all benchmarks.",
-    )
-    parser.add_argument(
-        "--run_pd1_only",
-        action='store_true',
-        help="If set, only runs PD1 benchmarks, otherwise runs all benchmarks.",
-    )
-
-    parser.add_argument(
-        "--run_deepar_only",
-        action='store_true',
-        help="If set, only runs deepar benchmarks, otherwise runs all benchmarks.",
-    )
-    parser.add_argument(
         "--method",
         type=str,
         required=False,
@@ -164,8 +150,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--benchmark",
         type=str,
-        required=False,
-        help="a benchmark to run from blackbox_benchmarks.py, run all by default.",
+        required=True,
+        help="a benchmark to run",
     )
     parser.add_argument(
         "--n_workers",
@@ -192,27 +178,10 @@ if __name__ == "__main__":
         methods  = original_optformer_methods | methods
     method_names = [args.method] if args.method is not None else list(methods.keys())
 
-    if args.benchmark is not None:
-       benchmark_names = [args.benchmark]
-
-    elif args.run_hpob_only:
-        from hpob_benchmarks import hpob_benchmark_definitions
-        benchmark_names =  list(hpob_benchmark_definitions.keys())
-    elif args.run_tabrepo_only:
-        from tabrepo_benchmarks import tabrepo_benchmark_definitions
-        benchmark_names = list(tabrepo_benchmark_definitions.keys())
-    elif args.run_pd1_only:
-        from pd1_benchmarks import pd1_benchmark_definitions
-        benchmark_names = list(pd1_benchmark_definitions.keys())
-    elif args.run_deepar_only:
-        from deepar_benchmarks import deepar_benchmark_definitions
-        benchmark_names = list(deepar_benchmark_definitions.keys())
-    else:
-        benchmark_names =  list(benchmark_definitions.keys())
     run(
         method_names=method_names,
         checkpoint_dir=args.checkpoint_dir,
-        benchmark_names=benchmark_names,
+        benchmark_names=[args.benchmark],
         seeds=seeds,
         n_workers=args.n_workers,
     )
