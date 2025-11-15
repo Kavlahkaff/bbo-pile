@@ -1,0 +1,23 @@
+from global_optimization_problems import (Rosenbrock, Michalewicz, Ackley, Branin, Hartman3, Hartman6,
+                                          GoldsteinPrice, Eggholder, Forrester, SixHumpCamel, Rastrigin)
+
+benchmark_definitions = dict()
+
+benchmark_definitions["branin"] = Branin()
+benchmark_definitions["goldstein_price"] = GoldsteinPrice()
+benchmark_definitions["eggholder"] = Eggholder()
+benchmark_definitions["forrester"] = Forrester()
+benchmark_definitions["sixhumpcamel"] = SixHumpCamel()
+benchmark_definitions["rastrigin_2d"] = Rastrigin(dimension=2)
+benchmark_definitions["rastrigin_5d"] = Rastrigin(dimension=5)
+benchmark_definitions["rastrigin_10d"] = Rastrigin(dimension=10)
+benchmark_definitions["hartman3"] = Hartman3()
+benchmark_definitions["hartman6"] = Hartman6()
+benchmark_definitions["rosenbrock_6d"] = Rosenbrock(dimension=6, lower_bound=-2, upper_bound=2)
+benchmark_definitions["rosenbrock_2d"] = Rosenbrock(dimension=2, lower_bound=-2, upper_bound=2)
+benchmark_definitions["michalewicz_2d"] = Michalewicz(dimension=2)
+benchmark_definitions["michalewicz_5d"] = Michalewicz(dimension=5)
+benchmark_definitions["michalewicz_10d"] = Michalewicz(dimension=10)
+benchmark_definitions["ackley_2d"] = Ackley(dimension=2)
+benchmark_definitions["ackley_5d"] = Ackley(dimension=5)
+benchmark_definitions["ackley_10d"] = Ackley(dimension=10)
