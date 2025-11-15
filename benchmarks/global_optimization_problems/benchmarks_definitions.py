@@ -1,5 +1,6 @@
 from global_optimization_problems import (Rosenbrock, Michalewicz, Ackley, Branin, Hartman3, Hartman6,
-                                          GoldsteinPrice, Eggholder, Forrester, SixHumpCamel, Rastrigin)
+                                          GoldsteinPrice, Eggholder, Forrester, SixHumpCamel, Rastrigin,
+                                          StyblinskiTang, SumPowers)
 
 benchmark_definitions = dict()
 
@@ -21,3 +22,9 @@ benchmark_definitions["michalewicz_10d"] = Michalewicz(dimension=10)
 benchmark_definitions["ackley_2d"] = Ackley(dimension=2)
 benchmark_definitions["ackley_5d"] = Ackley(dimension=5)
 benchmark_definitions["ackley_10d"] = Ackley(dimension=10)
+benchmark_definitions["sum_powers_2d"] = SumPowers(dimension=2)
+benchmark_definitions["sum_powers_5d"] = SumPowers(dimension=5)
+benchmark_definitions["sum_powers_10d"] = SumPowers(dimension=10)
+benchmark_definitions["styblinski_tang_2d"] = StyblinskiTang(dimension=2)
+benchmark_definitions["styblinski_tang_5d"] = StyblinskiTang(dimension=5)
+benchmark_definitions["styblinski_tang_10d"] = StyblinskiTang(dimension=10)

@@ -430,3 +430,30 @@ class SumPowers(SyntheticFunction):
         i = np.arange(1, self.dimension + 1)
         val = np.sum(np.abs(x) ** (i + 1))
         return {self.objectives_names[0]: float(val)}
+
+
+class StyblinskiTang(SyntheticFunction):
+    """
+    The Styblinski-Tang function is a multimodal function with a global minimum.
+    See https://www.sfu.ca/~ssurjano/stybtang.html for details.
+    """
+
+    def __init__(self, dimension: int):
+        self.configuration_space = {
+            f"x{i}": uniform(-5, 5) for i in range(dimension)
+        }
+        super().__init__(
+            dimension=dimension,
+            configuration_space=self.configuration_space,
+            objectives_names=["y"],
+        )
+
+    def _objective_function(
+        self,
+        configuration: Dict[str, Any],
+        fidelity: Dict | None = None,
+        seed: int | None = None,
+    ) -> ObjectiveFunctionResult:
+        x = np.array([configuration[f"x{i}"] for i in range(self.dimension)])
+        val = 0.5 * np.sum(x**4 - 16 * x**2 + 5 * x)
+        return {self.objectives_names[0]: float(val)}

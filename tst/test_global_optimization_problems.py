@@ -13,6 +13,7 @@ from benchmarks.global_optimization_problems.global_optimization_problems import
     Eggholder,
     Rastrigin,
     SumPowers,
+    StyblinskiTang,
 )
 
 
@@ -158,3 +159,16 @@ def test_sum_powers():
     configuration = {f"x{i}": 1.0 for i in range(2)}
     result = sum_powers.objective_function(configuration)
     assert np.isclose(result["y"], 2.0)
+
+
+def test_styblinski_tang():
+    # The Styblinski-Tang function has a global minimum of -39.16599 * d.
+    styblinski_tang = StyblinskiTang(dimension=2)
+    configuration = {f"x{i}": -2.903534 for i in range(2)}
+    result = styblinski_tang.objective_function(configuration)
+    assert np.isclose(result["y"], -39.16599 * 2, atol=1e-4)
+
+    # Test another point
+    configuration = {f"x{i}": 0.0 for i in range(2)}
+    result = styblinski_tang.objective_function(configuration)
+    assert np.isclose(result["y"], 0.0)
