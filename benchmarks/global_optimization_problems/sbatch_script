@@ -1,0 +1,16 @@
+#!/bin/bash
+#SBATCH --job-name=global_opt_array
+#SBATCH --output=logs/%A_%a.out
+#SBATCH --error=logs/%A_%a.err
+#SBATCH --array=0-4      # array index range (0-based)
+#SBATCH --time=00:10:00
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=2G
+
+# Read the command on line SLURM_ARRAY_TASK_ID
+eval "$(conda shell.bash hook)" && conda activate optformer
+
+CMD=$(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" bash_commands.sh)
+
+echo "Running: $CMD"
+eval $CMD

@@ -3,7 +3,7 @@ import os
 from baselines import methods
 from benchmarks_definitions import benchmark_definitions
 
-output_path = '/home/aaron/experiments/open_optformer/global_optimization_problems/'
+output_path = os.environ['OUTPUT_PATH']
 os.makedirs(output_path, exist_ok=True)
 fh = open('bash_commands.sh', 'w')
 counter = 0
