@@ -10,7 +10,7 @@ counter = 0
 for benchmark in list(benchmark_definitions.keys()):
     for method in methods:
         for seed in range(30):
-            cmd = f'python run_synthetic_functions_without_backend.py --method {method} --benchmark {benchmark} --seed {seed} --output_path {output_path}'
+            cmd = f'python run_benchmark.py --method {method} --benchmark {benchmark} --seed {seed} --output_path {output_path}'
             counter += 1
             fh.write(cmd + '\n')
 
