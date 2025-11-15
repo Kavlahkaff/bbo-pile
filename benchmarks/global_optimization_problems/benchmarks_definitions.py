@@ -1,6 +1,6 @@
 from global_optimization_problems import (Rosenbrock, Michalewicz, Ackley, Branin, Hartman3, Hartman6,
                                           GoldsteinPrice, Eggholder, Forrester, SixHumpCamel, Rastrigin,
-                                          StyblinskiTang, SumPowers)
+                                          StyblinskiTang, SumPowers, Sphere)
 
 benchmark_definitions = dict()
 
@@ -14,8 +14,9 @@ benchmark_definitions["rastrigin_5d"] = Rastrigin(dimension=5)
 benchmark_definitions["rastrigin_10d"] = Rastrigin(dimension=10)
 benchmark_definitions["hartman3"] = Hartman3()
 benchmark_definitions["hartman6"] = Hartman6()
-benchmark_definitions["rosenbrock_6d"] = Rosenbrock(dimension=6, lower_bound=-2, upper_bound=2)
 benchmark_definitions["rosenbrock_2d"] = Rosenbrock(dimension=2, lower_bound=-2, upper_bound=2)
+benchmark_definitions["rosenbrock_5d"] = Rosenbrock(dimension=5, lower_bound=-2, upper_bound=2)
+benchmark_definitions["rosenbrock_10d"] = Rosenbrock(dimension=10, lower_bound=-2, upper_bound=2)
 benchmark_definitions["michalewicz_2d"] = Michalewicz(dimension=2)
 benchmark_definitions["michalewicz_5d"] = Michalewicz(dimension=5)
 benchmark_definitions["michalewicz_10d"] = Michalewicz(dimension=10)
@@ -28,3 +29,6 @@ benchmark_definitions["sum_powers_10d"] = SumPowers(dimension=10)
 benchmark_definitions["styblinski_tang_2d"] = StyblinskiTang(dimension=2)
 benchmark_definitions["styblinski_tang_5d"] = StyblinskiTang(dimension=5)
 benchmark_definitions["styblinski_tang_10d"] = StyblinskiTang(dimension=10)
+benchmark_definitions["sphere_2d"] = Sphere(dimension=2)
+benchmark_definitions["sphere_5d"] = Sphere(dimension=5)
+benchmark_definitions["sphere_10d"] = Sphere(dimension=10)

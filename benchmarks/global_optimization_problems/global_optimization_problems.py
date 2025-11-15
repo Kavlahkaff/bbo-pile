@@ -457,3 +457,30 @@ class StyblinskiTang(SyntheticFunction):
         x = np.array([configuration[f"x{i}"] for i in range(self.dimension)])
         val = 0.5 * np.sum(x**4 - 16 * x**2 + 5 * x)
         return {self.objectives_names[0]: float(val)}
+
+
+class Sphere(SyntheticFunction):
+    """
+    The Sphere function is a simple, convex, and unimodal function.
+    See https://www.sfu.ca/~ssurjano/spheref.html for details.
+    """
+
+    def __init__(self, dimension: int):
+        self.configuration_space = {
+            f"x{i}": uniform(-5.12, 5.12) for i in range(dimension)
+        }
+        super().__init__(
+            dimension=dimension,
+            configuration_space=self.configuration_space,
+            objectives_names=["y"],
+        )
+
+    def _objective_function(
+        self,
+        configuration: Dict[str, Any],
+        fidelity: Dict | None = None,
+        seed: int | None = None,
+    ) -> ObjectiveFunctionResult:
+        x = np.array([configuration[f"x{i}"] for i in range(self.dimension)])
+        val = np.sum(x**2)
+        return {self.objectives_names[0]: float(val)}

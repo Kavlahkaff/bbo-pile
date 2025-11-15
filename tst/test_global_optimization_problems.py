@@ -14,6 +14,7 @@ from benchmarks.global_optimization_problems.global_optimization_problems import
     Rastrigin,
     SumPowers,
     StyblinskiTang,
+    Sphere,
 )
 
 
@@ -172,3 +173,16 @@ def test_styblinski_tang():
     configuration = {f"x{i}": 0.0 for i in range(2)}
     result = styblinski_tang.objective_function(configuration)
     assert np.isclose(result["y"], 0.0)
+
+
+def test_sphere():
+    # The Sphere function has a global minimum of 0 at (0, 0, ..., 0).
+    sphere = Sphere(dimension=5)
+    configuration = {f"x{i}": 0.0 for i in range(5)}
+    result = sphere.objective_function(configuration)
+    assert np.isclose(result["y"], 0.0)
+
+    # Test another point
+    configuration = {f"x{i}": 1.0 for i in range(5)}
+    result = sphere.objective_function(configuration)
+    assert np.isclose(result["y"], 5.0)
