@@ -41,6 +41,7 @@ class Methods:
     OptFormerHPOB_GP = "OptFormerHPOB-GP"
     OPT_RS = "OPT-RS"
     OPT_REA = "OPT-REA"
+    OPT_CQR = "OPT-CQR"
 
 methods = {
     Methods.RS: lambda method_arguments: SingleObjectiveScheduler(
@@ -109,6 +110,17 @@ methods = {
         checkpoint_dir=Path(method_arguments.checkpoint_dir),
         task_info={'name': method_arguments.benchmark_name,
                    'algorithm': "REA",
+                   'metric_names': "feval"},
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
+        points_to_evaluate=method_arguments.points_to_evaluate,
+    ),
+    Methods.OPT_CQR: lambda method_arguments: OptformerScheduler(
+        config_space=method_arguments.config_space,
+        metric=method_arguments.metric,
+        checkpoint_dir=Path(method_arguments.checkpoint_dir),
+        task_info={'name': method_arguments.benchmark_name,
+                   'algorithm': "CQR",
                    'metric_names': "feval"},
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
