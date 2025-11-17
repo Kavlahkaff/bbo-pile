@@ -43,10 +43,11 @@ class SyneTuneData(DataModule):
         self.batch_size = batch_size
         self.seq_length = max_seq_length + 1  # Increase by one because we need the next token as well
 
-        self.loss_weights = torch.zeros((tokenizer.vocab_size))
-        for cls in range(1000):
-            idx = tokenizer.encode(str(cls))
-            self.loss_weights[idx] = 1.0
+        self.loss_weights = torch.ones((tokenizer.vocab_size))
+        #self.loss_weights = torch.zeros((tokenizer.vocab_size))
+        #for cls in range(1000):
+        #    idx = tokenizer.encode(str(cls))
+        #    self.loss_weights[idx] = 1.0
 
     def train_dataloader(self) -> DataLoader:
         input_dir = os.path.join(self.data_path, self.split_names[0]) if self.split_names else str(self.data_path)
@@ -66,6 +67,10 @@ class SyneTuneData(DataModule):
             seed=self.seed,
         )
         dataloader = StreamingDataLoader(
-            dataset, batch_size=self.batch_size, pin_memory=True, num_workers=self.num_workers, drop_last=True
+            dataset,
+            batch_size=self.batch_size,
+            shuffle=train,
+            pin_memory=True,
+            num_workers=self.num_workers, drop_last=True
         )
         return dataloader
