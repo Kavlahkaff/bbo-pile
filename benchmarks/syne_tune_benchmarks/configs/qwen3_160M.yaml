@@ -29,11 +29,11 @@ model_config:
   lm_head_bias: false
   mlp_class_name: LLaMAMLP
   moe_intermediate_size: null
-  n_embd: 1024
+  n_embd: 512
   n_expert: 0
   n_expert_per_token: 0
   n_head: 16
-  n_layer: 28
+  n_layer: 20
   n_query_groups: 8
   name: Qwen3-0.6B
   norm_1: true
@@ -69,7 +69,7 @@ optimizer:
     weight_decay: 0.1
 out_dir: model/
 precision: bf16-mixed
-resume: false
+resume: true
 seed: 42
 tokenizer_dir: tokenizer/
 train:
@@ -83,7 +83,7 @@ train:
   max_tokens: 1000000
   micro_batch_size: 8
   min_lr: 0.0000
-  save_interval: 500
+  save_interval: 2000
   tie_embeddings: true
 log:
   project: "open-optformer"

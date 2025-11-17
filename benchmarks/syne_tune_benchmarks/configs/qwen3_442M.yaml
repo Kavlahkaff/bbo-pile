@@ -1,0 +1,91 @@
+data:
+  class_path: open_optformer.training.syne_tune_data.SyneTuneData
+  init_args:
+    data_path: /data/tokenized_data/
+    split_names: ['train', 'valid']
+devices: auto
+eval:
+  final_validation: true
+  initial_validation: true
+  interval: 20
+  max_iters: 100
+  max_new_tokens: null
+initial_checkpoint_dir: null
+logger_name: wandb
+model_config:
+  attention_logit_softcapping: null
+  attention_scores_scalar: null
+  attn_bias: false
+  bias: false
+  block_size: 40960
+  final_logit_softcapping: null
+  gelu_approximate: none
+  head_size: 128
+  hf_config:
+    name: Qwen3-0.6B
+    org: Qwen
+  intermediate_size: 3072
+  latent_attention: null
+  lm_head_bias: false
+  mlp_class_name: LLaMAMLP
+  moe_intermediate_size: null
+  n_embd: 1024
+  n_expert: 0
+  n_expert_per_token: 0
+  n_head: 16
+  n_layer: 28
+  n_query_groups: 8
+  name: Qwen3-0.6B
+  norm_1: true
+  norm_2: true
+  norm_class_name: RMSNorm
+  norm_eps: 1.0e-06
+  norm_qk: true
+  norm_qk_type: default
+  padded_vocab_size: 1074
+  padding_multiple: 512
+  parallel_residual: false
+  post_attention_norm: false
+  post_mlp_norm: false
+  rope_adjustments: null
+  rope_base: 1000000
+  rope_condense_ratio: 1
+  rope_indices: null
+  rope_local_base_freq: null
+  rotary_percentage: 1.0
+  scale_embeddings: false
+  shared_attention_norm: false
+  sliding_window_indices: null
+  sliding_window_size: null
+  vocab_size: 1074
+num_nodes: 1
+optimizer:
+  class_path: torch.optim.AdamW
+  init_args:
+    betas:
+    - 0.9
+    - 0.95
+    lr: 1e-5
+    weight_decay: 0.1
+out_dir: model/
+precision: bf16-mixed
+resume: true
+seed: 42
+tokenizer_dir: tokenizer/
+train:
+  epochs: null
+  global_batch_size: 8
+  log_interval: 10
+  lr_warmup_steps: 0
+  max_norm: 1.0
+  max_seq_length: 2048
+  max_steps: null
+  max_tokens: 1000000
+  micro_batch_size: 8
+  min_lr: 0.0000
+  save_interval: 2000
+  tie_embeddings: true
+log:
+  project: "open-optformer"
+  run: "qwen3-1M_token_1M"
+  group: 'concat'
