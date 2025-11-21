@@ -11,6 +11,7 @@ from syne_tune.optimizer.schedulers.single_objective_scheduler import (
 )
 
 from open_optformer.optformer_searcher import OptformerScheduler
+from open_optformer.hebo_searcher import HEBOSearcher
 
 @dataclass
 class MethodArguments:
@@ -34,6 +35,7 @@ class Methods:
     REA = "REA"
     BOTorch = "BOTorch"
     CQR = "CQR"
+    HEBO = "HEBO"
     OptFormerBBOB_HillClimb = "OptFormerBBOB-HillClimb"
     OptFormerBBOB_GP = "OptFormerBBOB-GP"
     OptFormerBBOB_REGEVO = "OptFormerBBOB-REGEVO"
@@ -82,7 +84,21 @@ methods = {
         metric=method_arguments.metric,
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
-        searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate},
+        searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate, 
+                         'optimization_strategy': 'random',
+                         'num_raw_samples': 1000},
+    ),
+    Methods.HEBO: lambda method_arguments: SingleObjectiveScheduler(
+        config_space=method_arguments.config_space,
+        searcher=HEBOSearcher(
+            config_space=method_arguments.config_space,
+            do_minimize=method_arguments.mode == "min",
+            random_seed=method_arguments.random_seed,
+            points_to_evaluate=method_arguments.points_to_evaluate
+        ),
+        metric=method_arguments.metric,
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
     ),
     Methods.REA: lambda method_arguments: SingleObjectiveScheduler(
         config_space=method_arguments.config_space,
