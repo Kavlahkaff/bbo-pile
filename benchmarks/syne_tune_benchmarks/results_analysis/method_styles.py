@@ -5,13 +5,11 @@ import numpy as np
 from matplotlib import cm
 
 rs_color = "black"
-gp_color = "tab:orange"
-gp_color2 = "tab:purple"
+hebo_color = "tab:orange"
 tpe_color = "red"
 bore_color = "tab:green"
-rea_color = "brown"
-qr_color = "paleturquoise"
-cqr_color = "tab:cyan"
+rea_color = "tab:blue"
+cqr_color = "tab:purple"
 
 fifo_style = "solid"
 multifidelity_style = "dashed"
@@ -21,7 +19,19 @@ show_seeds = False
 marker_ours = "*"
 
 cmap = cm.get_cmap("viridis")
-method_styles = {}
+method_styles = {
+    'RS': dict(color=rs_color, linestyle=fifo_style, marker="o"),
+    'TPE': dict(color=tpe_color, linestyle=fifo_style, marker="^"),
+    'BORE': dict(color=bore_color, linestyle=fifo_style, marker="s"),
+    'REA': dict(color=rea_color, linestyle=fifo_style, marker="D"),
+    'CQR': dict(color=cqr_color, linestyle=fifo_style, marker="v"),
+    'HEBO': dict(color=hebo_color, linestyle=fifo_style, marker="x"),
+    'OPT-RS': dict(color=rs_color, linestyle=multifidelity_style, marker="o"),
+    'OPT-TPE': dict(color=tpe_color, linestyle=multifidelity_style, marker="^"),
+    'OPT-BORE': dict(color=bore_color, linestyle=multifidelity_style, marker="s"),
+    'OPT-REA': dict(color=rea_color, linestyle=multifidelity_style, marker="D"),
+    'OPT-CQR': dict(color=cqr_color, linestyle=multifidelity_style, marker="v"),
+}
 
 
 @dataclass
@@ -33,21 +43,20 @@ class PlotArgs:
 
 
 plot_range = {
-    "fcnet-naval": PlotArgs(0, 3600, 0.0, 1e-3),
-    "fcnet-parkinsons": PlotArgs(0, 3600, 0.005, 0.025),
-    "fcnet-protein": PlotArgs(xmin=0, xmax=7200, ymin=0.22, ymax=0.3),
-    "fcnet-slice": PlotArgs(0, 7200, 0.0, 0.0025),
-    "nas201-ImageNet16-120": PlotArgs(2000, 36000, None, 0.8),
-    "nas201-cifar10": PlotArgs(2000, 36000, 0.05, 0.1),
-    "nas201-cifar100": PlotArgs(2000, 36000, 0.26, 0.35),
-    "lcbench-bank-marketing": PlotArgs(2500, 36000, 82, 89),
-    "lcbench-KDDCup09-appetency": PlotArgs(2500, 36000, 96, 100),
-    "lcbench-christine": PlotArgs(500, 36000, 73.25, 75.5),
-    "lcbench-albert": PlotArgs(500, 36000, 63, 66.5),
-    "lcbench-airlines": PlotArgs(2500, 36000, 60, 65),
-    "lcbench-Fashion-MNIST": PlotArgs(2500, 36000, 85, 90),
-    "lcbench-covertype": PlotArgs(2500, 36000, 60, 80),
-    "nas301-yahpo": PlotArgs(20000, 300000, 93.5, 97),
+    "fcnet-naval": PlotArgs(0, 100, 0.0, 1e-3),
+    "fcnet-parkinsons": PlotArgs(0, 100, 0.005, 0.025),
+    "fcnet-protein": PlotArgs(0, 100, ymin=0.22, ymax=0.3),
+    "fcnet-slice": PlotArgs(0, 100, 0.0, 0.0025),
+    "nas201-ImageNet16-120": PlotArgs(0, 100, None, 0.8),
+    "nas201-cifar10": PlotArgs(0, 100, 0.05, 0.1),
+    "nas201-cifar100": PlotArgs(0, 100, 0.26, 0.35),
+    "lcbench-bank-marketing": PlotArgs(0, 100, 82, 89),
+    "lcbench-KDDCup09-appetency": PlotArgs(0, 100, 96, 100),
+    "lcbench-christine": PlotArgs(0, 100, 73.25, 75.5),
+    "lcbench-albert": PlotArgs(0, 100, 63, 66.5),
+    "lcbench-airlines": PlotArgs(0, 100, 60, 65),
+    "lcbench-Fashion-MNIST": PlotArgs(0, 100, 85, 90),
+    "lcbench-covertype": PlotArgs(0, 100, 60, 80),
 }
 
 if __name__ == "__main__":
