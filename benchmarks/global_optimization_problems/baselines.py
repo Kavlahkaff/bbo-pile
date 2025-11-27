@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 
 from syne_tune.optimizer.baselines import REA, RandomSearch, CQR, TPE, BOTorch, BORE
+from syne_tune.optimizer.schedulers.single_objective_scheduler import SingleObjectiveScheduler
+from open_optformer.hebo_searcher import HEBOSearcher
 
 @dataclass
 class MethodArguments:
@@ -18,6 +20,7 @@ class Methods:
     REA = "REA"
     BOTorch = "BOTorch"
     CQR = "CQR"
+    HEBO = 'HEBO'
 
 methods = {
     Methods.RS: lambda method_arguments: RandomSearch(
@@ -61,5 +64,17 @@ methods = {
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate
-    )
+    ),
+    Methods.HEBO: lambda method_arguments: SingleObjectiveScheduler(
+        config_space=method_arguments.config_space,
+        searcher=HEBOSearcher(
+            config_space=method_arguments.config_space,
+            do_minimize=method_arguments.mode == "min",
+            random_seed=method_arguments.random_seed,
+            points_to_evaluate=method_arguments.points_to_evaluate
+        ),
+        metric=method_arguments.metric,
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
+    ),
 }
