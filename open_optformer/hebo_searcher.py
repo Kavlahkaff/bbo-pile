@@ -102,6 +102,7 @@ def _syne_tune_domain_to_optuna_dist(name: str, dom: Any) -> tuple[Any, dict]:
     if isinstance(dom, sp.Integer):
         low = dom.lower
         high = dom.upper
+        log_flag = bool(sp.is_log_space(domain))
         if low is None or high is None:
             raise RuntimeError(f"Integer domain {name} missing bounds.")
         return IntDistribution(int(low), int(high), log=log_flag), {
