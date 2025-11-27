@@ -109,7 +109,7 @@ def _syne_tune_domain_to_optuna_dist(name: str, dom: Any) -> tuple[Any, dict]:
             "type": "int",
             "low": int(low),
             "high": int(high),
-            "log": bool(sp.is_log_space(dom)),
+            "log": log_flag,
         }
 
     # Float
