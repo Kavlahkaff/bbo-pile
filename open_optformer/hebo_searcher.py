@@ -70,6 +70,7 @@ def _syne_tune_domain_to_optuna_dist(name: str, dom: Any) -> tuple[Any, dict]:
                 int(lower),
                 int(upper),
                 step=step_for_int,
+                log=bool(log_scale)
             ), {
                 "type": "int_finite",
                 "low": lower,
