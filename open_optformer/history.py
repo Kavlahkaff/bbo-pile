@@ -16,7 +16,7 @@ def preprocess(prompt: str):
     return prompt
 
 
-def quantize(x, x_min, x_max, q=1000):
+def quantize(x, x_min, x_max, q: int):
     """
     Quantize a value x to be in [0, q] based on the range [x_min, x_max].
     """
@@ -26,14 +26,14 @@ def quantize(x, x_min, x_max, q=1000):
     return int(x_norm * q)
 
 
-def dequantize(x, x_min, x_max, q=1000):
+def dequantize(x, x_min, x_max, q: int):
     """
     Dequantize a value x from [0, q] to the range [x_min, x_max].
     """
     return x / q * (x_max - x_min) + x_min
 
 
-def encode(x, hp: Domain, hp_name: str = ""):
+def encode(x, hp: Domain, q: int, hp_name: str = ""):
     """
     Encode a value x based on the type of hyperparameter hp.
     """
@@ -44,7 +44,7 @@ def encode(x, hp: Domain, hp_name: str = ""):
                x = str(x)
        return hp.categories.index(x)
     elif isinstance(hp, (Float, Integer, FiniteRange)):
-        return quantize(x, hp.lower, hp.upper)
+        return quantize(x, hp.lower, hp.upper, q)
     else:
         raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
 
@@ -60,6 +60,7 @@ class History:
     name: str
     algorithm: str
     config_space: dict
+    num_numeric_tokens: int
     metric_names: list = field(default_factory=list)
     trials: list = field(default_factory=list)
 
@@ -69,62 +70,73 @@ class History:
         self.trials.append(trial)
 
     def get_prompt(self, shuffle=False):
-        string = f"benchmark:{self.name},"
-        string += f"algorithm:{self.algorithm},"
+        string = f"benchmark:{self.name},algorithm:{self.algorithm},"
 
-        hypers = list(self.config_space.items())
+        # encode config-space
+        hp_names = list(self.config_space.keys())
+
         if shuffle:
-            random.shuffle(hypers)
-        for hp_name, hp in hypers:
-            string += f"parameter:"
-            string += "{"
-            string += f"name:{hp_name},"
-
-            if isinstance(hp, Categorical):
-
-                string += f"type:CAT,"
-                string += f"categories:{hp.categories},".replace(" ", "")
-            elif isinstance(hp, Float):
-                    string += f"type:UNI,"
-                    string += f"min_value:{hp.lower},"
-                    string += f"max_value:{hp.upper},"
-            elif isinstance(hp, Integer):
-                    string += f"type:INT,"
-                    string += f"min_value:{hp.lower},"
-                    string += f"max_value:{hp.upper},"
-            elif isinstance(hp, FiniteRange):
-                if hp.cast_int:
-                    string += f"type:INT,"
-                else:
-                    string += f"type:UNI,"
-                string += f"min_value:{hp.lower},"
-                string += f"max_value:{hp.upper},"
-            else:
-                raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
-            string += "}"
+            random.shuffle(hp_names)
+        for hp_name in hp_names:
+            string += f"parameter:{self._encode_hp_config_space(hp_name)}"
 
         string += '&'
 
+        # encode hyperparameters values
         if len(self.trials) > 0:
-            y_min = min(trial.metric for trial in self.trials)
-            y_max = max(trial.metric for trial in self.trials)
-            if y_min == y_max:
-                y_max += 1  # Avoid division by zero in quantization
             for trial in self.trials:
-                for i, (hp_name, hp) in enumerate(hypers):
-                    if not isinstance(hp, Domain):
-                        continue
-                    if i > 0:
-                        string += ","
-
-                    hp_encoded = encode(trial.config[hp_name], hp, hp_name)
-                    string += str(hp_encoded)
-                string += f"*"
-
-                string += f"{quantize(trial.metric, y_min, y_max)}"
-                string += f"|"
+                string += self._encode_trial_hp(trial, hp_names=hp_names)
         return string
-    
+
+    def _encode_trial_hp(self, trial: Trial, hp_names: list[str]) -> str:
+        string = ""
+        # TODO support quantile normalization
+        y_values = [trial.metric for trial in self.trials]
+        y_min = min(y_values)
+        y_max = max(y_values)
+        if y_min == y_max:
+            y_max += 1  # Avoid division by zero in quantization
+        for i, hp_name in enumerate(hp_names):
+            hp = self.config_space[hp_name]
+            if not isinstance(hp, Domain):
+                continue
+            if i > 0:
+                string += ","
+                hp_encoded = encode(x=trial.config[hp_name], hp=hp, hp_name=hp_name, q=self.num_numeric_tokens)
+                string += str(hp_encoded)
+            string += f"*"
+            # TODO support other normalization
+            string += f"{quantize(trial.metric, y_min, y_max, q=self.num_numeric_tokens)}"
+            string += f"|"
+        return string
+
+    def _encode_hp_config_space(self, hp_name: str) -> str:
+        string = "{"
+        string += f"name:{hp_name},"
+        hp = self.config_space[hp_name]
+        if isinstance(hp, Categorical):
+            string += f"type:CAT,"
+            string += f"categories:{hp.categories},".replace(" ", "")
+        elif isinstance(hp, Float):
+            string += f"type:UNI,"
+            string += f"min_value:{hp.lower},"
+            string += f"max_value:{hp.upper},"
+        elif isinstance(hp, Integer):
+            string += f"type:INT,"
+            string += f"min_value:{hp.lower},"
+            string += f"max_value:{hp.upper},"
+        elif isinstance(hp, FiniteRange):
+            if hp.cast_int:
+                string += f"type:INT,"
+            else:
+                string += f"type:UNI,"
+            string += f"min_value:{hp.lower},"
+            string += f"max_value:{hp.upper},"
+        else:
+            raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
+        string += "}"
+        return string
+
     @classmethod
     def from_syne_tune_experiment(cls, experiment: ExperimentResult, max_num_trials: int = None):
         """
