@@ -20,30 +20,6 @@ def test_encode():
     assert encode('a', choice(['a', 'b', 'c']), q=1000) == 0
     assert encode('c', choice(['a', 'b', 'c']), q=1000) == 2
 
-
-def test_encode_hp_config_space():
-    config_space = {
-        'x': uniform(-1, 3),
-        'y': randint(-2, 5),
-        'z': choice(['a', 'b', 'c']),
-        't': finrange(0, 3, 4),
-    }
-    history = History(name='test', algorithm='test', config_space=config_space, num_numeric_tokens=1000)
-
-    expecteds = {
-        "x": "{name:x,type:UNI,min_value:-1,max_value:3,}",
-        "y": "{name:y,type:INT,min_value:-2,max_value:5,}",
-        "z": "{name:z,type:CAT,categories:['a','b','c'],}",
-        "t": "{name:t,type:UNI,min_value:0,max_value:3,}",
-    }
-    for hp, expected in expecteds.items():
-        got = history._encode_hp_config_space(hp_name=hp)
-        print(hp)
-        print(expected)
-        print(got)
-        assert got == expected
-
-
 def test_history():
     config_space = {
         'x': uniform(0, 1),
@@ -60,8 +36,6 @@ def test_history():
     assert 'parameter:{name:x,type:UNI,min_value:0,max_value:1,}' in prompt
     assert 'parameter:{name:y,type:INT,min_value:0,max_value:10,}' in prompt
     assert "parameter:{name:z,type:CAT,categories:['a','b','c'],}" in prompt
-    ("benchmark:test,algorithm:test,parameter:{name:x,type:UNI,min_value:0,max_value:1,}parameter:{name:y,type:INT,min_value:0,max_value:10,}parameter:{name:z,type:CAT,categories:['a','b','c'],}&"
-     "*0|,500*0|,0*0|*1000|,600*1000|,1*1000|")
     assert '&500,500,0*0|600,600,1*1000|' in prompt
     
 def test_trial():

@@ -70,71 +70,60 @@ class History:
         self.trials.append(trial)
 
     def get_prompt(self, shuffle=False):
-        string = f"benchmark:{self.name},algorithm:{self.algorithm},"
+        string = f"benchmark:{self.name},"
+        string += f"algorithm:{self.algorithm},"
 
-        # encode config-space
-        hp_names = list(self.config_space.keys())
-
+        hypers = list(self.config_space.items())
         if shuffle:
-            random.shuffle(hp_names)
-        for hp_name in hp_names:
-            string += f"parameter:{self._encode_hp_config_space(hp_name)}"
+            random.shuffle(hypers)
+        for hp_name, hp in hypers:
+            string += f"parameter:"
+            string += "{"
+            string += f"name:{hp_name},"
+
+            if isinstance(hp, Categorical):
+
+                string += f"type:CAT,"
+                string += f"categories:{hp.categories},".replace(" ", "")
+            elif isinstance(hp, Float):
+                    string += f"type:UNI,"
+                    string += f"min_value:{hp.lower},"
+                    string += f"max_value:{hp.upper},"
+            elif isinstance(hp, Integer):
+                    string += f"type:INT,"
+                    string += f"min_value:{hp.lower},"
+                    string += f"max_value:{hp.upper},"
+            elif isinstance(hp, FiniteRange):
+                if hp.cast_int:
+                    string += f"type:INT,"
+                else:
+                    string += f"type:UNI,"
+                string += f"min_value:{hp.lower},"
+                string += f"max_value:{hp.upper},"
+            else:
+                raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
+            string += "}"
 
         string += '&'
 
-        # encode hyperparameters values
         if len(self.trials) > 0:
+            y_min = min(trial.metric for trial in self.trials)
+            y_max = max(trial.metric for trial in self.trials)
+            if y_min == y_max:
+                y_max += 1  # Avoid division by zero in quantization
             for trial in self.trials:
-                string += self._encode_trial_hp(trial, hp_names=hp_names)
-        return string
+                for i, (hp_name, hp) in enumerate(hypers):
+                    if not isinstance(hp, Domain):
+                        continue
+                    if i > 0:
+                        string += ","
 
-    def _encode_trial_hp(self, trial: Trial, hp_names: list[str]) -> str:
-        string = ""
-        # TODO support quantile normalization
-        y_values = [trial.metric for trial in self.trials]
-        y_min = min(y_values)
-        y_max = max(y_values)
-        if y_min == y_max:
-            y_max += 1  # Avoid division by zero in quantization
-        for i, hp_name in enumerate(hp_names):
-            hp = self.config_space[hp_name]
-            if not isinstance(hp, Domain):
-                continue
-            if i > 0:
-                string += ","
-                hp_encoded = encode(x=trial.config[hp_name], hp=hp, hp_name=hp_name, q=self.num_numeric_tokens)
-                string += str(hp_encoded)
-            string += f"*"
-            # TODO support other normalization
-            string += f"{quantize(trial.metric, y_min, y_max, q=self.num_numeric_tokens)}"
-            string += f"|"
-        return string
+                    hp_encoded = encode(trial.config[hp_name], hp, hp_name=hp_name, q=self.num_numeric_tokens)
+                    string += str(hp_encoded)
+                string += f"*"
 
-    def _encode_hp_config_space(self, hp_name: str) -> str:
-        string = "{"
-        string += f"name:{hp_name},"
-        hp = self.config_space[hp_name]
-        if isinstance(hp, Categorical):
-            string += f"type:CAT,"
-            string += f"categories:{hp.categories},".replace(" ", "")
-        elif isinstance(hp, Float):
-            string += f"type:UNI,"
-            string += f"min_value:{hp.lower},"
-            string += f"max_value:{hp.upper},"
-        elif isinstance(hp, Integer):
-            string += f"type:INT,"
-            string += f"min_value:{hp.lower},"
-            string += f"max_value:{hp.upper},"
-        elif isinstance(hp, FiniteRange):
-            if hp.cast_int:
-                string += f"type:INT,"
-            else:
-                string += f"type:UNI,"
-            string += f"min_value:{hp.lower},"
-            string += f"max_value:{hp.upper},"
-        else:
-            raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
-        string += "}"
+                string += f"{quantize(trial.metric, y_min, y_max, q=self.num_numeric_tokens)}"
+                string += f"|"
         return string
 
     @classmethod
