@@ -15,39 +15,67 @@ from syne_tune.util import catchtime
 
 
 def load_result(name, metadata, path):
-    usecols = [metadata["metric_names"][0], "st_tuner_time", "trial_id", "st_decision"]
+    metric = metadata["metric_names"][0]
+    usecols = [metric, "st_tuner_time", "trial_id", "st_decision"]
+    subset = defaultdict(list)
     try:
-        return pd.read_csv(path / name / "results.csv.zip", usecols=usecols)
-    except Exception:
+        df = pd.read_csv(path / name / "results.csv.zip", usecols=usecols)
+        for trial_id, sub_df in df.groupby("trial_id"):
+            subset['trial_id'].append(trial_id)
+            subset[metric].append(sub_df[metric].values[-1])  # use only last reported metric
+            subset['st_tuner_time'].append(sub_df[ST_TUNER_TIME].values[-1])
+            subset['st_decision'].append(sub_df['st_decision'].values[-1])
+        return pd.DataFrame.from_dict(subset)
+    except Exception as e:
+        print(e)
         return None
 
-
-def convert_to_numpy(benchmark_df, num_time_steps: int = 20):
+def convert_to_numpy(benchmark_df, num_time_steps: int = 20, name: str = ""):
     t_min = 0
-    # the last time step is the median of the stopping time of all algorithms
-    t_max = benchmark_df.groupby(["algorithm"]).max().st_tuner_time.median()
-    t_range = np.linspace(t_min, t_max, num_time_steps)
+    t_max = num_time_steps
+    t_range = np.arange(t_min, t_max)
     seed_results = {}
     for algorithm in benchmark_df["algorithm"].unique():
-        ts = []
         ys = []
         df_scheduler = benchmark_df[benchmark_df["algorithm"] == algorithm]
         for seed in sorted(df_scheduler["seed"].unique()):
-            sub_df = df_scheduler[df_scheduler["seed"] == seed]
-            ts.append(sub_df.loc[:, ST_TUNER_TIME].values)
-            ys.append(sub_df.loc[:, "best"].values)
-
-        # for each seed, find the best value at each regularly spaced time-step
-        y_ranges = []
-        for t, y in zip(ts, ys):
-            indices = np.searchsorted(t, t_range, side="left")
-            y_range = y[np.clip(indices, 0, len(y) - 1)]
-            y_ranges.append(y_range)
+            sub_df = df_scheduler[df_scheduler["seed"] == seed].sort_values("trial_id")
+            ys.append(sub_df.loc[:, "best"].values[:num_time_steps])
+            if len(ys[-1]) < num_time_steps:
+                print(algorithm, seed, name, len(ys[-1]))
 
         # (num_seeds, num_time_steps)
-        y_ranges = np.stack(y_ranges)
+        y_ranges = np.stack(ys)
+        assert y_ranges.shape[1] == len(t_range)
         seed_results[algorithm] = y_ranges
     return t_range, seed_results
+
+# def convert_to_numpy(benchmark_df, num_time_steps: int = 20):
+#    t_min = 0
+#    # the last time step is the median of the stopping time of all algorithms
+#    t_max = benchmark_df.groupby(["algorithm"]).max().st_tuner_time.median()
+#    t_range = np.linspace(t_min, t_max, num_time_steps)
+#    seed_results = {}
+#    for algorithm in benchmark_df["algorithm"].unique():
+#        ts = []
+#        ys = []
+#        df_scheduler = benchmark_df[benchmark_df["algorithm"] == algorithm]
+#        for seed in sorted(df_scheduler["seed"].unique()):
+#            sub_df = df_scheduler[df_scheduler["seed"] == seed]
+#            ts.append(sub_df.loc[:, ST_TUNER_TIME].values)
+#            ys.append(sub_df.loc[:, "best"].values)
+#
+#        # for each seed, find the best value at each regularly spaced time-step
+#        y_ranges = []
+#        for t, y in zip(ts, ys):
+#            indices = np.searchsorted(t, t_range, side="left")
+#            y_range = y[np.clip(indices, 0, len(y) - 1)]
+#            y_ranges.append(y_range)
+#
+#        # (num_seeds, num_time_steps)
+#        y_ranges = np.stack(y_ranges)
+#        seed_results[algorithm] = y_ranges
+#    return t_range, seed_results
 
 
 def compute_best(dfs, metadatas):
@@ -61,7 +89,7 @@ def compute_best(dfs, metadatas):
             df_bench[key] = metadata[key]
         # TODO this avoids the need to rely on the mode stored in the metadata but hardcode the benchmark mode,
         #  we should pass it instead
-        if "lcbench" in benchmark or "nas301" in benchmark:
+        if benchmark.startswith("lcbench") or benchmark.startswith("hpob"):
             mode = "max"
         else:
             mode = "min"
@@ -100,8 +128,8 @@ def convert_all_to_numpy(
     benchmarks_numpy = parfor(
         f=convert_to_numpy,
         inputs=[
-            {"benchmark_df": benchmark_df, "num_time_steps": num_time_steps}
-            for benchmark_df in benchmark_dfs.values()
+            {"benchmark_df": benchmark_df, "num_time_steps": num_time_steps, 'name': benchmark_name}
+            for benchmark_name, benchmark_df in benchmark_dfs.items()
         ],
         engine=engine,
     )
@@ -183,12 +211,17 @@ def load_benchmark_results(
 
     with catchtime("Load results dataframes"):
         # load results in parallel
+        dfs = []
+        for name, metadata in tqdm(metadatas.items()):
+            df = load_result(name, metadata, path)
+            dfs.append(df)
 
-        dfs = parfor(
-            lambda name, metadata: load_result(name, metadata, path),
-            inputs=list(metadatas.items()),
-            engine=engine,
-        )
+
+#        dfs = parfor(
+#            lambda name, metadata: load_result(name, metadata, path),
+#            inputs=list(metadatas.items()),
+#            engine=engine,
+#        )
     with catchtime("Compute best result over time"):
         benchmark_dfs = compute_best(dfs, metadatas)
 

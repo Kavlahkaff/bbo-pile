@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
+from benchmarks.syne_tune_benchmarks.benchmark_definitions import n_full_evals
 from benchmarks.syne_tune_benchmarks.baselines import (
     Methods,
 )
@@ -16,12 +17,10 @@ from benchmarks.syne_tune_benchmarks.results_analysis.load_experiments_parallel 
     load_benchmark_results,
 )
 from benchmarks.syne_tune_benchmarks.results_analysis.method_styles import (
-    plot_range,
+    plot_range, method_styles
 )
 from syne_tune.util import catchtime
 
-
-# matplotlib.rcParams["pdf.fonttype"] = 42
 
 
 def figure_folder(path):
@@ -39,34 +38,35 @@ alpha = 0.7
 matplotlib.rcParams.update({"font.size": 15})
 benchmark_families = [
     "fcnet",
+    "global-optimization",
     "lcbench",
     "nas201",
-#    "tabrepo_RandomForest",
-#    "tabrepo_LinearModel",
-#    "tabrepo_CatBoost",
-#    "tabrepo_XGBoost",
-#    "tabrepo_ExtraTrees",
-#    "tabrepo_NeuralNetTorch",
-#    "tabrepo_LightGBM",
-#    "tabrepo_KNeighbors"
-#    "pd1"
-#    # "yahpo"
-#    "hpob_4796",
-#    "hpob_5527",
-#    "hpob_5636",
-#    "hpob_5859",
-#    "hpob_5860",
-#    "hpob_5891",
-#    "hpob_5906",
-#    "hpob_5965",
-#    "hpob_5970",
-#    "hpob_5971",
-#    "hpob_6766",
-#    "hpob_6767",
-#    "hpob_6794",
-#    "hpob_7607",
-#    "hpob_7609",
-#    "hpob_5889",
+    "tabrepo_RandomForest",
+    "tabrepo_LinearModel",
+    "tabrepo_CatBoost",
+    "tabrepo_XGBoost",
+    "tabrepo_ExtraTrees",
+    "tabrepo_NeuralNetTorch",
+    "tabrepo_LightGBM",
+    "tabrepo_KNeighbors",
+    "pd1",
+    # "yahpo"
+    "hpob_4796",
+    "hpob_5527",
+    "hpob_5636",
+    "hpob_5859",
+    "hpob_5860",
+    "hpob_5891",
+    "hpob_5906",
+    "hpob_5965",
+    "hpob_5970",
+    "hpob_5971",
+    "hpob_6766",
+    "hpob_6767",
+    "hpob_6794",
+    "hpob_7607",
+    "hpob_7609",
+    "hpob_5889",
 ]
 benchmark_names = {
     "fcnet": "\\FCNet{}",
@@ -113,18 +113,23 @@ def plot_result_benchmark(
                 t_range,
                 mean - std,
                 mean + std,
+                color=method_styles[algorithm]["color"],
                 alpha=0.1,
             )
             ax.plot(
                 t_range,
                 mean,
                 label=renamed_algorithm,
+                color=method_styles[algorithm]["color"],
+                linestyle=method_styles[algorithm]["linestyle"],
+                marker=method_styles[algorithm]["marker"],
+                markevery=10,
                 alpha=alpha,
             )
 
             agg_results[algorithm] = mean
 
-        ax.set_xlabel("Wallclock time")
+        ax.set_xlabel("trials")
         ax.legend()
         ax.set_title(title)
     return ax
@@ -158,6 +163,9 @@ def plot_task_performance_over_time(
                 plotargs = plot_range[benchmark]
                 ax.set_ylim([plotargs.ymin, plotargs.ymax])
                 ax.set_xlim([plotargs.xmin, plotargs.xmax])
+        else:
+            ax.set_yscale("log")
+            ax.set_ylabel("normalized regret")
 
         if ax is not None:
             plt.tight_layout()
@@ -214,6 +222,10 @@ def plot_ranks(
             ys[i],
             label=rename_dict.get(method, method),
             alpha=alpha,
+            color=method_styles[method]["color"],
+            linestyle=method_styles[method]["linestyle"],
+            marker=method_styles[method]["marker"],
+            markevery=10,
             lw=lw,
         )
     plt.xlabel("% Budget Used")
@@ -250,7 +262,7 @@ def stack_benchmark_results(
     else:
         res = {}
         for benchmark_family in benchmark_families:
-            print(benchmark_family)
+
             # list of the benchmark of the current family
             benchmarks_family = [
                 benchmark
@@ -267,6 +279,9 @@ def stack_benchmark_results(
                 benchmark_result = np.stack(benchmark_result)
                 benchmark_results.append(benchmark_result)
 
+            if len(benchmark_results) == 0:
+                continue
+            print(benchmark_family)
             # (num_benchmarks, num_methods, num_min_seeds, num_time_steps)
             benchmark_results = np.stack(benchmark_results)
 
@@ -308,7 +323,8 @@ def generate_rank_results(
 ):
     rows = []
     for benchmark_family in benchmark_families:
-        print(benchmark_family)
+        if benchmark_family not in stacked_benchmark_results:
+            continue
         # list of the benchmark of the current family
         # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
         benchmark_results = stacked_benchmark_results[benchmark_family]
@@ -360,6 +376,8 @@ def plot_average_normalized_regret(
 ):
     normalized_regrets = []
     for benchmark_family in benchmark_families:
+        if benchmark_family not in stacked_benchmark_results:
+            continue
         # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
         benchmark_results = stacked_benchmark_results[benchmark_family]
         # uncomment to remove outliers
@@ -385,12 +403,14 @@ def plot_average_normalized_regret(
         renamed_algorithm = rename_dict.get(algorithm, algorithm)
         # (num_seeds, num_time_steps)
         mean = avg_regret[i]
+        method_style = method_styles[algorithm]
         ax.plot(
             np.arange(len(mean)) / len(mean),
             mean,
-            # color=method_style.color,
-            # linestyle=method_style.linestyle,
-            # marker=method_style.marker,
+            color=method_style['color'],
+            linestyle=method_style['linestyle'],
+            marker=method_style['marker'],
+            markevery=10,
             label=renamed_algorithm,
             lw=lw,
             alpha=alpha,
@@ -401,7 +421,7 @@ def plot_average_normalized_regret(
                 np.arange(len(mean)) / len(mean),
                 mean - std,
                 mean + std,
-                # color=method_style.color,
+                color=method_style['color'],
                 alpha=0.1,
             )
         ax.set_yscale("log")
@@ -439,29 +459,32 @@ if __name__ == "__main__":
         action="store_true",
         required=False,
     )
-
+    parser.add_argument(
+        "--plot_regret",
+        action="store_true",
+        required=False,
+    )
     methods_selected = [
         Methods.RS,
- #       Methods.OPT_RS,
+#        Methods.OPT_RS,
+#        Methods.OPT_CQR
  #       Methods.OPT_REA,
         Methods.REA,
         Methods.BORE,
         Methods.TPE,
         Methods.CQR,
-        Methods.OptFormerBBOB_HillClimb,
-        Methods.OptFormerBBOB_GP,
-        Methods.OptFormerBBOB_REGEVO,
+        'HEBO',
+#        Methods.OptFormerBBOB_HillClimb,
+#        Methods.OptFormerBBOB_GP,
+#        Methods.OptFormerBBOB_REGEVO,
     ]
 
     single_fidelity = [x for x in methods_selected if not ("ASHA" in x or "BOHB" in x)]
-    multi_fidelity = [x for x in methods_selected if x not in single_fidelity]
 
-    methods_to_show = single_fidelity + multi_fidelity
+    methods_to_show = single_fidelity
 
     groups = {
-        "single-fidelity": single_fidelity,
-        "multi-fidelity": multi_fidelity,
-        "all": single_fidelity + multi_fidelity,
+        "all": single_fidelity
     }
 
     args, _ = parser.parse_known_args()
@@ -469,7 +492,7 @@ if __name__ == "__main__":
     print(args.__dict__)
     assert Path(args.path).exists()
     max_seed = args.max_seed
-    num_time_steps = 50
+    num_time_steps = n_full_evals
 
     with catchtime("load benchmark results"):
         benchmark_results = load_and_cache(
@@ -510,6 +533,7 @@ if __name__ == "__main__":
                         methods_to_show=methods,
                         rename_dict=rename_dict,
                         result_folder=result_folder,
+                        plot_regret=args.plot_regret,
                     )
 
                 plot_average_normalized_regret(
