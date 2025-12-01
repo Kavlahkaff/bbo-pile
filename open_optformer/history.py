@@ -16,20 +16,28 @@ def preprocess(prompt: str):
     return prompt
 
 
-def quantize(x, x_min, x_max, q=1000):
+def quantize(x, x_min, x_max, q=1000, log_scale=False):
     """
     Quantize a value x to be in [0, q] based on the range [x_min, x_max].
     """
     if x_min == x_max:
         return 0
+    if log_scale:
+        x = np.log(x + 1e-10)
+        x_min = np.log(x_min + 1e-10)
+        x_max = np.log(x_max + 1e-10)
     x_norm = (x - x_min)/(x_max - x_min)
     return int(x_norm * q)
 
 
-def dequantize(x, x_min, x_max, q=1000):
+def dequantize(x, x_min, x_max, q=1000, log_scale=False):
     """
     Dequantize a value x from [0, q] to the range [x_min, x_max].
     """
+    if log_scale:
+        x_min = np.log(x_min + 1e-10)
+        x_max = np.log(x_max + 1e-10)
+        return np.exp(x / q * (x_max - x_min) + x_min)
     return x / q * (x_max - x_min) + x_min
 
 
