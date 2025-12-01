@@ -34,10 +34,10 @@ def test_history():
     assert isinstance(prompt, str)
     assert 'benchmark:test' in prompt
     assert 'algorithm:test' in prompt
-    assert 'parameter:{name:x,type:UNI,min_value:0,max_value:1,}' in prompt
-    assert 'parameter:{name:y,type:Int,min_value:0,max_value:10,}' in prompt
-    assert "parameter:{name:z,type:CAT,categories:['a','b','c'],}" in prompt
-    assert '&500,500,0*0|600,600,1*1000|' in prompt
+    assert '{name:x,type:UNI,min_value:0,max_value:1}' in prompt
+    assert '{name:y,type:INT,min_value:0,max_value:10}' in prompt
+    assert "{name:z,type:CAT,categories:['a','b','c']}" in prompt
+    assert '500,500,0*0|600,600,1*1000|' in prompt
     
 def test_trial():
     trial = Trial(config={'x': 0.5}, metric=0.5)

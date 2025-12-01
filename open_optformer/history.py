@@ -4,6 +4,7 @@ import random
 from dataclasses import dataclass, field
 
 import numpy as np
+from keras.src.backend.jax.random import categorical
 from syne_tune.config_space import Categorical, Float, Integer, Domain, config_space_from_json_dict, FiniteRange
 from syne_tune.experiments import ExperimentResult
 
@@ -77,41 +78,49 @@ class History:
         self.trials.append(trial)
 
     def get_prompt(self, shuffle=False):
-        string = f"benchmark:{self.name},"
-        string += f"algorithm:{self.algorithm},"
-
+        string = f"benchmark:{self.name}\n"
+        string += f"algorithm:{self.algorithm}\n"
         hypers = list(self.config_space.items())
         if shuffle:
             random.shuffle(hypers)
+        # sort hyperparameters: continuous first, categorical last
+        continues_hypers = []
+        categorical_hypers = []
         for hp_name, hp in hypers:
-            string += f"parameter:"
+            if isinstance(hp, Categorical):
+                categorical_hypers.append((hp_name, hp))
+            else:
+                continues_hypers.append((hp_name, hp))
+        hypers = continues_hypers + categorical_hypers
+        string += f"search-space:\n"
+        for hp_name, hp in hypers:
             string += "{"
             string += f"name:{hp_name},"
 
             if isinstance(hp, Categorical):
 
                 string += f"type:CAT,"
-                string += f"categories:{hp.categories},".replace(" ", "")
+                string += f"categories:{hp.categories}".replace(" ", "")
             elif isinstance(hp, Float):
                     string += f"type:UNI,"
                     string += f"min_value:{hp.lower},"
-                    string += f"max_value:{hp.upper},"
+                    string += f"max_value:{hp.upper}"
             elif isinstance(hp, Integer):
                     string += f"type:INT,"
                     string += f"min_value:{hp.lower},"
-                    string += f"max_value:{hp.upper},"
+                    string += f"max_value:{hp.upper}"
             elif isinstance(hp, FiniteRange):
                 if hp.cast_int:
                     string += f"type:INT,"
                 else:
                     string += f"type:UNI,"
                 string += f"min_value:{hp.lower},"
-                string += f"max_value:{hp.upper},"
+                string += f"max_value:{hp.upper}"
             else:
                 raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
-            string += "}"
+            string += "}\n"
 
-        string += '&'
+        string += 'history\n'
 
         if len(self.trials) > 0:
             y_min = min(trial.metric for trial in self.trials)
@@ -159,3 +168,16 @@ class History:
                 break
 
         return hist
+
+if __name__ == "__main__":
+    from syne_tune.config_space import uniform, randint, choice
+    config_space = {
+        'x': uniform(0, 1),
+        'y': randint(0, 10),
+        'z': choice(['a', 'b', 'c'])
+    }
+    history = History(name='test', algorithm='test', config_space=config_space)
+    history.add_trial({'x': 0.5, 'y': 5, 'z': 'a'}, 0.5)
+    history.add_trial({'x': 0.6, 'y': 6, 'z': 'b'}, 0.6)
+    prompt = history.get_prompt()
+    print(prompt)
