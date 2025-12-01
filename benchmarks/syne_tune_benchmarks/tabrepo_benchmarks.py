@@ -30,6 +30,37 @@ datasets = ['2dplanes', 'APSFailure', 'Airlines_DepDelay_10M', 'Allstate_Claims_
 
 tabrepo_benchmark_definitions = {}
 
+exclusion_list = ['tabrepo_KNeighbors_Amazon_employee_access',
+                  'tabrepo_KNeighbors_GAMETES_Epistasis_2-Way_1000atts_0_4H_EDM-1_EDM-1_1',
+                  'tabrepo_KNeighbors_GAMETES_Epistasis_2-Way_20atts_0_1H_EDM-1_1',
+                  'tabrepo_KNeighbors_GAMETES_Epistasis_2-Way_20atts_0_4H_EDM-1_1',
+                  'tabrepo_KNeighbors_GAMETES_Epistasis_3-Way_20atts_0_2H_EDM-1_1',
+                  'tabrepo_KNeighbors_GAMETES_Heterogeneity_20atts_1600_Het_0_4_0_2_50_EDM-2_001',
+                  'tabrepo_KNeighbors_GAMETES_Heterogeneity_20atts_1600_Het_0_4_0_2_75_EDM-2_001',
+                  'tabrepo_KNeighbors_KDDCup09-Upselling',
+                  'tabrepo_KNeighbors_LED-display-domain-7digit',
+                  "tabrepo_KNeighbors_Mercedes_Benz_Greener_Manufacturing",
+                  'tabrepo_KNeighbors_PhishingWebsites',
+                  'tabrepo_KNeighbors_QSAR-TID-10980',
+                  'tabrepo_KNeighbors_QSAR-TID-11',
+                  'tabrepo_KNeighbors_analcatdata_dmft',
+                  'tabrepo_KNeighbors_autoUniv-au1-1000',
+                  'tabrepo_KNeighbors_car',
+                  'tabrepo_KNeighbors_connect-4',
+                  'tabrepo_KNeighbors_dna',
+                  'tabrepo_KNeighbors_hiva_agnostic',
+                  'tabrepo_KNeighbors_kdd_internet_usage',
+                  'tabrepo_KNeighbors_kropt',
+                  'tabrepo_KNeighbors_led24',
+                  'tabrepo_KNeighbors_nursery',
+                  'tabrepo_KNeighbors_parity5_plus_5',
+                  'tabrepo_KNeighbors_semeion',
+                  'tabrepo_KNeighbors_sensory',
+                  'tabrepo_KNeighbors_soybean',
+                  'tabrepo_KNeighbors_splice',
+                  ]
 for ss in tabrepo_search_spaces:
     for ds in datasets:
+        if ss + "_" + ds in exclusion_list:
+            continue
         tabrepo_benchmark_definitions[ss + "_" + ds] = tabrepo_benchmark(ss, ds)
