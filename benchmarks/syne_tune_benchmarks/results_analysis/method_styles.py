@@ -10,7 +10,7 @@ tpe_color = "red"
 bore_color = "tab:green"
 rea_color = "tab:blue"
 cqr_color = "tab:purple"
-
+smac_color = "tab:brown"
 fifo_style = "solid"
 multifidelity_style = "dashed"
 multifidelity_style2 = "dashdot"
@@ -26,6 +26,7 @@ method_styles = {
     'REA': dict(color=rea_color, linestyle=fifo_style, marker="D"),
     'CQR': dict(color=cqr_color, linestyle=fifo_style, marker="v"),
     'HEBO': dict(color=hebo_color, linestyle=fifo_style, marker="x"),
+    'SMAC': dict(color=smac_color, linestyle=fifo_style, marker="x"),
     'OPT-RS': dict(color=rs_color, linestyle=multifidelity_style, marker="o"),
     'OPT-TPE': dict(color=tpe_color, linestyle=multifidelity_style, marker="^"),
     'OPT-BORE': dict(color=bore_color, linestyle=multifidelity_style, marker="s"),
