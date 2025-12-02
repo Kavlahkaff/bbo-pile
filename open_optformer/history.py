@@ -4,7 +4,6 @@ import random
 from dataclasses import dataclass, field
 
 import numpy as np
-from keras.src.backend.jax.random import categorical
 from syne_tune.config_space import Categorical, Float, Integer, Domain, config_space_from_json_dict, FiniteRange
 from syne_tune.experiments import ExperimentResult
 
