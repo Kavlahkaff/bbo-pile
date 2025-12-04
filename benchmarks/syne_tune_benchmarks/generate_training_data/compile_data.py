@@ -1,6 +1,8 @@
 import logging
+import json
 import os
 import random
+import itertools
 
 from pathlib import Path
 from argparse import ArgumentParser
@@ -8,7 +10,6 @@ from syne_tune.util import catchtime
 
 from load_data import get_metadata, create_history_from_results
 
-validation_benchmarks = ['fcnet-protein']
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
@@ -50,7 +51,8 @@ if __name__ == "__main__":
         "TPE",
         "BORE",
         "CQR",
-        "RS"
+        "RS",
+        "HEBO"
     ]
 
     args, _ = parser.parse_known_args()
@@ -64,6 +66,9 @@ if __name__ == "__main__":
     output_path = Path(args.output_path)
     os.makedirs(output_path, exist_ok=True)
     experiment_filter = None
+
+    validation_tasks = json.load(open('validation_tasks.json'))
+    validation_tasks = list(itertools.chain.from_iterable(validation_tasks.values()))
 
     with catchtime("load benchmark results"):
 
@@ -91,7 +96,7 @@ if __name__ == "__main__":
             for name, metadata in metadatas.items():
 #                try:
                     benchmark_name = metadata['benchmark']
-                    if benchmark_name in validation_benchmarks:
+                    if benchmark_name in validation_tasks:
                         hist_valid.extend(create_history_from_results(name, metadata, path, max_num_trials, args.num_permutation))
                     else:
                         hist_train.extend(create_history_from_results(name, metadata, path, max_num_trials, args.num_permutation))
