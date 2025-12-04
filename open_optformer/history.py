@@ -50,7 +50,7 @@ def encode(x, hp: Domain, hp_name: str = ""):
             x = 'None'
        if hp_name == 'proc.skew_threshold' and isinstance(x, float):
                x = str(x)
-       return hp.categories.index(x)
+       return f"<{hp.categories.index(x)}>"
     elif isinstance(hp, (Float, Integer, FiniteRange)):
         return quantize(x, hp.lower, hp.upper)
     else:
