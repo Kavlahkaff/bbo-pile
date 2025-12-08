@@ -46,11 +46,16 @@ def encode(x, hp: Domain, hp_name: str = ""):
     Encode a value x based on the type of hyperparameter hp.
     """
     if isinstance(hp, Categorical):
-       if hp_name == 'proc.skew_threshold' and np.isnan(x):
+        #TODO: handle this in a more principled way
+        if hp_name == 'proc.skew_threshold' and np.isnan(x):
             x = 'None'
-       if hp_name == 'proc.skew_threshold' and isinstance(x, float):
+        if hp_name == 'proc.skew_threshold' and isinstance(x, float):
                x = str(x)
-       return f"<{hp.categories.index(x)}>"
+        if hp_name == 'num_layers' and isinstance(x, np.int64):
+               x = str(x)
+        if hp_name == 'max_features':
+           x = str(x)
+        return f"<{hp.categories.index(x)}>"
     elif isinstance(hp, (Float, Integer, FiniteRange)):
         return quantize(x, hp.lower, hp.upper)
     else:
