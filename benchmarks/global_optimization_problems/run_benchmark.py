@@ -10,6 +10,7 @@ import pandas
 
 from syne_tune.optimizer.schedulers.ask_tell_scheduler import AskTellScheduler
 from syne_tune.tuning_status import Status
+from syne_tune.config_space import config_space_to_json_dict
 from baselines import methods, MethodArguments
 from benchmarks_definitions import benchmark_definitions
 
@@ -76,6 +77,6 @@ if __name__ == "__main__":
     metadata = {"algorithm": method,
                 "benchmark": 'global-optimization_' + benchmark,
                 "seed": seed,
-                "config_space": config_space,
+                "config_space":  json.dumps(config_space_to_json_dict(config_space)),
                 'metric_names': ['objective']}
     json.dump(metadata, open(output_path / 'metadata.json', 'w'))
