@@ -31,7 +31,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max_sentence_length",
         type=int,
-        default=7000000,
+        default=6000,
+    )
+    parser.add_argument(
+        "--input_sentence_size",
+        type=int,
+        default=500,
     )
     args, _ = parser.parse_known_args()
 
@@ -50,6 +55,8 @@ if __name__ == "__main__":
         vocab_size=args.vocab_size,
         model_prefix=str(Path(args.output_path) / args.model_prefix),
         character_coverage=1.0,
+        input_sentence_size=args.input_sentence_size,
         max_sentence_length=args.max_sentence_length,
+        shuffle_input_sentence=True,
         user_defined_symbols=special_token,
 )
