@@ -4,16 +4,8 @@ import random
 from dataclasses import dataclass, field
 
 import numpy as np
-from syne_tune.config_space import Categorical, Float, Integer, Domain, config_space_from_json_dict, FiniteRange
+from syne_tune.config_space import Categorical, Float, Integer, Domain, config_space_from_json_dict, FiniteRange, is_log_space
 from syne_tune.experiments import ExperimentResult
-
-
-def preprocess(prompt: str):
-    prompt = prompt.replace('parameter', "")
-    prompt = prompt.replace('trial', "")
-    prompt = prompt.replace('\"', "")
-    prompt = prompt.replace(' ', "")
-    return prompt
 
 
 def quantize(x, x_min, x_max, q=1000, log_scale=False):
@@ -27,7 +19,7 @@ def quantize(x, x_min, x_max, q=1000, log_scale=False):
         x_min = np.log(x_min + 1e-10)
         x_max = np.log(x_max + 1e-10)
     x_norm = (x - x_min)/(x_max - x_min)
-    return int(x_norm * q)
+    return int(round(x_norm * q))
 
 
 def dequantize(x, x_min, x_max, q=1000, log_scale=False):
@@ -57,7 +49,7 @@ def encode(x, hp: Domain, hp_name: str = ""):
            x = str(x)
         return f"<{hp.categories.index(x)}>"
     elif isinstance(hp, (Float, Integer, FiniteRange)):
-        return quantize(x, hp.lower, hp.upper, log_scale=hp.log_scale)
+        return quantize(x, hp.lower, hp.upper, log_scale=is_log_space(hp))
     else:
         raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
 
@@ -108,18 +100,21 @@ class History:
             elif isinstance(hp, Float):
                     string += f"type:UNI,"
                     string += f"min_value:{hp.lower},"
-                    string += f"max_value:{hp.upper}"
+                    string += f"max_value:{hp.upper},"
+                    string += f"log_scale" if is_log_space(hp) else f"linear_scale"
             elif isinstance(hp, Integer):
                     string += f"type:INT,"
                     string += f"min_value:{hp.lower},"
-                    string += f"max_value:{hp.upper}"
+                    string += f"max_value:{hp.upper},"
+                    string += f"log_scale" if is_log_space(hp) else f"linear_scale"
             elif isinstance(hp, FiniteRange):
                 if hp.cast_int:
                     string += f"type:INT,"
                 else:
                     string += f"type:UNI,"
                 string += f"min_value:{hp.lower},"
-                string += f"max_value:{hp.upper}"
+                string += f"max_value:{hp.upper},"
+                string += f"log_scale" if is_log_space(hp) else f"linear_scale"
             else:
                 raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
             string += "}\n"
@@ -174,14 +169,41 @@ class History:
         return hist
 
 if __name__ == "__main__":
-    from syne_tune.config_space import uniform, randint, choice
+    from syne_tune.config_space import uniform, randint, choice, loguniform
     config_space = {
         'x': uniform(0, 1),
         'y': randint(0, 10),
-        'z': choice(['a', 'b', 'c'])
+        'z': choice(['a', 'b', 'c']),
+        'log_x': loguniform(0.01, 1),
     }
     history = History(name='test', algorithm='test', config_space=config_space)
-    history.add_trial({'x': 0.5, 'y': 5, 'z': 'a'}, 0.5)
-    history.add_trial({'x': 0.6, 'y': 6, 'z': 'b'}, 0.6)
+    history.add_trial({'x': 0.5, 'y': 5, 'z': 'a', 'log_x': 0.1}, 0.5)
+    history.add_trial({'x': 0.6, 'y': 6, 'z': 'b', 'log_x': 0.9}, 0.6)
     prompt = history.get_prompt()
     print(prompt)
+
+    test_cases = [
+        (0.1, 0.01, 1, True),
+        (0.99, 0.01, 1, True),
+        (0.2, 0.0, 1.0, False),
+        (100, 0, 200, False),
+        (0.01, 0.01, 1, True),
+        (50, 10, 100, True),
+        (0.5, 0.0, 1.0, False),
+        (1, 1, 10, True),
+        (5, 1, 10, False),
+    ]
+    q = 1000
+    for x, x_min, x_max, log_scale in test_cases:
+        x_quantized = quantize(x, x_min, x_max, q, log_scale)
+        x_dequantized = dequantize(x_quantized, x_min, x_max, q, log_scale)
+
+        if log_scale:
+            expected_error = np.exp(np.log(x_max + 1e-10) - np.log(x_min + 1e-10) / (2 * q))
+        else:
+            expected_error = (x_max - x_min) / (2 * q)
+
+        assert abs(x - x_dequantized) < expected_error, (
+            f"x: {x}, x_min: {x_min}, x_max: {x_max}, log_scale: {log_scale}, "
+            f"x_quantized: {x_quantized}, x_dequantized: {x_dequantized}"
+        )
