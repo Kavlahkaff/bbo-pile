@@ -57,7 +57,7 @@ def encode(x, hp: Domain, hp_name: str = ""):
            x = str(x)
         return f"<{hp.categories.index(x)}>"
     elif isinstance(hp, (Float, Integer, FiniteRange)):
-        return quantize(x, hp.lower, hp.upper)
+        return quantize(x, hp.lower, hp.upper, log_scale=hp.log_scale)
     else:
         raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
 
