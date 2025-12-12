@@ -11,7 +11,7 @@ from litgpt.config import Config
 from litgpt.tokenizer import Tokenizer
 from litgpt.model import GPT
 
-from open_optformer.history import History, preprocess, dequantize
+from open_optformer.history import History, dequantize
 
 from syne_tune.config_space import Integer, Categorical, Float, FiniteRange
 from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
@@ -164,7 +164,6 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
             return config
 
         prompt = self.study.get_prompt()
-        prompt = preprocess(prompt)
         token = self.tokenizer.encode(prompt)[-self.model.max_seq_length:]
         prompt_size = token.size(0)
         input_pos = torch.arange(0, token.size(0))
