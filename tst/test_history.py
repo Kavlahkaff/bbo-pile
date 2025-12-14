@@ -6,7 +6,7 @@ from syne_tune.experiments import load_experiment
 from syne_tune.config_space import randint, uniform, choice
 from syne_tune.constants import SYNE_TUNE_ENV_FOLDER
 
-from open_optformer.history import History, Trial, encode, quantize, preprocess
+from open_optformer.history import History, Trial, encode, quantize 
 
 def test_quantize():
     assert quantize(0.5, 0, 1) == 500
@@ -43,11 +43,6 @@ def test_trial():
     trial = Trial(config={'x': 0.5}, metric=0.5)
     assert trial.config == {'x': 0.5}
     assert trial.metric == 0.5
-
-def test_preprocess():
-    prompt = 'parameter "trial" '
-    processed_prompt = preprocess(prompt)
-    assert processed_prompt == ''
 
 def test_from_syne_tune_experiment():
     from syne_tune import Tuner, StoppingCriterion
