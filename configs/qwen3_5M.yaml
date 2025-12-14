@@ -1,13 +1,13 @@
 data:
   class_path: open_optformer.training.syne_tune_data.SyneTuneData
   init_args:
-    data_path: /data/tokenized_data/
+    data_path: /syne-tune-benchmarks/data/tokenized_data/concat
     split_names: ['train', 'valid']
 devices: auto
 eval:
   final_validation: true
   initial_validation: true
-  interval: 20
+  interval: 50
   max_iters: 100
   max_new_tokens: null
 initial_checkpoint_dir: null
@@ -20,21 +20,21 @@ model_config:
   block_size: 40960
   final_logit_softcapping: null
   gelu_approximate: none
-  head_size: 128
   hf_config:
-    name: Qwen3-0.6B
+    name: Qwen3-5M
     org: Qwen
-  intermediate_size: 3072
   latent_attention: null
   lm_head_bias: false
   mlp_class_name: LLaMAMLP
   moe_intermediate_size: null
-  n_embd: 1024
+  n_embd: 128
+  head_size: 16
+  intermediate_size: 768
   n_expert: 0
   n_expert_per_token: 0
-  n_head: 16
-  n_layer: 28
-  n_query_groups: 8
+  n_head: 8
+  n_layer: 14
+  n_query_groups: 4
   name: Qwen3-0.6B
   norm_1: true
   norm_2: true
@@ -42,7 +42,7 @@ model_config:
   norm_eps: 1.0e-06
   norm_qk: true
   norm_qk_type: default
-  padded_vocab_size: 1074
+  padded_vocab_size: 1185
   padding_multiple: 512
   parallel_residual: false
   post_attention_norm: false
@@ -57,7 +57,7 @@ model_config:
   shared_attention_norm: false
   sliding_window_indices: null
   sliding_window_size: null
-  vocab_size: 1074
+  vocab_size: 1185
 num_nodes: 1
 optimizer:
   class_path: torch.optim.AdamW
@@ -65,27 +65,27 @@ optimizer:
     betas:
     - 0.9
     - 0.95
-    lr: 1e-5
+    lr: 1e-4
     weight_decay: 0.1
-out_dir: model/
+out_dir: /syne-tune-benchmarks/test_qwen3_160M_token_8B_bs_128_all_tokens_lr_1e-4_warump_5p
 precision: bf16-mixed
-resume: true
+resume: false
 seed: 42
-tokenizer_dir: tokenizer/
+tokenizer_dir: /syne-tune-benchmarks/tokenizer
 train:
   epochs: null
-  global_batch_size: 8
-  log_interval: 10
-  lr_warmup_steps: 0
+  global_batch_size: 512
+  log_interval: 50
+  lr_warmup_steps: 3500
   max_norm: 1.0
-  max_seq_length: 2048
+  max_seq_length: 4096
   max_steps: null
-  max_tokens: 1000000
-  micro_batch_size: 8
+  max_tokens: 8_000_000_000 
+  micro_batch_size: 16
   min_lr: 0.0000
   save_interval: 2000
   tie_embeddings: true
 log:
   project: "open-optformer"
-  run: "qwen3-1M_token_1M"
+  run: "qwen3-5M_token_8B_bs_128_all_tokens_lr_1e-4_warumup_5p"
   group: 'concat'

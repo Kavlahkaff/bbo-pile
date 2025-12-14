@@ -7,7 +7,7 @@ devices: auto
 eval:
   final_validation: true
   initial_validation: true
-  interval: 500
+  interval: 50
   max_iters: 100
   max_new_tokens: null
 initial_checkpoint_dir: null
@@ -20,29 +20,29 @@ model_config:
   block_size: 40960
   final_logit_softcapping: null
   gelu_approximate: none
-  head_size: 128
   hf_config:
-    name: Qwen3-0.6B
+    name: Qwen3-30M
     org: Qwen
-  intermediate_size: 3072
   latent_attention: null
   lm_head_bias: false
   mlp_class_name: LLaMAMLP
   moe_intermediate_size: null
-  n_embd: 512
+  n_embd: 1024
+  head_size: 54
+  intermediate_size: 6144
   n_expert: 0
   n_expert_per_token: 0
   n_head: 16
-  n_layer: 20
-  n_query_groups: 8
-  name: Qwen3-0.6B
+  n_layer: 24
+  n_query_groups: 4
+  name: Qwen3-500M
   norm_1: true
   norm_2: true
   norm_class_name: RMSNorm
   norm_eps: 1.0e-06
   norm_qk: true
   norm_qk_type: default
-  padded_vocab_size: 1074
+  padded_vocab_size: 1185
   padding_multiple: 512
   parallel_residual: false
   post_attention_norm: false
@@ -57,7 +57,7 @@ model_config:
   shared_attention_norm: false
   sliding_window_indices: null
   sliding_window_size: null
-  vocab_size: 1074
+  vocab_size: 1185
 num_nodes: 1
 optimizer:
   class_path: torch.optim.AdamW
@@ -75,10 +75,10 @@ tokenizer_dir: /syne-tune-benchmarks/tokenizer
 train:
   epochs: null
   global_batch_size: 128
-  log_interval: 200
+  log_interval: 50
   lr_warmup_steps: 3500
   max_norm: 1.0
-  max_seq_length: 2048
+  max_seq_length: 4096
   max_steps: null
   max_tokens: 8_000_000_000 
   micro_batch_size: 8
@@ -87,5 +87,5 @@ train:
   tie_embeddings: true
 log:
   project: "open-optformer"
-  run: "test_qwen3-160M_token_8B_bs_128_all_tokens_lr_1e-4_warumup_5p"
+  run: "qwen3-500M_token_8B_bs_128_all_tokens_lr_1e-4_warumup_5p"
   group: 'concat'
