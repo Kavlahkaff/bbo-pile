@@ -36,7 +36,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--input_sentence_size",
         type=int,
-        default=500,
+        default=1000,
     )
     args, _ = parser.parse_known_args()
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     # Float, integer parameters
     special_token += [str(i) for i in range(1000)]
     # Categorical parameters
-    special_token += [f"<{i}>" for i in range(100)]
+    special_token += [f"<{i}>" for i in range(15)]
 
     input_folder = Path(args.input_folder)
     os.makedirs(args.output_path, exist_ok=True)
