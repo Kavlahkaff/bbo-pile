@@ -41,7 +41,7 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
 
     special_token = ['name', 'algorithm', 'benchmark', 'type', 'history',
-     'CAT', 'UNI', 'INT', "|", "&", "*", ","]
+     'CAT', 'UNI', 'INT', "|", "&", "*", ",", "log_scale", "linear_scale"]
 
     # Float, integer parameters
     special_token += [str(i) for i in range(1000)]
