@@ -75,7 +75,7 @@ tokenizer_dir: /syne-tune-benchmarks/tokenizer
 train:
   epochs: null
   global_batch_size: 128
-  log_interval: 50
+  log_interval: 10
   lr_warmup_steps: 3500
   max_norm: 1.0
   max_seq_length: 4096

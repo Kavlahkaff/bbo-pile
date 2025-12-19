@@ -7,7 +7,7 @@ devices: auto
 eval:
   final_validation: true
   initial_validation: true
-  interval: 50
+  interval: 10
   max_iters: 100
   max_new_tokens: null
 initial_checkpoint_dir: null
