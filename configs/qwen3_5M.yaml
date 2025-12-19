@@ -76,7 +76,7 @@ train:
   epochs: null
   global_batch_size: 512
   log_interval: 10
-  lr_warmup_steps: 3500
+  lr_warmup_steps: 200
   max_norm: 1.0
   max_seq_length: 4096
   max_steps: null
