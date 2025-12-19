@@ -81,7 +81,7 @@ train:
   max_seq_length: 4096
   max_steps: null
   max_tokens: 8_000_000_000 
-  micro_batch_size: 16
+  micro_batch_size: 32
   min_lr: 0.0000
   save_interval: 2000
   tie_embeddings: true
