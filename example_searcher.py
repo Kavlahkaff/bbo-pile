@@ -35,8 +35,7 @@ print(points_to_evaluate[0])
 
 name = "remove-forward-refactor"
 
-#checkpoint_dir = pathlib.Path("./checkpoint/")
-checkpoint_dir = pathlib.Path('/home/aaron/experiments/open_optformer/checkpoints/qwen3_50M_token_2B_lr_1e-4_bsz_64')
+checkpoint_dir = pathlib.Path("./checkpoint/")
 
 searcher = OptformerScheduler(
     config_space=config_space,
