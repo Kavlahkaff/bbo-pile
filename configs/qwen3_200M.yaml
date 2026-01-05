@@ -17,7 +17,7 @@ model_config:
   attention_scores_scalar: null
   attn_bias: false
   bias: false
-  block_size: 40960
+  block_size: 4096
   final_logit_softcapping: null
   gelu_approximate: none
   hf_config:
