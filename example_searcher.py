@@ -1,9 +1,12 @@
 import time
 
 import pathlib
+from collections import defaultdict
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from syne_tune.config_space import is_log_space
 
 from syne_tune.util import catchtime
 from syne_tune.backend.trial_status import Trial
@@ -32,13 +35,15 @@ print(points_to_evaluate[0])
 
 name = "remove-forward-refactor"
 
-checkpoint_dir = pathlib.Path("./checkpoint/")
+#checkpoint_dir = pathlib.Path("./checkpoint/")
+checkpoint_dir = pathlib.Path('/home/aaron/experiments/open_optformer/checkpoints/qwen3_50M_token_2B_lr_1e-4_bsz_64')
+
 searcher = OptformerScheduler(
     config_space=config_space,
     checkpoint_dir=checkpoint_dir,
     metric=objective,
     random_seed=0,
-    task_info={'name': 'pd1_imagenet_resnet_batch_size_512',
+    task_info={'name': 'lcbench_Fashion-MNIST',
             'algorithm': "CQR",
             'metric_names': objective},
     points_to_evaluate=points_to_evaluate
@@ -47,7 +52,8 @@ searcher = OptformerScheduler(
 
 # Store runtimes for each trial
 runtimes = {}
-n = 20
+n = 100
+configs = defaultdict(list)
 for trial_id in range(n):
     # Start timer for this trial
     start_time = time.time()
@@ -64,6 +70,11 @@ for trial_id in range(n):
     runtime = time.time() - start_time
     runtimes[trial_id] = runtime
     print(f"Runtime: {runtime:.4f} seconds\n")
+    for hp in config:
+        if is_log_space(config_space[hp]):
+            configs[hp].append(np.log10(config[hp]))
+        else:
+            configs[hp].append(config[hp])
 
 # Plot the runtimes
 plt.figure(figsize=(10, 6))
@@ -87,3 +98,9 @@ print(f"Total runtime: {sum(runtimes):.4f} seconds")
 print(f"Average runtime: {sum(runtimes) / len(runtimes):.4f} seconds")
 print(f"Min runtime: {min(runtimes):.4f} seconds")
 print(f"Max runtime: {max(runtimes):.4f} seconds")
+
+for hp, vals in configs.items():
+    plt.figure(dpi=200)
+    plt.hist(vals)
+    plt.title(hp)
+    plt.savefig(f"fig-{hp}.png")
