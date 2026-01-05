@@ -22,14 +22,6 @@ from syne_tune.optimizer.schedulers.single_objective_scheduler import (
 logger = logging.getLogger(__name__)
 
 
-def select_token(logits, pos):
-    #m = logits[:, pos].argmax(dim=-1)
-    probs = torch.nn.functional.softmax(logits[:, pos], dim=-1).detach().numpy()[0, :]
-    m = np.random.choice(np.arange(pos.shape[0]), p=probs)
-    token = pos[m]
-    return token
-
-
 def get_probability(logits, classes):
     # Convert logits to probabilities
     probs = F.softmax(logits, dim=0)  # shape: [vocab_size]
@@ -117,15 +109,20 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         task_info: Dict = None,
         points_to_evaluate: Optional[List[Dict[str, Any]]] = None,
         random_seed: int = None,
+        num_numeric_tokens: int = 1000,
     ):
         super().__init__(config_space, points_to_evaluate, random_seed)
-
+        torch.random.manual_seed(random_seed)
         config = Config.from_file(str(checkpoint_dir / 'model_config.yaml'))
         self.model = GPT(config)
-
+        self.num_numeric_tokens = num_numeric_tokens
 #        self.tokenizer = Tokenizer(str(Path(__file__).parent / "data" / "tokenizer"))
         self.tokenizer = Tokenizer(str(checkpoint_dir))
-        state_dict = torch.load(str(checkpoint_dir / 'lit_model.pth'), weights_only=True)
+        state_dict = torch.load(
+            str(checkpoint_dir / 'lit_model.pth'),
+            weights_only=True,
+            map_location=torch.device('cpu') if not torch.cuda.is_available() else None
+        )
         if 'model' in state_dict:
             state_dict = state_dict['model']
         self.model.load_state_dict(state_dict)
@@ -142,6 +139,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                              name=self.task_info['name'],
                              algorithm=self.task_info['algorithm'],
                              metric_names=[self.task_info['metric_names']],
+                             num_numeric_tokens=self.num_numeric_tokens,
                              )
 
     def suggest(self, **kwargs) -> Optional[Dict[str, Any]]:
@@ -173,27 +171,48 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         prefill_token = True
         config = {}
 
+        tokens_per_numeric = [self.tokenizer.encode(str(i))[-1] for i in range(self.num_numeric_tokens)]
+
         for hp_name, hp in self.config_space.items():
+            # (batch_size, vocab_size), eg (1, vocab_size)
+
             logits = self.model(token.view(1, -1),
                                 input_pos,
                                 input_pos_maxp1=input_pos_maxp1)[:, -1]
+            logits = logits[0]
 
             if isinstance(hp, (Float, Integer, FiniteRange)):
                 # pick value in [0, Q] with the highest probability
-                idx = torch.tensor([self.tokenizer.encode(str(i))[-1] for i in range(1000)], dtype=torch.int)
-                token = select_token(logits, idx)
-                value = int(self.tokenizer.decode(token))
-                token = torch.tensor([token])
-                config[hp_name] = dequantize(value, hp.lower, hp.upper, q=1000)
+                idx = torch.tensor(tokens_per_numeric, dtype=torch.int)
+
+                # sample from softmax distribution
+                probs = F.softmax(logits[idx], dim=-1)
+                next_token_id = torch.multinomial(probs, num_samples=1)
+                # get next token
+                token = idx[next_token_id]
+
+                # assign the decoded value to the config
+                config[hp_name] = dequantize(
+                    x=int(self.tokenizer.decode(token)),
+                    x_min=hp.lower,
+                    x_max=hp.upper,
+                    q=self.num_numeric_tokens,
+                )
 
             elif isinstance(hp, Categorical):
                 #  pick the category with the highest probability
                 tokens_per_category = [self.tokenizer.encode(str(cat)).tolist() for cat in hp.categories]
                 if len(logits.shape) == 2:
                     logits = logits.squeeze(0)
-                token = sample_category_hparam(logits, tokens_per_category)
-                category = self.tokenizer.decode(token)
-                config[hp_name] = category
+
+                # sample category
+                # first selects logits of tokens that are categories then samples category index an decode it
+                probs_per_category = get_probability(logits, tokens_per_category)
+                probs_per_category /= probs_per_category.sum()
+                category_index = torch.multinomial(probs_per_category, num_samples=1)
+                token = torch.tensor(tokens_per_category[category_index.item()])
+                config[hp_name] = self.tokenizer.decode(token)
+
             if prefill_token:
                 prefill_token = False
 #                input_pos = torch.tensor([prompt_size],dtype=torch.int64)

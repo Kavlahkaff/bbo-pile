@@ -33,7 +33,7 @@ def dequantize(x, x_min, x_max, q=1000, log_scale=False):
     return x / q * (x_max - x_min) + x_min
 
 
-def encode(x, hp: Domain, hp_name: str = ""):
+def encode(x, hp: Domain, q: int = 1000, hp_name: str = ""):
     """
     Encode a value x based on the type of hyperparameter hp.
     """
@@ -49,7 +49,7 @@ def encode(x, hp: Domain, hp_name: str = ""):
            x = str(x)
         return f"<{hp.categories.index(x)}>"
     elif isinstance(hp, (Float, Integer, FiniteRange)):
-        return quantize(x, hp.lower, hp.upper, log_scale=is_log_space(hp))
+        return quantize(x, hp.lower, hp.upper, q, log_scale=is_log_space(hp))
     else:
         raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
 
@@ -65,6 +65,7 @@ class History:
     name: str
     algorithm: str
     config_space: dict
+    num_numeric_tokens: int = 1000
     metric_names: list = field(default_factory=list)
     trials: list = field(default_factory=list)
 
@@ -133,14 +134,14 @@ class History:
                     if i > 0:
                         string += ","
 
-                    hp_encoded = encode(trial.config[hp_name], hp, hp_name)
+                    hp_encoded = encode(trial.config[hp_name], hp, hp_name=hp_name, q=self.num_numeric_tokens)
                     string += str(hp_encoded)
                 string += f"*"
 
-                string += f"{quantize(trial.metric, y_min, y_max)}"
+                string += f"{quantize(trial.metric, y_min, y_max, q=self.num_numeric_tokens)}"
                 string += f"|"
         return string
-    
+
     @classmethod
     def from_syne_tune_experiment(cls, experiment: ExperimentResult, max_num_trials: int = None):
         """
@@ -163,7 +164,7 @@ class History:
             config = {k: row[f"config_{k}"] for k in config_space.keys()}
             result = row[metric_name]
             hist.add_trial(config, result)
-            if i >= max_num_trials - 1 and max_num_trials is not None:
+            if max_num_trials is not None and i >= max_num_trials - 1:
                 break
 
         return hist

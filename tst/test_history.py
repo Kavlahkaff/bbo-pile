@@ -3,23 +3,22 @@ import tempfile
 
 from syne_tune.experiments import load_experiment
 
-from syne_tune.config_space import randint, uniform, choice
+from syne_tune.config_space import randint, uniform, choice, finrange
 from syne_tune.constants import SYNE_TUNE_ENV_FOLDER
 
 from open_optformer.history import History, Trial, encode, quantize 
 
 def test_quantize():
-    assert quantize(0.5, 0, 1) == 500
-    assert quantize(0, 0, 1) == 0
-    assert quantize(1, 0, 1) == 1000
+    assert quantize(0.5, 0, 1, q=1000) == 500
+    assert quantize(0, 0, 1, q=1000) == 0
+    assert quantize(1, 0, 1, q=1000) == 1000
 
 
 def test_encode():
-    assert encode(0.5, uniform(0, 1)) == 500
-    assert encode(5, randint(0, 10)) == 500
-    assert encode('a', choice(['a', 'b', 'c'])) == 0
-    assert encode('c', choice(['a', 'b', 'c'])) == 2
-
+    assert encode(0.5, uniform(0, 1), q=1000) == 500
+    assert encode(5, randint(0, 10), q=1000) == 500
+    assert encode('a', choice(['a', 'b', 'c']), q=1000) == 0
+    assert encode('c', choice(['a', 'b', 'c']), q=1000) == 2
 
 def test_history():
     config_space = {
@@ -27,7 +26,7 @@ def test_history():
         'y': randint(0, 10),
         'z': choice(['a', 'b', 'c'])
     }
-    history = History(name='test', algorithm='test', config_space=config_space)
+    history = History(name='test', algorithm='test', config_space=config_space, num_numeric_tokens=1000)
     history.add_trial({'x': 0.5, 'y': 5, 'z': 'a'}, 0.5)
     history.add_trial({'x': 0.6, 'y': 6, 'z': 'b'}, 0.6)
     prompt = history.get_prompt()
@@ -57,13 +56,13 @@ def test_from_syne_tune_experiment():
         :class:`~syne_tune.backend.PythonBackend`.
         """
         from syne_tune import Reporter
-
+        import time
         reporter = Reporter()
         for step in range(steps):
             dummy_score = (0.1 + width * step / 100) ** (-1) + height * 0.1
             # Feed the score back to Syne Tune.
             reporter(step=step, mean_loss=dummy_score)
-            #time.sleep(0.1)
+            time.sleep(0.1)
 
     config_space = {
         "steps": 100,
@@ -76,7 +75,6 @@ def test_from_syne_tune_experiment():
         config_space,
         metrics=[metric],
     )
-
 
     stop_criterion = StoppingCriterion(
         max_num_trials_completed=1,
@@ -92,11 +90,10 @@ def test_from_syne_tune_experiment():
             stop_criterion=stop_criterion,
             n_workers=1,
             save_tuner=False,
-            
+            results_update_interval=0.1,
         )
         tuner.run()
         experiment = load_experiment(tuner_name=tuner.name, local_path=local_path)
         history = History.from_syne_tune_experiment(experiment)
 
         assert len(history.trials) == 1
-

@@ -6,7 +6,7 @@
   dill
   litgpt>=0.5.9
   litdata
-  syne-tune[extra]
+#  syne-tune[extra]
   pyparfor
   sentencepiece
   wandb
