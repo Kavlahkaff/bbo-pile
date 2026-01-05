@@ -186,35 +186,42 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
             if isinstance(hp, (Float, Integer, FiniteRange)):
                 # pick value in [0, Q] with the highest probability
                 idx = torch.tensor(tokens_per_numeric, dtype=torch.int)
+            elif isinstance(hp, Categorical):
+                idx = torch.tensor(tokens_per_category, dtype=torch.int)[:len(hp.categories)]
 
-                # sample from softmax distribution
-                probs = F.softmax(logits[idx], dim=-1)
-                next_token_id = torch.multinomial(probs, num_samples=1)
-                # get next token
-                token = idx[next_token_id]
+            # sample from softmax distribution
+            probs = F.softmax(logits[idx], dim=-1)
+            next_token_id = torch.multinomial(probs, num_samples=1)
+            # get next token
+            token = idx[next_token_id]
 
-                # assign the decoded value to the config
-                config[hp_name] = dequantize(
+            # assign the decoded value to the config
+            if isinstance(hp, (Float, Integer, FiniteRange)):
+               config[hp_name] = dequantize(
                     x=int(self.tokenizer.decode(token)),
                     x_min=hp.lower,
                     x_max=hp.upper,
                     q=self.num_numeric_tokens,
                     log_scale=is_log_space(hp),
                 )
-
             elif isinstance(hp, Categorical):
-                #  pick the category with the highest probability
- #               tokens_per_category = [self.tokenizer.encode(str(cat)).tolist() for cat in hp.categories]
-                if len(logits.shape) == 2:
-                    logits = logits.squeeze(0)
+                categorical_string = self.tokenizer.decode(token)
+                cat_idx = int(categorical_string.strip('<').strip('>'))
+                config[hp_name] = hp.categories[cat_idx]
 
-                # sample category
-                # first selects logits of tokens that are categories then samples category index and decode it
-                probs_per_category = get_probability(logits, tokens_per_category)
-                probs_per_category /= probs_per_category.sum()
-                category_index = torch.multinomial(probs_per_category, num_samples=1)
-                token = torch.tensor(tokens_per_category[category_index.item()])
-                config[hp_name] = self.tokenizer.decode(token)
+#            elif isinstance(hp, Categorical):
+#                #  pick the category with the highest probability
+# #               tokens_per_category = [self.tokenizer.encode(str(cat)).tolist() for cat in hp.categories]
+#                if len(logits.shape) == 2:
+#                    logits = logits.squeeze(0)
+#
+#                # sample category
+#                # first selects logits of tokens that are categories then samples category index and decode it
+#                probs_per_category = get_probability(logits, tokens_per_category)
+#                probs_per_category /= probs_per_category.sum()
+#                category_index = torch.multinomial(probs_per_category, num_samples=1)
+#                token = torch.tensor(tokens_per_category[category_index.item()])
+#                config[hp_name] = self.tokenizer.decode(token)
 
             if prefill_token:
                 prefill_token = False
