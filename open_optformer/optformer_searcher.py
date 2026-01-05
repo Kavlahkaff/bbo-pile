@@ -113,7 +113,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         num_categorical_tokens: int = 15,
     ):
         super().__init__(config_space, points_to_evaluate, random_seed)
-        torch.random.manual_seed(random_seed)
+        torch.random.manual_seed(self.random_seed)
         config = Config.from_file(str(checkpoint_dir / 'model_config.yaml'))
         self.model = GPT(config)
         self.num_numeric_tokens = num_numeric_tokens
