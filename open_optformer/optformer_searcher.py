@@ -13,7 +13,7 @@ from litgpt.model import GPT
 
 from open_optformer.history import History, dequantize
 
-from syne_tune.config_space import Integer, Categorical, Float, FiniteRange
+from syne_tune.config_space import Integer, Categorical, Float, FiniteRange, is_log_space
 from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
 from syne_tune.optimizer.schedulers.single_objective_scheduler import (
     SingleObjectiveScheduler,
@@ -110,13 +110,14 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         points_to_evaluate: Optional[List[Dict[str, Any]]] = None,
         random_seed: int = None,
         num_numeric_tokens: int = 1000,
+        num_categorical_tokens: int = 15,
     ):
         super().__init__(config_space, points_to_evaluate, random_seed)
         torch.random.manual_seed(random_seed)
         config = Config.from_file(str(checkpoint_dir / 'model_config.yaml'))
         self.model = GPT(config)
         self.num_numeric_tokens = num_numeric_tokens
-#        self.tokenizer = Tokenizer(str(Path(__file__).parent / "data" / "tokenizer"))
+        self.num_categorical_tokens = num_categorical_tokens
         self.tokenizer = Tokenizer(str(checkpoint_dir))
         state_dict = torch.load(
             str(checkpoint_dir / 'lit_model.pth'),
@@ -172,7 +173,8 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         config = {}
 
         tokens_per_numeric = [self.tokenizer.encode(str(i))[-1] for i in range(self.num_numeric_tokens)]
-
+        tokens_per_category = [self.tokenizer.encode( f"<{i}>")[-1] for i in range(self.num_categorical_tokens)]
+        
         for hp_name, hp in self.config_space.items():
             # (batch_size, vocab_size), eg (1, vocab_size)
 
@@ -197,16 +199,17 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                     x_min=hp.lower,
                     x_max=hp.upper,
                     q=self.num_numeric_tokens,
+                    log_scale=is_log_space(hp),
                 )
 
             elif isinstance(hp, Categorical):
                 #  pick the category with the highest probability
-                tokens_per_category = [self.tokenizer.encode(str(cat)).tolist() for cat in hp.categories]
+ #               tokens_per_category = [self.tokenizer.encode(str(cat)).tolist() for cat in hp.categories]
                 if len(logits.shape) == 2:
                     logits = logits.squeeze(0)
 
                 # sample category
-                # first selects logits of tokens that are categories then samples category index an decode it
+                # first selects logits of tokens that are categories then samples category index and decode it
                 probs_per_category = get_probability(logits, tokens_per_category)
                 probs_per_category /= probs_per_category.sum()
                 category_index = torch.multinomial(probs_per_category, num_samples=1)
