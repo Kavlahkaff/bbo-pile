@@ -17,8 +17,8 @@ def test_quantize():
 def test_encode():
     assert encode(0.5, uniform(0, 1), q=1000) == 500
     assert encode(5, randint(0, 10), q=1000) == 500
-    assert encode('a', choice(['a', 'b', 'c']), q=1000) == 0
-    assert encode('c', choice(['a', 'b', 'c']), q=1000) == 2
+    assert encode('a', choice(['a', 'b', 'c']), q=1000) == '<0>'
+    assert encode('c', choice(['a', 'b', 'c']), q=1000) == '<2>'
 
 def test_history():
     config_space = {
@@ -33,10 +33,10 @@ def test_history():
     assert isinstance(prompt, str)
     assert 'benchmark:test' in prompt
     assert 'algorithm:test' in prompt
-    assert '{name:x,type:UNI,min_value:0,max_value:1}' in prompt
-    assert '{name:y,type:INT,min_value:0,max_value:10}' in prompt
+    assert '{name:x,type:UNI,min_value:0,max_value:1,linear_scale}' in prompt
+    assert '{name:y,type:INT,min_value:0,max_value:10,linear_scale}' in prompt
     assert "{name:z,type:CAT,categories:['a','b','c']}" in prompt
-    assert '500,500,0*0|600,600,1*1000|' in prompt
+    assert '500,500,<0>*0|600,600,<1>*1000|' in prompt
     
 def test_trial():
     trial = Trial(config={'x': 0.5}, metric=0.5)
@@ -96,4 +96,4 @@ def test_from_syne_tune_experiment():
         experiment = load_experiment(tuner_name=tuner.name, local_path=local_path)
         history = History.from_syne_tune_experiment(experiment)
 
-        assert len(history.trials) == 1
+        assert len(history.trials) == len(experiment.results['trial_id'].unique())
