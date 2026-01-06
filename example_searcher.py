@@ -17,8 +17,8 @@ from syne_tune.blackbox_repository import load_blackbox
 from open_optformer.optformer_searcher import OptformerScheduler
 
 
-bb = load_blackbox("nasbench201")["ImageNet16-120"]
-# bb = load_blackbox("lcbench")["Fashion-MNIST"]
+# bb = load_blackbox("nasbench201")["ImageNet16-120"]
+bb = load_blackbox("lcbench")["Fashion-MNIST"]
 bb = add_surrogate(bb, predict_curves=False)
 config_space = bb.configuration_space
 objective = bb.objectives_names[0]
@@ -46,7 +46,7 @@ searcher = OptformerScheduler(
             'algorithm': "CQR",
             'metric_names': objective},
     points_to_evaluate=points_to_evaluate,
-    n_sample_configurations=1,
+    n_sample_configurations=100,
 )
 
 

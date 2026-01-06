@@ -201,22 +201,37 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
             # minus one as there is trailing comma, plus two for the * and token of the predicted output
             max_returned_tokens = len(prompt_tokens) + (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 + 1
 
-            tokens_configs = []
+            # enables parallelism
+            # from pyparfor import parfor
+            # tokens_configs = parfor(
+            #     lambda i: generate(
+            #         model=self.model,
+            #         prompt=prompt_tokens,
+            #         max_returned_tokens=max_returned_tokens,
+            #         include_prompt=False,
+            #         eos_id=self.tokenizer.token_to_id("|"),
+            #     ).tolist(),
+            #     list(range(self.n_sample_configurations)),
+            #     engine="futures",
+            # )
 
-            for i in range(self.n_sample_configurations):
-                tokens_configs.append(generate(
+            tokens_configs = [
+                generate(
                     model=self.model,
                     prompt=prompt_tokens,
                     max_returned_tokens=max_returned_tokens,
                     include_prompt=False,
                     eos_id=self.tokenizer.token_to_id("|"),
-                ).tolist())
-
+                ).tolist()
+                for _ in range(self.n_sample_configurations)
+            ]
             return tokens_configs
 
     def _decode_config(self, tokens_config: list[int]) -> tuple[Dict[str, Any], float]:
         # decode configuration in the form of "500,500,<0>*0|"
         star_index = tokens_config.index(self.tokenizer.token_to_id("*"))
+        if star_index >= len(tokens_config) - 1:
+            raise ValueError(f"Star index {star_index} is out of bounds.")
         tokens_hps = tokens_config[:star_index]
         token_output = tokens_config[star_index + 1]
 
