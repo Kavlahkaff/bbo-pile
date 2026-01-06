@@ -36,6 +36,7 @@ class OptformerScheduler(SingleObjectiveScheduler):
         do_minimize: Optional[bool] = True,
         random_seed: Optional[int] = None,
         points_to_evaluate: Optional[List[dict]] = None,
+        n_sample_configurations: Optional[int] = None,
     ):
         super(OptformerScheduler, self).__init__(
             config_space=config_space,
@@ -46,7 +47,8 @@ class OptformerScheduler(SingleObjectiveScheduler):
                 points_to_evaluate=points_to_evaluate,
                 random_seed=random_seed,
                 checkpoint_dir=checkpoint_dir,
-                task_info=task_info
+                task_info=task_info,
+                n_sample_configurations=n_sample_configurations,
             ),
             random_seed=random_seed,
         )
@@ -76,7 +78,18 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         random_seed: int = None,
         num_numeric_tokens: int = 1000,
         num_categorical_tokens: int = 15,
+        n_sample_configurations: int = 1,
     ):
+        """
+        :param checkpoint_dir:
+        :param config_space:
+        :param task_info:
+        :param points_to_evaluate:
+        :param random_seed:
+        :param num_numeric_tokens:
+        :param num_categorical_tokens:
+        :param n_sample_configurations: number of configurations to sample, pick the one with best predicted performance.
+        """
         super().__init__(config_space, points_to_evaluate, random_seed)
         if random_seed is not None:
             torch.random.manual_seed(random_seed)
@@ -86,6 +99,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         self.num_numeric_tokens = num_numeric_tokens
         self.num_categorical_tokens = num_categorical_tokens
         self.tokenizer = Tokenizer(str(checkpoint_dir))
+        self.n_sample_configurations = n_sample_configurations
         state_dict = torch.load(
             str(checkpoint_dir / 'lit_model.pth'),
             weights_only=True,
@@ -126,8 +140,6 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
             for k in self.hp_cont_names + self.hp_cat_names
         }
 
-
-
     def suggest(self, **kwargs) -> Optional[Dict[str, Any]]:
         """Suggest a new configuration.
 
@@ -148,42 +160,66 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
             return config
         else:
 
+            configs, ys = self._sample_n_configs()
+
+            # return best of n
+            return configs[np.argmin(ys)]
+
+    def _sample_n_configs(self):
+
+        configs = []
+        ys = []
+
+        completions = self._generate_n_suggestions()
+
+        for completion in completions:
+            try:
+                # decode configuration, if possible
+                config, y = self._decode_config(completion)
+
+                # add constant hyperparameters
+                for k, v in self.config_space.items():
+                    if not hasattr(v, "sample"):
+                        config[k] = v
+                configs.append(config)
+                ys.append(y)
+
+            except ValueError as e:
+                print(f"Could not sample because of error: {str(e)}, skipping sampled configuration.")
+
+        return configs, ys
+
+    def _generate_n_suggestions(self) -> List[List[int]]:
+        with torch.no_grad():
+            # TODO get `n_sample_configurations` in batch once we moved to HF models, cant be done with LitGPT API
             # generate tokens of the configuration
             prompt = self.study.get_prompt()
             prompt_tokens = self.tokenizer.encode(prompt)[-self.model.max_seq_length:]
             self.model.set_kv_cache(batch_size=1)
 
-            with torch.no_grad():
-                # number of tokens to return including the prompt is 2 per hyperparameters counting for the comma
-                # minus one as there is trailing comma
-                max_returned_tokens = len(prompt_tokens) + (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 - 1
-                tokens_hps = generate(
+            # number of tokens to return including the prompt is 2 per hyperparameters counting for the comma
+            # minus one as there is trailing comma, plus two for the * and token of the predicted output
+            max_returned_tokens = len(prompt_tokens) + (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 + 1
+
+            tokens_configs = []
+
+            for i in range(self.n_sample_configurations):
+                tokens_configs.append(generate(
                     model=self.model,
                     prompt=prompt_tokens,
                     max_returned_tokens=max_returned_tokens,
                     include_prompt=False,
-                )
+                    eos_id=self.tokenizer.token_to_id("|"),
+                ).tolist())
 
-            # decode the tokens of the configuration, if possible
-            try:
-                config = self._decode_config(tokens_hps.tolist())
+            return tokens_configs
 
-                # add constant hyperparameters
-                for k, v in config_space.items():
-                    if not hasattr(v, "sample"):
-                        config[k] = v
+    def _decode_config(self, tokens_config: list[int]) -> tuple[Dict[str, Any], float]:
+        # decode configuration in the form of "500,500,<0>*0|"
+        star_index = tokens_config.index(self.tokenizer.token_to_id("*"))
+        tokens_hps = tokens_config[:star_index]
+        token_output = tokens_config[star_index + 1]
 
-            except ValueError as e:
-                # shows the error draw a random config
-                print(f"Could not sample because of error: {str(e)}, returning random config.")
-                config = {
-                    k: v.sample(random_state=self.random_state) if hasattr(v, "sample") else v
-                    for k, v in config_space.items()
-                }
-            finally:
-                return config
-
-    def _decode_config(self, tokens_hps: list[int]) -> Dict[str, Any]:
         # we decode the tokens into a configuration dictionary
         config = {}
         hp_value_tokens = [x for x in tokens_hps if x != self.tokenizer.token_to_id(",")]
@@ -210,16 +246,18 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                     # TODO should we rather fail in this case? How frequently does this happen?
                     # can be fixed if using HF interface as it allows to restrict the tokens that can be sampled
                     print(f"Could not read category {hp_name}, got token {hp_token}.")
-                    config[hp_name] = self.random_state.choice(self.config_space[hp_name].categories)
+                    config[hp_name] = self.config_space[hp_name].sample(random_state=self.random_state)
                 else:
                     config[hp_name] = tokens_per_category[hp_token]
 
         for hp_name in self.hp_cat_names:
             if hp_name not in config:
                 print(f"Did not sample category {hp_name}, sampling randomly")
-                config[hp_name] = self.random_state.choice(self.config_space[hp_name].categories)
+                config[hp_name] = self.config_space[hp_name].sample(random_state=self.random_state)
 
-        return config
+        # note we return token_output as the predicted output, we could also apply the invert quantization but it does
+        # not matter as it is a monotonic operation and we are only interested in picking the lowest predicted output
+        return config, token_output
 
     def on_trial_complete(
             self,
