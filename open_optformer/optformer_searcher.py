@@ -147,7 +147,8 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         if config is not None:
             return config
         else:
-            config = {}
+
+            # generate tokens of the configuration
             prompt = self.study.get_prompt()
             prompt_tokens = self.tokenizer.encode(prompt)[-self.model.max_seq_length:]
             self.model.set_kv_cache(batch_size=1)
@@ -156,14 +157,16 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                 # number of tokens to return including the prompt is 2 per hyperparameters counting for the comma
                 # minus one as there is trailing comma
                 max_returned_tokens = len(prompt_tokens) + (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 - 1
-                output = generate(
+                tokens_hps = generate(
                     model=self.model,
                     prompt=prompt_tokens,
                     max_returned_tokens=max_returned_tokens,
                     include_prompt=False,
                 )
+
+            # decode the tokens of the configuration, if possible
             try:
-                config = self._decode_config(output.tolist())
+                config = self._decode_config(tokens_hps.tolist())
 
                 # add constant hyperparameters
                 for k, v in config_space.items():
