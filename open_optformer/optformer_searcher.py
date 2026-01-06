@@ -78,7 +78,8 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         num_categorical_tokens: int = 15,
     ):
         super().__init__(config_space, points_to_evaluate, random_seed)
-        torch.random.manual_seed(random_seed)
+        if random_seed is not None:
+            torch.random.manual_seed(random_seed)
         config = Config.from_file(str(checkpoint_dir / 'model_config.yaml'))
         self.model = GPT(config)
         self.random_state = np.random.RandomState(random_seed)
@@ -162,7 +163,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                     include_prompt=False,
                 )
             try:
-                config = self._decode(output)
+                config = self._decode_config(output.tolist())
 
                 # add constant hyperparameters
                 for k, v in config_space.items():
@@ -179,35 +180,42 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
             finally:
                 return config
 
-    def _decode(self, output) -> Dict[str, Any]:
+    def _decode_config(self, tokens_hps: list[int]) -> Dict[str, Any]:
+        # we decode the tokens into a configuration dictionary
         config = {}
-        hp_value_tokens = [x for x in output.tolist() if x != self.tokenizer.token_to_id(",")]
+        hp_value_tokens = [x for x in tokens_hps if x != self.tokenizer.token_to_id(",")]
         if len(hp_value_tokens) != len(self.hp_cont_names) + len(self.hp_cat_names):
-            raise ValueError("wrong length")
+            print("wrong length")
 
-        # parse continuous hps
-        for hp_name, hp_token in zip(self.hp_cont_names, hp_value_tokens[:len(self.hp_cont_names)]):
-            config[hp_name] = dequantize(
-                x=hp_token,
-                x_min=self.config_space[hp_name].lower,
-                x_max=self.config_space[hp_name].upper,
-                q=self.num_numeric_tokens,
-                log_scale=is_log_space(self.config_space[hp_name]),
-            )
-
-        # parse categorical hps
-        for hp_name, hp_token in zip(self.hp_cat_names, hp_value_tokens[len(self.hp_cont_names):]):
-            tokens_per_category = {
-                self.tokenizer.encode(f"<{i}>").tolist()[1]: cat
-                for i, cat in enumerate(self.config_space[hp_name].categories)
-            }
-            if hp_token not in tokens_per_category:
-                # TODO should we rather fail in this case? How frequently does this happen?
-                # can be fixed if using HF interface as it allows to restrict the tokens that can be sampled
-                print(f"Could not read category {hp_name}, got token {hp_token}.")
-                config[hp_name] = self.random_state.choice(self.config_space[hp_name].categories)
+        for i, (hp_name, hp_token) in enumerate(zip(self.hp_cont_names + self.hp_cat_names, hp_value_tokens)):
+            is_continuous_hp = i < len(self.hp_cont_names)
+            if is_continuous_hp:
+                config[hp_name] = dequantize(
+                    x=hp_token,
+                    x_min=self.config_space[hp_name].lower,
+                    x_max=self.config_space[hp_name].upper,
+                    q=self.num_numeric_tokens,
+                    log_scale=is_log_space(self.config_space[hp_name]),
+                )
             else:
-                config[hp_name] = tokens_per_category[hp_token]
+                # categorical
+                tokens_per_category = {
+                    self.tokenizer.encode(f"<{i}>").tolist()[1]: cat
+                    for i, cat in enumerate(self.config_space[hp_name].categories)
+                }
+                if hp_token not in tokens_per_category:
+                    # TODO should we rather fail in this case? How frequently does this happen?
+                    # can be fixed if using HF interface as it allows to restrict the tokens that can be sampled
+                    print(f"Could not read category {hp_name}, got token {hp_token}.")
+                    config[hp_name] = self.random_state.choice(self.config_space[hp_name].categories)
+                else:
+                    config[hp_name] = tokens_per_category[hp_token]
+
+        for hp_name in self.hp_cat_names:
+            if hp_name not in config:
+                print(f"Did not sample category {hp_name}, sampling randomly")
+                config[hp_name] = self.random_state.choice(self.config_space[hp_name].categories)
+
         return config
 
     def on_trial_complete(
