@@ -35,7 +35,7 @@ def generate_configs():
         gas_grid = [1, 2, 4, 8, 16]
         mbs = 16
         base_path = Path(BASE_PATH_CLUSTER)
-
+        seed = 0
         for name, tokens in token_counts.items():
             for lr in lr_grid:
                 for gas in gas_grid:
@@ -54,10 +54,10 @@ def generate_configs():
                     new_config['train']['save_interval'] = number_of_steps // 10  # Save 10 checkpoints per model
                     new_config['eval']['interval'] = number_of_steps // 500 # Evaluate 500 times per model
 
-                    run_name = f"{model_name}_token_{name}_lr_{lr}_bsz_{bsz}"
+                    run_name = f"{model_name}_token_{name}_lr_{lr}_bsz_{bsz}_seed_{seed}"
                     new_config['log']['run'] = run_name
                     new_config['log']['project'] = WANDB_PROJECT
-
+                    new_config['seed'] = seed
                     new_config['data']['init_args']['data_path'] = str(base_path / 'tokenized_dataset' / DATASET_NAME)
                     new_config['tokenizer_dir'] = str(base_path / 'tokenizer')
                     new_config['out_dir'] = str(base_path / 'checkpoints' / run_name)
