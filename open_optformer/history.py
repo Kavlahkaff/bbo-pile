@@ -120,7 +120,7 @@ class History:
                 raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
             string += "}"
 
-        string += 'history:'
+        string += ',history:'
 
         if len(self.trials) > 0:
             y_min = min(trial.metric for trial in self.trials)
