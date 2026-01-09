@@ -75,8 +75,8 @@ class History:
         self.trials.append(trial)
 
     def get_prompt(self, shuffle=False):
-        string = f"benchmark:{self.name}\n"
-        string += f"algorithm:{self.algorithm}\n"
+        string = f"benchmark:{self.name},"
+        string += f"algorithm:{self.algorithm},"
         hypers = list(self.config_space.items())
         if shuffle:
             random.shuffle(hypers)
@@ -89,7 +89,7 @@ class History:
             else:
                 continues_hypers.append((hp_name, hp))
         hypers = continues_hypers + categorical_hypers
-        string += f"search-space:\n"
+        string += f"search-space:"
         for hp_name, hp in hypers:
             string += "{"
             string += f"name:{hp_name},"
@@ -118,9 +118,9 @@ class History:
                 string += f"log_scale" if is_log_space(hp) else f"linear_scale"
             else:
                 raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
-            string += "}\n"
+            string += "}"
 
-        string += 'history\n'
+        string += 'history:'
 
         if len(self.trials) > 0:
             y_min = min(trial.metric for trial in self.trials)
