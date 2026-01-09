@@ -30,14 +30,14 @@ def generate_configs():
             '8B': 8_000_000_000,
             '10B': 10_000_000_000,
         }
-        lr_grid = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3]
+        lr_grid = {"1e-5": 1e-5, "5e-5": 5e-5, "1e-4": 1e-4, "5e-4": 5e-4, "1e-3": 1e-3}
 
         gas_grid = [1, 2, 4, 8, 16]
         mbs = 16
         base_path = Path(BASE_PATH_CLUSTER)
         seed = 0
         for name, tokens in token_counts.items():
-            for lr in lr_grid:
+            for lr_name, lr in lr_grid.items():
                 for gas in gas_grid:
 
                     bsz = int(gas * mbs)
@@ -54,7 +54,7 @@ def generate_configs():
                     new_config['train']['save_interval'] = number_of_steps // 10  # Save 10 checkpoints per model
                     new_config['eval']['interval'] = number_of_steps // 500 # Evaluate 500 times per model
 
-                    run_name = f"{model_name}_token_{name}_lr_{lr}_bsz_{bsz}_seed_{seed}"
+                    run_name = f"{model_name}_token_{name}_lr_{lr_name}_bsz_{bsz}_seed_{seed}"
                     new_config['log']['run'] = run_name
                     new_config['log']['project'] = WANDB_PROJECT
                     new_config['seed'] = seed
