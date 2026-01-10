@@ -40,6 +40,11 @@ if __name__ == "__main__":
         required=True,
         help="path to store the results",
     )
+    parser.add_argument(
+        "--remove_names",
+        action='store_true',
+        help="remove names of benchmark and hypers",
+    )
 
     methods = [
         "REA",
@@ -89,9 +94,13 @@ if __name__ == "__main__":
             for name, metadata in tqdm.tqdm(metadatas.items()):
                     benchmark_name = metadata['benchmark']
                     if benchmark_name in validation_tasks:
-                        hist_valid.extend(create_history_from_results(name, metadata, path, max_num_trials, args.num_permutation))
+                        hist_valid.extend(create_history_from_results(name, metadata, path, max_num_trials,
+                                                                      remove_names=args.remove_names,
+                                                                      n_permutation=args.num_permutation))
                     else:
-                        hist_train.extend(create_history_from_results(name, metadata, path, max_num_trials, args.num_permutation))
+                        hist_train.extend(create_history_from_results(name, metadata, path, max_num_trials,
+                                                                      remove_names=args.remove_names,
+                                                                      n_permutation=args.num_permutation))
 
             random.shuffle(hist_train)
             for split in ['train', 'valid']:
