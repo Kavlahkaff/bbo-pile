@@ -1,5 +1,5 @@
 import os
-
+import math
 import yaml
 from pathlib import Path
 
@@ -49,11 +49,11 @@ def generate_configs():
                     
                     new_config['train']['max_tokens'] = tokens
                     new_config['train']['global_batch_size'] = bsz
-                    new_config['train']['log_interval'] = number_of_steps // 500
+                    new_config['train']['log_interval'] = math.ceil(number_of_steps / 50)
                     new_config['train']['lr_warmup_steps'] = int(number_of_steps * 0.05)  # 5% warmup
                     new_config['train']['micro_batch_size'] = mbs
-                    new_config['train']['save_interval'] = number_of_steps // 10  # Save 10 checkpoints per model
-                    new_config['eval']['interval'] = number_of_steps // 500 # Evaluate 500 times per model
+                    new_config['train']['save_interval'] = math.ceil(number_of_steps / 10)  # Save 10 checkpoints per model
+                    new_config['eval']['interval'] = math.ceil(number_of_steps / 50)
 
                     run_name = f"{model_name}_token_{name}_lr_{lr_name}_bsz_{bsz}_seed_{SEED}"
                     new_config['log']['run'] = run_name
