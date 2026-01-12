@@ -5,7 +5,8 @@ from pathlib import Path
 
 BASE_PATH_CLUSTER = os.environ['BASE_PATH']
 DATASET_NAME = 'all'
-WANDB_PROJECT = 'open_optformer_qwen3_hp_sweep'
+VERSION = 'v0.3'
+WANDB_PROJECT = f'open_optformer_qwen3_hp_sweep_{VERSION}'
 
 def generate_configs():
     model_names = ['qwen3_5M', 'qwen3_10M', 'qwen3_20M',
@@ -58,9 +59,9 @@ def generate_configs():
                     new_config['log']['run'] = run_name
                     new_config['log']['project'] = WANDB_PROJECT
                     new_config['seed'] = seed
-                    new_config['data']['init_args']['data_path'] = str(base_path / 'tokenized_dataset' / DATASET_NAME)
-                    new_config['tokenizer_dir'] = str(base_path / 'tokenizer')
-                    new_config['out_dir'] = str(base_path / 'checkpoints' / run_name)
+                    new_config['data']['init_args']['data_path'] = str(base_path / 'tokenized_dataset' / VERSION / DATASET_NAME)
+                    new_config['tokenizer_dir'] = str(base_path / 'tokenizer' / VERSION )
+                    new_config['out_dir'] = str(base_path / 'checkpoints' / VERSION /  run_name)
 
                     new_filename = f"{run_name}.yaml"
                     new_filepath = base_config_path.parent / new_filename
