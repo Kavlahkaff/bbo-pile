@@ -53,13 +53,30 @@ From the root of the repository, run the following commands to process the data:
 
 First to compile the results into a dataset
 
-    python benchmarks/syne_tune_benchmarks/generate_training_data/compile_data.py --path $RESULTS_PATH --output_path $BASE_PATH/data/raw
+    python benchmarks/syne_tune_benchmarks/generate_training_data/compile_data.py --path $RESULTS_PATH/fcnet/ --output_path $BASE_PATH/dataset/v0.2/fcnet/
+
+You need to run this command for each benchmark family.
+
+Concat all datasets for training
+
+    python generate_training_data/concat_text_files.py dataset/v0.2/fcnet/train.txt dataset/v0.2/nas201/train.txt dataset/v0.2/hpob/train.txt dataset/v0.2/tabrepo/train.txt dataset/v0.2/pd1/train.txt dataset/v0.2/lcbench/train.txt dataset/v0.2/global_optimization_benchmarks/train.txt dataset/v0.2/all/unshuffled_train.txt
+
+
+and validation:
+
+    python generate_training_data/concat_text_files.py dataset/v0.2/fcnet/valid.txt dataset/v0.2/nas201/valid.txt dataset/v0.2/hpob/valid.txt dataset/v0.2/tabrepo/valid.txt dataset/v0.2/pd1/valid.txt dataset/v0.2/lcbench/valid.txt dataset/v0.2/global_optimization_benchmarks/valid.txt dataset/v0.2/all/unshuffled_valid.txt
+
+Shuffle the data
+    
+    shuf --random-source=<(yes 42) unshuffled_train.txt > train.txt
+    shuf --random-source=<(yes 42) unshuffled_valid.txt > valid.txt
+
 
 Now we can train the tokenizer
 
     python train_tokenizer.py --input_folder $BASE_PATH/data/raw/ --output_path $BASE_PATH/tokenizer --vocab_size 1049
 
-And pre-process the dataset to a litdata format, which is required for training the model
+And pre-process the dataset to a litdata format, which is required for training the model. This is memory intensive and you might want to run this on a SLURM cluster.
 
     python benchmarks/syne_tune_benchmarks/generate_training_data/preprocess_data.py --input_path $BASE_PATH/data/raw --output_path $BASE_PATH/data/tokenized_data --tokenizer_dir $BASE_PATH/tokenizer
 
