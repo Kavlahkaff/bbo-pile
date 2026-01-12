@@ -63,7 +63,8 @@ def generate_configs():
                     new_config['data']['init_args']['data_path'] = str(base_path / 'tokenized_dataset' / VERSION / DATASET_NAME)
                     new_config['tokenizer_dir'] = str(base_path / 'tokenizer' / VERSION )
                     new_config['out_dir'] = str(base_path / 'checkpoints' / VERSION /  run_name)
-
+                    if VERSION == 'v0.3':
+                        new_config['model_config']['vocab_size'] = 1106
                     new_filename = f"{run_name}.yaml"
                     new_filepath = base_config_path.parent / new_filename
 
