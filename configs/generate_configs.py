@@ -58,6 +58,7 @@ def generate_configs():
                     run_name = f"{model_name}_token_{name}_lr_{lr_name}_bsz_{bsz}_seed_{SEED}"
                     new_config['log']['run'] = run_name
                     new_config['log']['project'] = WANDB_PROJECT
+                    new_config['log']['group'] = model_name
                     new_config['seed'] = SEED
                     new_config['data']['init_args']['data_path'] = str(base_path / 'tokenized_dataset' / VERSION / DATASET_NAME)
                     new_config['tokenizer_dir'] = str(base_path / 'tokenizer' / VERSION )
