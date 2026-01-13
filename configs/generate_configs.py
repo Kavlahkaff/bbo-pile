@@ -65,6 +65,7 @@ def generate_configs():
                     new_config['out_dir'] = str(base_path / 'checkpoints' / VERSION /  run_name)
                     if VERSION == 'v0.3':
                         new_config['model_config']['vocab_size'] = 1106
+                        new_config['model_config']['padded_vocab_size'] = 1106
                     new_filename = f"{run_name}.yaml"
                     new_filepath = base_config_path.parent / new_filename
 
