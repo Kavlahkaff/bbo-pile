@@ -111,6 +111,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         random_seed: int = None,
         num_numeric_tokens: int = 1000,
         num_categorical_tokens: int = 15,
+        remove_names: bool = False,
     ):
         super().__init__(config_space, points_to_evaluate, random_seed)
         torch.random.manual_seed(self.random_seed)
@@ -141,6 +142,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                              algorithm=self.task_info['algorithm'],
                              metric_names=[self.task_info['metric_names']],
                              num_numeric_tokens=self.num_numeric_tokens,
+                             remove_names=remove_names
                              )
 
     def suggest(self, **kwargs) -> Optional[Dict[str, Any]]:
