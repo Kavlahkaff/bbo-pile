@@ -1,11 +1,13 @@
 import os
-
+import math
 import yaml
 from pathlib import Path
 
 BASE_PATH_CLUSTER = os.environ['BASE_PATH']
 DATASET_NAME = 'all'
-WANDB_PROJECT = 'open_optformer_qwen3_hp_sweep'
+VERSION = 'v0.3'
+SEED = 0
+WANDB_PROJECT = f'open_optformer_qwen3_hp_sweep_{VERSION}'
 
 def generate_configs():
     model_names = ['qwen3_5M', 'qwen3_10M', 'qwen3_20M',
@@ -35,7 +37,6 @@ def generate_configs():
         gas_grid = [1, 2, 4, 8, 16]
         mbs = 16
         base_path = Path(BASE_PATH_CLUSTER)
-        seed = 0
         for name, tokens in token_counts.items():
             for lr_name, lr in lr_grid.items():
                 for gas in gas_grid:
@@ -48,20 +49,23 @@ def generate_configs():
                     
                     new_config['train']['max_tokens'] = tokens
                     new_config['train']['global_batch_size'] = bsz
-                    new_config['train']['log_interval'] = number_of_steps // 500
+                    new_config['train']['log_interval'] = math.ceil(number_of_steps / 50)
                     new_config['train']['lr_warmup_steps'] = int(number_of_steps * 0.05)  # 5% warmup
                     new_config['train']['micro_batch_size'] = mbs
-                    new_config['train']['save_interval'] = number_of_steps // 10  # Save 10 checkpoints per model
-                    new_config['eval']['interval'] = number_of_steps // 500 # Evaluate 500 times per model
+                    new_config['train']['save_interval'] = math.ceil(number_of_steps / 10)  # Save 10 checkpoints per model
+                    new_config['eval']['interval'] = math.ceil(number_of_steps / 50)
 
-                    run_name = f"{model_name}_token_{name}_lr_{lr_name}_bsz_{bsz}_seed_{seed}"
+                    run_name = f"{model_name}_token_{name}_lr_{lr_name}_bsz_{bsz}_seed_{SEED}"
                     new_config['log']['run'] = run_name
                     new_config['log']['project'] = WANDB_PROJECT
-                    new_config['seed'] = seed
-                    new_config['data']['init_args']['data_path'] = str(base_path / 'tokenized_dataset' / DATASET_NAME)
-                    new_config['tokenizer_dir'] = str(base_path / 'tokenizer')
-                    new_config['out_dir'] = str(base_path / 'checkpoints' / run_name)
-
+                    new_config['log']['group'] = model_name
+                    new_config['seed'] = SEED
+                    new_config['data']['init_args']['data_path'] = str(base_path / 'tokenized_dataset' / VERSION / DATASET_NAME)
+                    new_config['tokenizer_dir'] = str(base_path / 'tokenizer' / VERSION )
+                    new_config['out_dir'] = str(base_path / 'checkpoints' / VERSION /  run_name)
+                    if VERSION == 'v0.3':
+                        new_config['model_config']['vocab_size'] = 1106
+                        new_config['model_config']['padded_vocab_size'] = 1106
                     new_filename = f"{run_name}.yaml"
                     new_filepath = base_config_path.parent / new_filename
 

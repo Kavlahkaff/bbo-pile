@@ -8,7 +8,7 @@ eval:
   final_validation: true
   initial_validation: true
   interval: 50
-  max_iters: 100
+  max_iters: 100000 # loop over entire validation dataset
   max_new_tokens: null
 initial_checkpoint_dir: null
 logger_name: wandb
