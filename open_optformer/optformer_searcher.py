@@ -1,18 +1,17 @@
 import logging
 import numpy as np
 import torch
-import torch.nn.functional as F
 
 from typing import Optional, List, Dict, Any
 from pathlib import Path
 
 
-from litgpt.config import Config
 from litgpt.tokenizer import Tokenizer
-from litgpt.model import GPT
 from litgpt.generate.base import generate
-
+from litgpt.model import GPT
+from litgpt.config import Config
 from open_optformer.history import History, dequantize
+from transformers import AutoTokenizer, Qwen3ForCausalLM
 
 from syne_tune.config_space import Integer, Categorical, Float, FiniteRange, is_log_space
 from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
@@ -37,6 +36,7 @@ class OptformerScheduler(SingleObjectiveScheduler):
         random_seed: Optional[int] = None,
         points_to_evaluate: Optional[List[dict]] = None,
         n_sample_configurations: Optional[int] = None,
+        use_hf: bool = False,
     ):
         super(OptformerScheduler, self).__init__(
             config_space=config_space,
@@ -49,16 +49,14 @@ class OptformerScheduler(SingleObjectiveScheduler):
                 checkpoint_dir=checkpoint_dir,
                 task_info=task_info,
                 n_sample_configurations=n_sample_configurations,
+                use_hf=use_hf,
             ),
             random_seed=random_seed,
         )
 
 
-
-
 class OptFormerSearcher(SingleObjectiveBaseSearcher):
     """
-
     :param config_space: Configuration space
     :param points_to_evaluate: List of configurations to be evaluated
         initially (in that order). Each config in the list can be partially
@@ -80,6 +78,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         num_categorical_tokens: int = 15,
         remove_names: bool = False,
         n_sample_configurations: int = 1,
+        use_hf: bool = False,
     ):
         """
         :param checkpoint_dir:
@@ -94,21 +93,27 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         super().__init__(config_space, points_to_evaluate, random_seed)
         if random_seed is not None:
             torch.random.manual_seed(random_seed)
-        config = Config.from_file(str(checkpoint_dir / 'model_config.yaml'))
-        self.model = GPT(config)
+        if use_hf:
+            self.model = Qwen3ForCausalLM.from_pretrained(checkpoint_dir)
+            self.tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        else:
+            config = Config.from_file(str(checkpoint_dir / 'model_config.yaml'))
+            self.model = GPT(config)
+            self.tokenizer = Tokenizer(str(checkpoint_dir))
+            state_dict = torch.load(
+                str(checkpoint_dir / 'lit_model.pth'),
+                weights_only=True,
+                map_location=torch.device('cpu') if not torch.cuda.is_available() else None
+            )
+            if 'model' in state_dict:
+                state_dict = state_dict['model']
+            self.model.load_state_dict(state_dict)
         self.random_state = np.random.RandomState(random_seed)
         self.num_numeric_tokens = num_numeric_tokens
         self.num_categorical_tokens = num_categorical_tokens
-        self.tokenizer = Tokenizer(str(checkpoint_dir))
         self.n_sample_configurations = n_sample_configurations
-        state_dict = torch.load(
-            str(checkpoint_dir / 'lit_model.pth'),
-            weights_only=True,
-            map_location=torch.device('cpu') if not torch.cuda.is_available() else None
-        )
-        if 'model' in state_dict:
-            state_dict = state_dict['model']
-        self.model.load_state_dict(state_dict)
+        self.use_hf = use_hf
         self.history = []
 
         if task_info is None:
@@ -123,7 +128,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                              algorithm=self.task_info['algorithm'],
                              metric_names=[self.task_info['metric_names']],
                              num_numeric_tokens=self.num_numeric_tokens,
-                             remove_names=remove_names
+                             remove_names=remove_names,
                              )
 
         # Sort hp to have continuous first and categorical after
@@ -161,9 +166,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         if config is not None:
             return config
         else:
-
             configs, ys = self._sample_n_configs()
-
             # return best of n
             return configs[np.argmin(ys)]
 
@@ -193,45 +196,71 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
     def _generate_n_suggestions(self) -> List[List[int]]:
         with torch.no_grad():
-            # TODO get `n_sample_configurations` in batch once we moved to HF models, cant be done with LitGPT API
-            # generate tokens of the configuration
-            prompt = self.study.get_prompt()
-            prompt_tokens = self.tokenizer.encode(prompt)[-self.model.max_seq_length:]
-            self.model.set_kv_cache(batch_size=1)
+            if self.use_hf:
+                prompt = self.study.get_prompt()
+                inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
+                prompt_length = inputs['input_ids'].shape[1]
 
-            # number of tokens to return including the prompt is 2 per hyperparameters counting for the comma
-            # minus one as there is trailing comma, plus two for the * and token of the predicted output
-            max_returned_tokens = len(prompt_tokens) + (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 + 1
+                # number of tokens to return including the prompt is 2 per hyperparameters counting for the comma
+                # minus one as there is trailing comma, plus two for the * and token of the predicted output
+                max_new_tokens = (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 + 1
+                attention_mask = torch.ones_like(inputs['input_ids'])
+                eos_token_id = self.tokenizer.convert_tokens_to_ids("|")
 
-            # enables parallelism
-            # from pyparfor import parfor
-            # tokens_configs = parfor(
-            #     lambda i: generate(
-            #         model=self.model,
-            #         prompt=prompt_tokens,
-            #         max_returned_tokens=max_returned_tokens,
-            #         include_prompt=False,
-            #         eos_id=self.tokenizer.token_to_id("|"),
-            #     ).tolist(),
-            #     list(range(self.n_sample_configurations)),
-            #     engine="futures",
-            # )
+                outputs = self.model.generate(
+                    **inputs,
+                    max_new_tokens=max_new_tokens,
+                    num_return_sequences=self.n_sample_configurations,
+                    do_sample=True,
+                    temperature=0.7,
+                    top_p=0.9,
+                    eos_token_id=eos_token_id,
+                    pad_token_id=self.tokenizer.pad_token_id,
+                )
 
-            tokens_configs = [
-                generate(
-                    model=self.model,
-                    prompt=prompt_tokens,
-                    max_returned_tokens=max_returned_tokens,
-                    include_prompt=False,
-                    eos_id=self.tokenizer.token_to_id("|"),
-                ).tolist()
-                for _ in range(self.n_sample_configurations)
-            ]
+                # Remove prompt from the beginning of each sequence
+                tokens_configs = [output[prompt_length:].tolist() for output in outputs]
+            else:
+                prompt = self.study.get_prompt()
+                prompt_tokens = self.tokenizer.encode(prompt)[-self.model.max_seq_length:]
+                self.model.set_kv_cache(batch_size=1)
+
+                # number of tokens to return including the prompt is 2 per hyperparameters counting for the comma
+                # minus one as there is trailing comma, plus two for the * and token of the predicted output
+                max_returned_tokens = len(prompt_tokens) + (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 + 1
+
+                # enables parallelism
+                # from pyparfor import parfor
+                # tokens_configs = parfor(
+                #     lambda i: generate(
+                #         model=self.model,
+                #         prompt=prompt_tokens,
+                #         max_returned_tokens=max_returned_tokens,
+                #         include_prompt=False,
+                #         eos_id=self.tokenizer.token_to_id("|"),
+                #     ).tolist(),
+                #     list(range(self.n_sample_configurations)),
+                #     engine="futures",
+                # )
+
+                tokens_configs = [
+                    generate(
+                        model=self.model,
+                        prompt=prompt_tokens,
+                        max_returned_tokens=max_returned_tokens,
+                        include_prompt=False,
+                        eos_id=self.tokenizer.token_to_id("|"),
+                    ).tolist()
+                    for _ in range(self.n_sample_configurations)
+                ]
             return tokens_configs
 
     def _decode_config(self, tokens_config: list[int]) -> tuple[Dict[str, Any], float]:
         # decode configuration in the form of "500,500,<0>*0|"
-        star_index = tokens_config.index(self.tokenizer.token_to_id("*"))
+        if self.use_hf:
+            star_index = tokens_config.index(self.tokenizer.convert_tokens_to_ids("*"))
+        else:
+            star_index = tokens_config.index(self.tokenizer.token_to_id("*"))
         if star_index >= len(tokens_config) - 1:
             raise ValueError(f"Star index {star_index} is out of bounds.")
         tokens_hps = tokens_config[:star_index]
@@ -239,7 +268,10 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
         # we decode the tokens into a configuration dictionary
         config = {}
-        hp_value_tokens = [x for x in tokens_hps if x != self.tokenizer.token_to_id(",")]
+        if self.use_hf:
+            hp_value_tokens = [x for x in tokens_hps if x != self.tokenizer.convert_tokens_to_ids(",")]
+        else:
+            hp_value_tokens = [x for x in tokens_hps if x != self.tokenizer.token_to_id(",")]
         if len(hp_value_tokens) != len(self.hp_cont_names) + len(self.hp_cat_names):
             print("wrong length")
 
@@ -255,10 +287,16 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                 )
             else:
                 # categorical
-                tokens_per_category = {
-                    self.tokenizer.encode(f"<{i}>").tolist()[1]: cat
-                    for i, cat in enumerate(self.config_space[hp_name].categories)
-                }
+                if self.use_hf:
+                    tokens_per_category = {
+                        self.tokenizer.convert_tokens_to_ids(f"<{i}>"): cat
+                        for i, cat in enumerate(self.config_space[hp_name].categories)
+                    }
+                else:
+                    tokens_per_category = {
+                        self.tokenizer.encode(f"<{i}>").tolist()[1]: cat
+                        for i, cat in enumerate(self.config_space[hp_name].categories)
+                    }
                 if hp_token not in tokens_per_category:
                     # TODO should we rather fail in this case? How frequently does this happen?
                     # can be fixed if using HF interface as it allows to restrict the tokens that can be sampled
@@ -313,7 +351,6 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         return
 
 if __name__ == '__main__':
-
     import pathlib
     from syne_tune.config_space import randint, choice
 
