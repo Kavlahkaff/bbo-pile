@@ -10,6 +10,7 @@ from pathlib import Path
 from litgpt.config import Config
 from litgpt.tokenizer import Tokenizer
 from litgpt.model import GPT
+from litgpt.generate.base import generate
 
 from open_optformer.history import History, dequantize
 
@@ -20,42 +21,6 @@ from syne_tune.optimizer.schedulers.single_objective_scheduler import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def get_probability(logits, classes):
-    # Convert logits to probabilities
-    probs = F.softmax(logits, dim=0)  # shape: [vocab_size]
-
-    # --- Vectorized approach ---
-
-    # 1. Pad classes to same length (max length)
-    max_len = max(len(c) for c in classes)
-    padded_classes = [c + [-1] * (max_len - len(c)) for c in classes]  # pad with -1
-    class_tensor = torch.tensor(padded_classes)  # shape: [num_classes, max_len]
-
-    # 2. Mask for padded tokens
-    mask = class_tensor != -1  # True for real tokens, False for padding
-
-    # 3. Replace -1 with 0 for indexing (will be masked out)
-    class_tensor_for_index = class_tensor.clone()
-    class_tensor_for_index[class_tensor_for_index == -1] = 0
-
-    # 4. Gather probabilities
-    token_probs = probs[class_tensor_for_index]  # shape: [num_classes, max_len]
-
-    # 5. Apply mask to ignore padding (set padding probs to 1)
-    token_probs = torch.where(mask, token_probs, torch.ones_like(token_probs))
-
-    # 6. Compute joint probability (product across token dimension)
-    joint_probs = token_probs.prod(dim=1)  # shape: [num_classes]
-    
-    return joint_probs
-
-def sample_category_hparam(logits, positions_per_category):
-    probs_per_category = get_probability(logits, positions_per_category).detach().numpy()
-    probs_per_category /= probs_per_category.sum()
-    category_index = np.random.choice(np.arange(len(positions_per_category)), p=probs_per_category)
-    return torch.tensor(positions_per_category[category_index])
 
 
 class OptformerScheduler(SingleObjectiveScheduler):
@@ -71,6 +36,7 @@ class OptformerScheduler(SingleObjectiveScheduler):
         do_minimize: Optional[bool] = True,
         random_seed: Optional[int] = None,
         points_to_evaluate: Optional[List[dict]] = None,
+        n_sample_configurations: Optional[int] = None,
     ):
         super(OptformerScheduler, self).__init__(
             config_space=config_space,
@@ -81,7 +47,8 @@ class OptformerScheduler(SingleObjectiveScheduler):
                 points_to_evaluate=points_to_evaluate,
                 random_seed=random_seed,
                 checkpoint_dir=checkpoint_dir,
-                task_info=task_info
+                task_info=task_info,
+                n_sample_configurations=n_sample_configurations,
             ),
             random_seed=random_seed,
         )
@@ -112,14 +79,28 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         num_numeric_tokens: int = 1000,
         num_categorical_tokens: int = 15,
         remove_names: bool = False,
+        n_sample_configurations: int = 1,
     ):
+        """
+        :param checkpoint_dir:
+        :param config_space:
+        :param task_info:
+        :param points_to_evaluate:
+        :param random_seed:
+        :param num_numeric_tokens:
+        :param num_categorical_tokens:
+        :param n_sample_configurations: number of configurations to sample, pick the one with best predicted performance.
+        """
         super().__init__(config_space, points_to_evaluate, random_seed)
-        torch.random.manual_seed(self.random_seed)
+        if random_seed is not None:
+            torch.random.manual_seed(random_seed)
         config = Config.from_file(str(checkpoint_dir / 'model_config.yaml'))
         self.model = GPT(config)
+        self.random_state = np.random.RandomState(random_seed)
         self.num_numeric_tokens = num_numeric_tokens
         self.num_categorical_tokens = num_categorical_tokens
         self.tokenizer = Tokenizer(str(checkpoint_dir))
+        self.n_sample_configurations = n_sample_configurations
         state_dict = torch.load(
             str(checkpoint_dir / 'lit_model.pth'),
             weights_only=True,
@@ -145,6 +126,22 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                              remove_names=remove_names
                              )
 
+        # Sort hp to have continuous first and categorical after
+        self.hp_cont_names = [
+            hp_name
+            for hp_name, hp in config_space.items()
+            if isinstance(hp, (Float, Integer, FiniteRange))
+        ]
+        self.hp_cat_names = [
+            hp_name
+            for hp_name, hp in config_space.items()
+            if not isinstance(hp, (Float, Integer, FiniteRange))
+        ]
+        self.config_space = {
+            k: self.config_space[k]
+            for k in self.hp_cont_names + self.hp_cat_names
+        }
+
     def suggest(self, **kwargs) -> Optional[Dict[str, Any]]:
         """Suggest a new configuration.
 
@@ -163,78 +160,121 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         config = self._next_points_to_evaluate()
         if config is not None:
             return config
+        else:
 
-        prompt = self.study.get_prompt()
-        token = self.tokenizer.encode(prompt)[-self.model.max_seq_length:]
-        prompt_size = token.size(0)
-        input_pos = torch.arange(0, token.size(0))
-        input_pos_maxp1 = torch.tensor([prompt_size])
+            configs, ys = self._sample_n_configs()
 
-        self.model.set_kv_cache(batch_size=1)
-        prefill_token = True
+            # return best of n
+            return configs[np.argmin(ys)]
+
+    def _sample_n_configs(self):
+
+        configs = []
+        ys = []
+
+        completions = self._generate_n_suggestions()
+
+        for completion in completions:
+            try:
+                # decode configuration, if possible
+                config, y = self._decode_config(completion)
+
+                # add constant hyperparameters
+                for k, v in self.config_space.items():
+                    if not hasattr(v, "sample"):
+                        config[k] = v
+                configs.append(config)
+                ys.append(y)
+
+            except ValueError as e:
+                print(f"Could not sample because of error: {str(e)}, skipping sampled configuration.")
+
+        return configs, ys
+
+    def _generate_n_suggestions(self) -> List[List[int]]:
+        with torch.no_grad():
+            # TODO get `n_sample_configurations` in batch once we moved to HF models, cant be done with LitGPT API
+            # generate tokens of the configuration
+            prompt = self.study.get_prompt()
+            prompt_tokens = self.tokenizer.encode(prompt)[-self.model.max_seq_length:]
+            self.model.set_kv_cache(batch_size=1)
+
+            # number of tokens to return including the prompt is 2 per hyperparameters counting for the comma
+            # minus one as there is trailing comma, plus two for the * and token of the predicted output
+            max_returned_tokens = len(prompt_tokens) + (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 + 1
+
+            # enables parallelism
+            # from pyparfor import parfor
+            # tokens_configs = parfor(
+            #     lambda i: generate(
+            #         model=self.model,
+            #         prompt=prompt_tokens,
+            #         max_returned_tokens=max_returned_tokens,
+            #         include_prompt=False,
+            #         eos_id=self.tokenizer.token_to_id("|"),
+            #     ).tolist(),
+            #     list(range(self.n_sample_configurations)),
+            #     engine="futures",
+            # )
+
+            tokens_configs = [
+                generate(
+                    model=self.model,
+                    prompt=prompt_tokens,
+                    max_returned_tokens=max_returned_tokens,
+                    include_prompt=False,
+                    eos_id=self.tokenizer.token_to_id("|"),
+                ).tolist()
+                for _ in range(self.n_sample_configurations)
+            ]
+            return tokens_configs
+
+    def _decode_config(self, tokens_config: list[int]) -> tuple[Dict[str, Any], float]:
+        # decode configuration in the form of "500,500,<0>*0|"
+        star_index = tokens_config.index(self.tokenizer.token_to_id("*"))
+        if star_index >= len(tokens_config) - 1:
+            raise ValueError(f"Star index {star_index} is out of bounds.")
+        tokens_hps = tokens_config[:star_index]
+        token_output = tokens_config[star_index + 1]
+
+        # we decode the tokens into a configuration dictionary
         config = {}
+        hp_value_tokens = [x for x in tokens_hps if x != self.tokenizer.token_to_id(",")]
+        if len(hp_value_tokens) != len(self.hp_cont_names) + len(self.hp_cat_names):
+            print("wrong length")
 
-        tokens_per_numeric = [self.tokenizer.encode(str(i))[-1] for i in range(self.num_numeric_tokens)]
-        tokens_per_category = [self.tokenizer.encode( f"<{i}>")[-1] for i in range(self.num_categorical_tokens)]
-        
-        for hp_name, hp in self.config_space.items():
-            # (batch_size, vocab_size), eg (1, vocab_size)
-
-            logits = self.model(token.view(1, -1),
-                                input_pos,
-                                input_pos_maxp1=input_pos_maxp1)[:, -1]
-            logits = logits[0]
-
-            if isinstance(hp, (Float, Integer, FiniteRange)):
-                # pick value in [0, Q] with the highest probability
-                idx = torch.tensor(tokens_per_numeric, dtype=torch.int)
-            elif isinstance(hp, Categorical):
-                idx = torch.tensor(tokens_per_category, dtype=torch.int)[:len(hp.categories)]
-
-            # sample from softmax distribution
-            probs = F.softmax(logits[idx], dim=-1)
-            next_token_id = torch.multinomial(probs, num_samples=1)
-            # get next token
-            token = idx[next_token_id]
-
-            # assign the decoded value to the config
-            if isinstance(hp, (Float, Integer, FiniteRange)):
-               config[hp_name] = dequantize(
-                    x=int(self.tokenizer.decode(token)),
-                    x_min=hp.lower,
-                    x_max=hp.upper,
+        for i, (hp_name, hp_token) in enumerate(zip(self.hp_cont_names + self.hp_cat_names, hp_value_tokens)):
+            is_continuous_hp = i < len(self.hp_cont_names)
+            if is_continuous_hp:
+                config[hp_name] = dequantize(
+                    x=hp_token,
+                    x_min=self.config_space[hp_name].lower,
+                    x_max=self.config_space[hp_name].upper,
                     q=self.num_numeric_tokens,
-                    log_scale=is_log_space(hp),
+                    log_scale=is_log_space(self.config_space[hp_name]),
                 )
-            elif isinstance(hp, Categorical):
-                categorical_string = self.tokenizer.decode(token)
-                cat_idx = int(categorical_string.strip('<').strip('>'))
-                config[hp_name] = hp.categories[cat_idx]
+            else:
+                # categorical
+                tokens_per_category = {
+                    self.tokenizer.encode(f"<{i}>").tolist()[1]: cat
+                    for i, cat in enumerate(self.config_space[hp_name].categories)
+                }
+                if hp_token not in tokens_per_category:
+                    # TODO should we rather fail in this case? How frequently does this happen?
+                    # can be fixed if using HF interface as it allows to restrict the tokens that can be sampled
+                    print(f"Could not read category {hp_name}, got token {hp_token}.")
+                    config[hp_name] = self.config_space[hp_name].sample(random_state=self.random_state)
+                else:
+                    config[hp_name] = tokens_per_category[hp_token]
 
-#            elif isinstance(hp, Categorical):
-#                #  pick the category with the highest probability
-# #               tokens_per_category = [self.tokenizer.encode(str(cat)).tolist() for cat in hp.categories]
-#                if len(logits.shape) == 2:
-#                    logits = logits.squeeze(0)
-#
-#                # sample category
-#                # first selects logits of tokens that are categories then samples category index and decode it
-#                probs_per_category = get_probability(logits, tokens_per_category)
-#                probs_per_category /= probs_per_category.sum()
-#                category_index = torch.multinomial(probs_per_category, num_samples=1)
-#                token = torch.tensor(tokens_per_category[category_index.item()])
-#                config[hp_name] = self.tokenizer.decode(token)
+        for hp_name in self.hp_cat_names:
+            if hp_name not in config:
+                print(f"Did not sample category {hp_name}, sampling randomly")
+                config[hp_name] = self.config_space[hp_name].sample(random_state=self.random_state)
 
-            if prefill_token:
-                prefill_token = False
-#                input_pos = torch.tensor([prompt_size],dtype=torch.int64)
-#            else:
-            input_pos = torch.arange(start=int(input_pos[-1]) + 1, end=int(input_pos[-1] + token.size(0) + 1))
-            input_pos_maxp1 = input_pos.max() + 1
-            self.model(token.view(1, -1), input_pos, input_pos_maxp1=input_pos_maxp1)
-            input_pos = torch.tensor([input_pos_maxp1])
-            token = self.tokenizer.encode(',')[-1:]
-        return config
+        # note we return token_output as the predicted output, we could also apply the invert quantization but it does
+        # not matter as it is a monotonic operation and we are only interested in picking the lowest predicted output
+        return config, token_output
 
     def on_trial_complete(
             self,

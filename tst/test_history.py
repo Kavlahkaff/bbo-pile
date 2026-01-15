@@ -30,6 +30,7 @@ def test_history():
     history.add_trial({'x': 0.5, 'y': 5, 'z': 'a'}, 0.5)
     history.add_trial({'x': 0.6, 'y': 6, 'z': 'b'}, 0.6)
     prompt = history.get_prompt()
+    print(prompt)
     assert isinstance(prompt, str)
     assert 'benchmark:test' in prompt
     assert 'algorithm:test' in prompt
