@@ -68,6 +68,7 @@ class History:
     num_numeric_tokens: int = 1000
     metric_names: list = field(default_factory=list)
     trials: list = field(default_factory=list)
+    remove_names: bool = False
 
     def add_trial(self, config, result):
 
@@ -75,8 +76,10 @@ class History:
         self.trials.append(trial)
 
     def get_prompt(self, shuffle=False):
-        string = f"benchmark:{self.name}\n"
-        string += f"algorithm:{self.algorithm}\n"
+        string = ""
+        if not self.remove_names:
+            string += f"benchmark:{self.name},"
+        string += f"algorithm:{self.algorithm},"
         hypers = list(self.config_space.items())
         if shuffle:
             random.shuffle(hypers)
@@ -89,10 +92,11 @@ class History:
             else:
                 continues_hypers.append((hp_name, hp))
         hypers = continues_hypers + categorical_hypers
-        string += f"search-space:\n"
+        string += f"search-space:"
         for hp_name, hp in hypers:
             string += "{"
-            string += f"name:{hp_name},"
+            if not self.remove_names:
+                string += f"name:{hp_name},"
 
             if isinstance(hp, Categorical):
 
@@ -118,9 +122,9 @@ class History:
                 string += f"log_scale" if is_log_space(hp) else f"linear_scale"
             else:
                 raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
-            string += "}\n"
+            string += "}"
 
-        string += 'history\n'
+        string += ',history:'
 
         if len(self.trials) > 0:
             y_min = min(trial.metric for trial in self.trials)
@@ -143,7 +147,10 @@ class History:
         return string
 
     @classmethod
-    def from_syne_tune_experiment(cls, experiment: ExperimentResult, max_num_trials: int = None):
+    def from_syne_tune_experiment(cls, experiment: ExperimentResult,
+                                  num_numeric_tokens: int = 1000,
+                                  remove_names: bool = False,
+                                  max_num_trials: int = None):
         """
         Create a History object from a Syne Tune ExperimentResult.
         """
@@ -157,7 +164,9 @@ class History:
         hist = cls(config_space=config_space,
                         name=benchmark_name,
                         algorithm=algorithm_name,
-                        metric_names=metric_name)
+                        metric_names=metric_name,
+                   num_numeric_tokens=num_numeric_tokens,
+                   remove_names=remove_names)
 
         for i, (trial_id, trial) in enumerate(results.groupby('trial_id')):
             row = trial.iloc[-1]

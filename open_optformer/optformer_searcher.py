@@ -78,6 +78,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         random_seed: int = None,
         num_numeric_tokens: int = 1000,
         num_categorical_tokens: int = 15,
+        remove_names: bool = False,
         n_sample_configurations: int = 1,
     ):
         """
@@ -122,6 +123,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                              algorithm=self.task_info['algorithm'],
                              metric_names=[self.task_info['metric_names']],
                              num_numeric_tokens=self.num_numeric_tokens,
+                             remove_names=remove_names
                              )
 
         # Sort hp to have continuous first and categorical after
