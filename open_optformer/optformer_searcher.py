@@ -19,7 +19,31 @@ from syne_tune.optimizer.schedulers.single_objective_scheduler import (
     SingleObjectiveScheduler,
 )
 
+import os
+import glob
+
 logger = logging.getLogger(__name__)
+
+
+def detect_hf_checkpoint(path):
+    """
+    Returns: bool: True if the checkpoint is a hf model, False otherwise
+    """
+    path = os.fspath(path)
+
+    files = set(os.listdir(path))
+
+    lit_markers = {"lit_model.pth", "hyperparameters.yaml", "model_config.yaml"}
+    lit_hits = lit_markers & files
+    if lit_hits:
+        print("found litgpt model")
+        return False
+
+    hf_model_files = [f for f in files if f.endswith(".safetensors")]
+    if "config.json" in files and hf_model_files:
+        print("found hf model")
+        return True
+
 
 
 class OptformerScheduler(SingleObjectiveScheduler):
@@ -36,7 +60,6 @@ class OptformerScheduler(SingleObjectiveScheduler):
         random_seed: Optional[int] = None,
         points_to_evaluate: Optional[List[dict]] = None,
         n_sample_configurations: Optional[int] = None,
-        use_hf: bool = False,
     ):
         super(OptformerScheduler, self).__init__(
             config_space=config_space,
@@ -49,7 +72,6 @@ class OptformerScheduler(SingleObjectiveScheduler):
                 checkpoint_dir=checkpoint_dir,
                 task_info=task_info,
                 n_sample_configurations=n_sample_configurations,
-                use_hf=use_hf,
             ),
             random_seed=random_seed,
         )
@@ -78,7 +100,6 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         num_categorical_tokens: int = 15,
         remove_names: bool = False,
         n_sample_configurations: int = 1,
-        use_hf: bool = False,
     ):
         """
         :param checkpoint_dir:
@@ -93,7 +114,8 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         super().__init__(config_space, points_to_evaluate, random_seed)
         if random_seed is not None:
             torch.random.manual_seed(random_seed)
-        if use_hf:
+        self.use_hf = detect_hf_checkpoint(checkpoint_dir)
+        if self.use_hf:
             self.model = Qwen3ForCausalLM.from_pretrained(checkpoint_dir)
             self.tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
             self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -113,7 +135,6 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         self.num_numeric_tokens = num_numeric_tokens
         self.num_categorical_tokens = num_categorical_tokens
         self.n_sample_configurations = n_sample_configurations
-        self.use_hf = use_hf
         self.history = []
 
         if task_info is None:
@@ -204,7 +225,6 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                 # number of tokens to return including the prompt is 2 per hyperparameters counting for the comma
                 # minus one as there is trailing comma, plus two for the * and token of the predicted output
                 max_new_tokens = (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 + 1
-                attention_mask = torch.ones_like(inputs['input_ids'])
                 eos_token_id = self.tokenizer.convert_tokens_to_ids("|")
 
                 outputs = self.model.generate(
@@ -212,8 +232,6 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                     max_new_tokens=max_new_tokens,
                     num_return_sequences=self.n_sample_configurations,
                     do_sample=True,
-                    temperature=0.7,
-                    top_p=0.9,
                     eos_token_id=eos_token_id,
                     pad_token_id=self.tokenizer.pad_token_id,
                 )
@@ -257,10 +275,10 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
     def _decode_config(self, tokens_config: list[int]) -> tuple[Dict[str, Any], float]:
         # decode configuration in the form of "500,500,<0>*0|"
-        if self.use_hf:
-            star_index = tokens_config.index(self.tokenizer.convert_tokens_to_ids("*"))
-        else:
-            star_index = tokens_config.index(self.tokenizer.token_to_id("*"))
+        token_to_id = self.tokenizer.convert_tokens_to_ids if self.use_hf else self.tokenizer.token_to_id
+
+        star_index = tokens_config.index(token_to_id("*"))
+
         if star_index >= len(tokens_config) - 1:
             raise ValueError(f"Star index {star_index} is out of bounds.")
         tokens_hps = tokens_config[:star_index]
@@ -268,10 +286,9 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
         # we decode the tokens into a configuration dictionary
         config = {}
-        if self.use_hf:
-            hp_value_tokens = [x for x in tokens_hps if x != self.tokenizer.convert_tokens_to_ids(",")]
-        else:
-            hp_value_tokens = [x for x in tokens_hps if x != self.tokenizer.token_to_id(",")]
+
+        hp_value_tokens = [x for x in tokens_hps if x != token_to_id(",")]
+
         if len(hp_value_tokens) != len(self.hp_cont_names) + len(self.hp_cat_names):
             print("wrong length")
 
@@ -287,16 +304,11 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                 )
             else:
                 # categorical
-                if self.use_hf:
-                    tokens_per_category = {
-                        self.tokenizer.convert_tokens_to_ids(f"<{i}>"): cat
-                        for i, cat in enumerate(self.config_space[hp_name].categories)
-                    }
-                else:
-                    tokens_per_category = {
-                        self.tokenizer.encode(f"<{i}>").tolist()[1]: cat
-                        for i, cat in enumerate(self.config_space[hp_name].categories)
-                    }
+                tokens_per_category = {
+                    token_to_id(f"<{i}>"): cat
+                    for i, cat in enumerate(self.config_space[hp_name].categories)
+                }
+
                 if hp_token not in tokens_per_category:
                     # TODO should we rather fail in this case? How frequently does this happen?
                     # can be fixed if using HF interface as it allows to restrict the tokens that can be sampled
