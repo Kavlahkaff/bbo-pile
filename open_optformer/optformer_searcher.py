@@ -78,7 +78,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         random_seed: int = None,
         num_numeric_tokens: int = 1000,
         num_categorical_tokens: int = 15,
-        remove_names: bool = False,
+        remove_names: bool = True,
         n_sample_configurations: int = 1,
     ):
         """
