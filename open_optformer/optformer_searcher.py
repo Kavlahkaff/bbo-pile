@@ -59,7 +59,7 @@ class OptformerScheduler(SingleObjectiveScheduler):
         do_minimize: Optional[bool] = True,
         random_seed: Optional[int] = None,
         points_to_evaluate: Optional[List[dict]] = None,
-        n_sample_configurations: Optional[int] = None,
+        n_sample_configurations: int = 1,
     ):
         super(OptformerScheduler, self).__init__(
             config_space=config_space,
