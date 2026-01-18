@@ -1,6 +1,7 @@
 """
 Convert LitGPT Qwen3 checkpoint to HuggingFace format.
 """
+import sys
 import torch
 import yaml
 from pathlib import Path
@@ -142,7 +143,7 @@ def convert_to_huggingface(path: Union[str, Path], output_dir: Union[str, Path] 
 
     # Use LlamaTokenizer, because AutoTokenizer can load binary files
     tokenizer = LlamaTokenizerFast(
-        vocab_file=path / "tokenizer.model",
+        vocab_file=str(path / "tokenizer.model"),
         local_files_only=True
     )
 
@@ -179,10 +180,10 @@ if __name__ == '__main__':
     import random
 
     print("Loading LitGPT model...")
-    litgpt_model = load_litgpt("checkpoint/")
+    litgpt_model = load_litgpt(sys.argv[1])
 
     print("Converting to HuggingFace...")
-    hf_model = convert_to_huggingface("checkpoint/", "hf_checkpoint/")
+    hf_model = convert_to_huggingface(sys.argv[1], sys.argv[2])
 
     # Generate random context
     vocab_size = litgpt_model.config.vocab_size
