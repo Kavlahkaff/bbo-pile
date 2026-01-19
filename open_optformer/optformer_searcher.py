@@ -36,12 +36,12 @@ def detect_hf_checkpoint(path):
     lit_markers = {"lit_model.pth", "hyperparameters.yaml", "model_config.yaml"}
     lit_hits = lit_markers & files
     if lit_hits:
-        print("found litgpt model")
+        logging.debug("found litgpt model")
         return False
 
     hf_model_files = [f for f in files if f.endswith(".safetensors")]
     if "config.json" in files and hf_model_files:
-        print("found hf model")
+        logging.debug("found hf model")
         return True
 
 
@@ -189,6 +189,10 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         else:
             configs, ys = self._sample_n_configs()
             # return best of n
+            if len(configs) == 0:
+                logging.warning('Sampling failed, return a random configuration!')
+                return {k: v.sample() for k, v in self.config_space.items()}
+            print(f'valid config: {len(configs)}/{self.n_sample_configurations}')
             return configs[np.argmin(ys)]
 
     def _sample_n_configs(self):
@@ -211,7 +215,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                 ys.append(y)
 
             except ValueError as e:
-                print(f"Could not sample because of error: {str(e)}, skipping sampled configuration.")
+                logging.warning(f"Could not sample because of error: {str(e)}, skipping sampled configuration.")
 
         return configs, ys
 
@@ -290,7 +294,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         hp_value_tokens = [x for x in tokens_hps if x != token_to_id(",")]
 
         if len(hp_value_tokens) != len(self.hp_cont_names) + len(self.hp_cat_names):
-            print("wrong length")
+            logging.warning("wrong length")
 
         for i, (hp_name, hp_token) in enumerate(zip(self.hp_cont_names + self.hp_cat_names, hp_value_tokens)):
             is_continuous_hp = i < len(self.hp_cont_names)
@@ -312,14 +316,14 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                 if hp_token not in tokens_per_category:
                     # TODO should we rather fail in this case? How frequently does this happen?
                     # can be fixed if using HF interface as it allows to restrict the tokens that can be sampled
-                    print(f"Could not read category {hp_name}, got token {hp_token}.")
+                    logging.warning(f"Could not read category {hp_name}, got token {hp_token}.")
                     config[hp_name] = self.config_space[hp_name].sample(random_state=self.random_state)
                 else:
                     config[hp_name] = tokens_per_category[hp_token]
 
         for hp_name in self.hp_cat_names:
             if hp_name not in config:
-                print(f"Did not sample category {hp_name}, sampling randomly")
+                logging.warning(f"Did not sample category {hp_name}, sampling randomly")
                 config[hp_name] = self.config_space[hp_name].sample(random_state=self.random_state)
 
         # note we return token_output as the predicted output, we could also apply the invert quantization but it does
