@@ -1,9 +1,10 @@
 from dataclasses import dataclass
-
+from pathlib import Path
 from syne_tune.optimizer.baselines import REA, RandomSearch, CQR, TPE, BOTorch, BORE
 from syne_tune.optimizer.schedulers.smac_scheduler import SMACScheduler
 from syne_tune.optimizer.schedulers.single_objective_scheduler import SingleObjectiveScheduler
 from open_optformer.hebo_searcher import HEBOSearcher
+from open_optformer.optformer_searcher import OptformerScheduler
 
 @dataclass
 class MethodArguments:
@@ -12,6 +13,7 @@ class MethodArguments:
     mode: str
     random_seed: int
     points_to_evaluate: list[dict]
+    checkpoint_dir: str
 
 
 class Methods:
@@ -23,6 +25,8 @@ class Methods:
     CQR = "CQR"
     HEBO = 'HEBO'
     SMAC = 'SMAC'
+    OPT_CQR = 'OPT-CQR'
+    OPT_CQR_TS = 'OPT-CQR-TS'
 
 methods = {
     Methods.RS: lambda method_arguments: RandomSearch(
@@ -85,5 +89,29 @@ methods = {
         metric=method_arguments.metric,
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
+    ),
+    Methods.OPT_CQR: lambda method_arguments: OptformerScheduler(
+        config_space=method_arguments.config_space,
+        metric=method_arguments.metric,
+        checkpoint_dir=Path(method_arguments.checkpoint_dir),
+        task_info={'name': method_arguments.benchmark_name,
+                   'algorithm': "CQR",
+                   'metric_names': "feval"},
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
+        points_to_evaluate=method_arguments.points_to_evaluate,
+        n_sample_configurations=1,
+    ),
+    Methods.OPT_CQR_TS: lambda method_arguments: OptformerScheduler(
+        config_space=method_arguments.config_space,
+        metric=method_arguments.metric,
+        checkpoint_dir=Path(method_arguments.checkpoint_dir),
+        task_info={'name': method_arguments.benchmark_name,
+                   'algorithm': "CQR",
+                   'metric_names': "feval"},
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
+        points_to_evaluate=method_arguments.points_to_evaluate,
+        n_sample_configurations=50,
     ),
 }
