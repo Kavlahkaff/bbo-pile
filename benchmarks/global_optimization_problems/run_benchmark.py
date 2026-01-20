@@ -55,6 +55,7 @@ if __name__ == "__main__":
             config_space=config_space,
             points_to_evaluate=points_to_evaluate,
             checkpoint_dir=args.checkpoint_dir,
+            benchmark_name=args.benchmark
         )
     )
 

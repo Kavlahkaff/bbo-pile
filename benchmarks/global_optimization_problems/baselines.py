@@ -14,7 +14,7 @@ class MethodArguments:
     random_seed: int
     points_to_evaluate: list[dict]
     checkpoint_dir: str
-
+    benchmark_name: str
 
 class Methods:
     BORE = "BORE"
