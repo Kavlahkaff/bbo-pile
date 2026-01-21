@@ -66,6 +66,9 @@ def generate_configs():
                     if VERSION == 'v0.3':
                         new_config['model_config']['vocab_size'] = 1106
                         new_config['model_config']['padded_vocab_size'] = 1106
+                    elif VERSION == 'v0.4':
+                        new_config['model_config']['vocab_size'] = 1072
+                        new_config['model_config']['padded_vocab_size'] = 1072
                     new_filename = f"{run_name}.yaml"
                     new_filepath = base_config_path.parent / new_filename
 
