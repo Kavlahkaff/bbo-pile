@@ -34,14 +34,15 @@ def generate_configs():
         }
         lr_grid = {"1e-5": 1e-5, "5e-5": 5e-5, "1e-4": 1e-4, "5e-4": 5e-4, "1e-3": 1e-3, "5e-3": 5e-3}
 
-        gas_grid = [1, 2, 4, 8, 16]
-        mbs = 16
+#        gas_grid = [1, 2, 4, 8, 16]
+#        mbs = 16
+        bsz_grid = [4, 8, 16, 32, 64]
         base_path = Path(BASE_PATH_CLUSTER)
         for name, tokens in token_counts.items():
             for lr_name, lr in lr_grid.items():
-                for gas in gas_grid:
+                for bsz in bsz_grid:
 
-                    bsz = int(gas * mbs)
+#                    bsz = int(gas * mbs)
                     number_of_steps = tokens // (bsz * base_config['train']['max_seq_length'])
                     new_config = base_config.copy()
 
@@ -51,7 +52,7 @@ def generate_configs():
                     new_config['train']['global_batch_size'] = bsz
                     new_config['train']['log_interval'] = math.ceil(number_of_steps / 50)
                     new_config['train']['lr_warmup_steps'] = int(number_of_steps * 0.05)  # 5% warmup
-                    new_config['train']['micro_batch_size'] = mbs
+                    new_config['train']['micro_batch_size'] = bsz
                     new_config['train']['save_interval'] = math.ceil(number_of_steps / 10)  # Save 10 checkpoints per model
                     new_config['eval']['interval'] = math.ceil(number_of_steps / 50)
 
