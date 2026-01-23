@@ -101,7 +101,7 @@ class History:
             if isinstance(hp, Categorical):
 
                 string += f"type:CAT,"
-                string += f"categories:{hp.categories}".replace(" ", "")
+                string += f"categories:{[i for i in range(len(hp.categories))]}".replace(" ", "")
             elif isinstance(hp, Float):
                     string += f"type:UNI,"
                     string += f"min_value:{hp.lower},"
@@ -158,7 +158,7 @@ class History:
         config_space = config_space_from_json_dict(json.loads(metadata['config_space']))
         metric_name = metadata["metric_names"][0]
         results = experiment.results
-
+        mode = metadata['metric_mode'] if 'metric_mode' in metadata else 'min'
         benchmark_name = metadata['benchmark'] if 'benchmark' in metadata else metadata['entrypoint']
         algorithm_name = metadata['algorithm'] if 'algorithm' in metadata else metadata['scheduler_name']
         hist = cls(config_space=config_space,
@@ -172,6 +172,8 @@ class History:
             row = trial.iloc[-1]
             config = {k: row[f"config_{k}"] for k in config_space.keys()}
             result = row[metric_name]
+            if mode == 'max':
+                result = -result
             hist.add_trial(config, result)
             if max_num_trials is not None and i >= max_num_trials - 1:
                 break

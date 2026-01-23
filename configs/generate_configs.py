@@ -5,7 +5,7 @@ from pathlib import Path
 
 BASE_PATH_CLUSTER = os.environ['BASE_PATH']
 DATASET_NAME = 'all'
-VERSION = 'v0.3'
+VERSION = 'v0.4'
 SEED = 0
 WANDB_PROJECT = f'open_optformer_qwen3_hp_sweep_{VERSION}'
 
@@ -28,20 +28,18 @@ def generate_configs():
             "1B": 1_000_000_000,
             '2B': 2_000_000_000,
             '4B': 4_000_000_000,
-            '6B': 6_000_000_000,
-            '8B': 8_000_000_000,
-            '10B': 10_000_000_000,
         }
-        lr_grid = {"1e-5": 1e-5, "5e-5": 5e-5, "1e-4": 1e-4, "5e-4": 5e-4, "1e-3": 1e-3, "5e-3": 5e-3}
+        lr_grid = {"5e-4": 5e-4, "1e-3": 1e-3, "5e-3": 5e-3, "1e-2": 1e-2}
 
-        gas_grid = [1, 2, 4, 8, 16]
-        mbs = 16
+#        gas_grid = [1, 2, 4, 8, 16]
+#        mbs = 16
+        bsz_grid = [4, 8, 16, 32]
         base_path = Path(BASE_PATH_CLUSTER)
         for name, tokens in token_counts.items():
             for lr_name, lr in lr_grid.items():
-                for gas in gas_grid:
+                for bsz in bsz_grid:
 
-                    bsz = int(gas * mbs)
+#                    bsz = int(gas * mbs)
                     number_of_steps = tokens // (bsz * base_config['train']['max_seq_length'])
                     new_config = base_config.copy()
 
@@ -51,9 +49,9 @@ def generate_configs():
                     new_config['train']['global_batch_size'] = bsz
                     new_config['train']['log_interval'] = math.ceil(number_of_steps / 50)
                     new_config['train']['lr_warmup_steps'] = int(number_of_steps * 0.05)  # 5% warmup
-                    new_config['train']['micro_batch_size'] = mbs
+                    new_config['train']['micro_batch_size'] = bsz
                     new_config['train']['save_interval'] = math.ceil(number_of_steps / 10)  # Save 10 checkpoints per model
-                    new_config['eval']['interval'] = math.ceil(number_of_steps / 50)
+                    new_config['eval']['interval'] = math.ceil(number_of_steps / 20)
 
                     run_name = f"{model_name}_token_{name}_lr_{lr_name}_bsz_{bsz}_seed_{SEED}"
                     new_config['log']['run'] = run_name
@@ -66,6 +64,9 @@ def generate_configs():
                     if VERSION == 'v0.3':
                         new_config['model_config']['vocab_size'] = 1106
                         new_config['model_config']['padded_vocab_size'] = 1106
+                    elif VERSION == 'v0.4':
+                        new_config['model_config']['vocab_size'] = 1072
+                        new_config['model_config']['padded_vocab_size'] = 1072
                     new_filename = f"{run_name}.yaml"
                     new_filepath = base_config_path.parent / new_filename
 
