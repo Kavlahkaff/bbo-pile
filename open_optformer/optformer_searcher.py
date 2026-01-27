@@ -199,8 +199,8 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
         configs = []
         ys = []
-
-        completions = self._generate_n_suggestions()
+        prompt = self.study.get_prompt()
+        completions = self._generate_n_suggestions(prompt=prompt)
 
         for completion in completions:
             try:
@@ -219,10 +219,9 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
         return configs, ys
 
-    def _generate_n_suggestions(self) -> List[List[int]]:
-        with torch.no_grad():
-            if self.use_hf:
-                prompt = self.study.get_prompt()
+    def _generate_n_suggestions(self, prompt: str) -> List[List[int]]:
+        if self.use_hf:
+            with torch.no_grad():
                 inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
                 prompt_length = inputs['input_ids'].shape[1]
 
@@ -242,8 +241,9 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
                 # Remove prompt from the beginning of each sequence
                 tokens_configs = [output[prompt_length:].tolist() for output in outputs]
-            else:
-                prompt = self.study.get_prompt()
+        else:
+            with torch.no_grad():
+
                 prompt_tokens = self.tokenizer.encode(prompt)[-self.model.max_seq_length:]
                 self.model.set_kv_cache(batch_size=1)
 
@@ -275,7 +275,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                     ).tolist()
                     for _ in range(self.n_sample_configurations)
                 ]
-            return tokens_configs
+        return tokens_configs
 
     def _decode_config(self, tokens_config: list[int]) -> tuple[Dict[str, Any], float]:
         # decode configuration in the form of "500,500,<0>*0|"
@@ -372,11 +372,11 @@ if __name__ == '__main__':
 
     config_space = {"a": choice([0, 1, 2, 3, 4])}
 
-    checkpoint_dir = pathlib.Path(__file__).parent / "models" / "small_custom_model" / "step-00000800"
+    checkpoint_dir = pathlib.Path(__file__).parent.parent / "models" / "checkpoint"
     searcher = OptFormerSearcher(config_space=config_space, checkpoint_dir=checkpoint_dir)
 
-    trial_id = 0
-    config = searcher.suggest()
-    print(config)
-    metric = np.random.rand()
-    searcher.on_trial_complete(trial_id, config, metric)
+    for trial_id in range(20):
+        config = searcher.suggest()
+        print(config)
+        metric = np.random.rand()
+        searcher.on_trial_complete(trial_id, config, metric)
