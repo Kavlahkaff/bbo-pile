@@ -36,7 +36,7 @@ def test_history():
     assert 'algorithm:test' in prompt
     assert '{name:x,type:UNI,min_value:0,max_value:1,linear_scale}' in prompt
     assert '{name:y,type:INT,min_value:0,max_value:10,linear_scale}' in prompt
-    assert "{name:z,type:CAT,categories:['a','b','c']}" in prompt
+    assert "{name:z,type:CAT,categories:[0,1,2]}" in prompt
     assert '500,500,<0>*0|600,600,<1>*1000|' in prompt
     
 def test_trial():
