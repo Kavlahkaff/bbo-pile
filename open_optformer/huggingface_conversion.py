@@ -6,8 +6,10 @@ import torch
 import yaml
 from pathlib import Path
 from typing import Union
+import os
+import json
 
-from transformers import LlamaTokenizerFast
+from transformers import LlamaTokenizer, LlamaTokenizerFast
 
 
 def load_litgpt(path: Union[str, Path]):
@@ -141,21 +143,41 @@ def convert_to_huggingface(path: Union[str, Path], output_dir: Union[str, Path] 
     print(f"Saving HuggingFace model to {output_dir}")
     model.save_pretrained(output_dir)
 
-    # Use LlamaTokenizer, because AutoTokenizer can load binary files
-    tokenizer = LlamaTokenizerFast(
-        vocab_file=str(path / "tokenizer.model"),
-        local_files_only=True
-    )
+    print(f"Loading SentencePiece model from: {path}")
+    slow_tokenizer = LlamaTokenizer(vocab_file=path / "tokenizer.model", legacy=False)
 
-    tokenizer.eos_token = "|"
+    # 2. Save "slow" version to directory
+    # This generates the initial config files
+    print(f"Saving temporary files to: {output_dir}")
+    slow_tokenizer.save_pretrained(output_dir)
 
-    # Save the converted tokenizer back to the directory
-    # This generates 'tokenizer.json', 'tokenizer_config.json', and 'special_tokens_map.json'
-    tokenizer.save_pretrained(output_dir)
+    # 3. Convert to "Fast" (Rust-based) version
+    # This creates the critical tokenizer.json file
+    print(f"Generating Fast tokenizer...")
+    fast_tokenizer = LlamaTokenizerFast.from_pretrained(output_dir)
+    fast_tokenizer.save_pretrained(output_dir)
+
+    # 4. MANUALLY FIX THE tokenizer.json
+    # This removes the Pre-Tokenizer and Normalizer to prevent ID mismatches
+    tokenizer_json_path = os.path.join(output_dir, "tokenizer.json")
+
+    with open(tokenizer_json_path, "r") as f:
+        data = json.load(f)
+
+    print(f"Patching tokenizer.json (Setting pre_tokenizer and normalizer to null)...")
+    # Bypass HF's default splitting logic to match LitGPT's raw SentencePiece behavior
+    data["pre_tokenizer"] = None
+    data["normalizer"] = None
+
+    with open(tokenizer_json_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+    print(f"✅ Success! Converted tokenizer saved to: {output_dir}")
 
     print("Save complete.")
 
     return model
+
 
 
 def do_inference_litgpt(context: list[int], litgpt_model) -> torch.Tensor:
@@ -178,18 +200,29 @@ def do_inference_huggingface(context: list[int], hf_model) -> torch.Tensor:
 
 if __name__ == '__main__':
     import random
+    import sys
+    import torch
+    import sentencepiece as spm
+    import json
+    from transformers import AutoTokenizer
 
-    print("Loading LitGPT model...")
-    litgpt_model = load_litgpt(sys.argv[1])
+    # Check for correct number of arguments
+    if len(sys.argv) < 3:
+        print("Usage: python script.py <litgpt_checkpoint_path> <hf_output_path>")
+        sys.exit(1)
 
-    print("Converting to HuggingFace...")
-    hf_model = convert_to_huggingface(sys.argv[1], sys.argv[2])
+    litgpt_path = sys.argv[1]
+    hf_path = sys.argv[2]
+
+    print(f"Loading LitGPT model from: {litgpt_path}")
+    litgpt_model = load_litgpt(litgpt_path)
+
+    print(f"Converting to HuggingFace at: {hf_path}")
+    hf_model = convert_to_huggingface(litgpt_path, hf_path)
 
     # Generate random context
     vocab_size = litgpt_model.config.vocab_size
-
-
-    context_length =  10
+    context_length = 10
     random.seed(42)
     torch.manual_seed(42)
     random_context = [random.randint(0, vocab_size - 1) for _ in range(context_length)]
@@ -204,7 +237,6 @@ if __name__ == '__main__':
     # Compare logits
     print(f"LitGPT logits shape: {litgpt_logits.shape}")
     print(f"HuggingFace logits shape: {hf_logits.shape}")
-
     print(f"LitGPT logits (first 10): {litgpt_logits[:10]}")
     print(f"HuggingFace logits (first 10): {hf_logits[:10]}")
 
@@ -218,9 +250,57 @@ if __name__ == '__main__':
     print(f"LitGPT prediction: {litgpt_pred}")
     print(f"HuggingFace prediction: {hf_pred}")
 
-    # Assert close enough (small numerical differences are expected)
+    # Assert close enough
     assert torch.allclose(litgpt_logits, hf_logits, atol=1e-4), \
         f"Logits don't match! Max diff: {max_diff}"
 
-    print("\nSUCCESS: Predictions match!")
+    print("\nSUCCESS: Model predictions match!")
 
+    # --- TOKENIZER COMPARISON ---
+    print("\n--- Verifying Tokenizer Parity ---")
+    # Path to the original .model file within the checkpoint folder
+    sp_model_path = f"{litgpt_path}/tokenizer.model"
+    sp_processor = spm.SentencePieceProcessor(model_file=sp_model_path)
+
+    # Load your newly converted Hugging Face Tokenizer
+    hf_tokenizer = AutoTokenizer.from_pretrained(hf_path)
+
+    # Test string with your categorical and special tokens
+    test_text = "<algorithm>:RS<type>:<UNI>,<min value>:0,<max value>:1.0,<log-scale>&<type>:<INT>,<min value>:1,<max value>:5,<linear-scale>&<type>:<CATEGORICAL>,<categories>:['l1', 'l2']120,200,<1>*300|60,50,<0>*200|"
+
+    # Check ID 1035
+    try:
+        print(f"Token ID 1035 represents: '{sp_processor.decode([1035])}'")
+    except:
+        print("Token ID 1035 out of bounds for SentencePiece processor.")
+
+    litgpt_ids = sp_processor.encode(test_text)
+    hf_ids = hf_tokenizer.encode(test_text, add_special_tokens=False)
+
+    print(f"LitGPT IDs: {litgpt_ids}")
+    print(f"HF IDs:     {hf_ids}")
+
+    if litgpt_ids == hf_ids:
+        print("✅ Success! Token IDs match perfectly.")
+    else:
+        print("❌ Warning: ID mismatch detected.")
+
+    # --- VOCAB SIZE CHECK ---
+    print("\n--- Verifying Vocab Size ---")
+    tokenizer_vocab_size = len(hf_tokenizer)
+
+    # Load model config from the converted path
+    hf_config_path = f"{hf_path}/config.json"
+    with open(hf_config_path, "r") as f:
+        config = json.load(f)
+    model_vocab_size = config.get("vocab_size")
+
+    print(f"Tokenizer Vocab Size: {tokenizer_vocab_size}")
+    print(f"Model Config Vocab Size: {model_vocab_size}")
+
+    if tokenizer_vocab_size == model_vocab_size:
+        print("✅ Match! Vocab sizes are consistent.")
+    elif tokenizer_vocab_size < model_vocab_size:
+        print("⚠️ Warning: Model config vocab_size is larger than tokenizer.")
+    else:
+        print("❌ Error: Tokenizer vocab is larger than model config!")
