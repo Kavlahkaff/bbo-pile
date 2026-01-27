@@ -266,8 +266,7 @@ if __name__ == '__main__':
     hf_tokenizer = AutoTokenizer.from_pretrained(hf_path)
 
     # Test string with your categorical and special tokens
-    test_text = "<algorithm>:RS<type>:<UNI>,<min value>:0,<max value>:1.0,<log-scale>&<type>:<INT>,<min value>:1,<max value>:5,<linear-scale>&<type>:<CATEGORICAL>,<categories>:['l1', 'l2']120,200,<1>*300|60,50,<0>*200|"
-
+    test_text = " benchmark:test,algorithm:test,search-space:{name:x,type:UNI,min_value:0,max_value:1,linear_scale}{name:y,type:INT,min_value:0,max_value:10,linear_scale}{name:z,type:CAT,categories:[0,1,2]},history:500,500,<0>*0|600,600,<1>*1000|"
     # Check ID 1035
     try:
         print(f"Token ID 1035 represents: '{sp_processor.decode([1035])}'")
@@ -304,3 +303,148 @@ if __name__ == '__main__':
         print("⚠️ Warning: Model config vocab_size is larger than tokenizer.")
     else:
         print("❌ Error: Tokenizer vocab is larger than model config!")
+
+    # --- TEXT GENERATION COMPARISON ---
+    print("\n--- Comparing Text Generation ---")
+
+    # Use the same test text as input prompt
+    prompt = test_text
+    max_new_tokens = 100
+    temperature = 0.0  # Deterministic generation
+
+    print(f"Input prompt: {prompt[:100]}...")
+    print(f"Generating {max_new_tokens} tokens with temperature={temperature}")
+
+    # Generate with LitGPT
+    print("\nGenerating with LitGPT...")
+    torch.manual_seed(42)
+    litgpt_input_ids = torch.tensor([litgpt_ids], dtype=torch.long)
+    litgpt_model.eval()
+
+    with torch.no_grad():
+        litgpt_generated_ids = litgpt_input_ids.clone()
+        for _ in range(max_new_tokens):
+            logits = litgpt_model(litgpt_generated_ids)
+            next_token_logits = logits[:, -1, :]
+
+            if temperature > 0:
+                next_token_logits = next_token_logits / temperature
+                probs = torch.softmax(next_token_logits, dim=-1)
+                next_token = torch.multinomial(probs, num_samples=1)
+            else:
+                next_token = torch.argmax(next_token_logits, dim=-1, keepdim=True)
+
+            litgpt_generated_ids = torch.cat([litgpt_generated_ids, next_token], dim=1)
+
+    litgpt_output_ids = litgpt_generated_ids[0].tolist()
+    litgpt_generated_text = sp_processor.decode(litgpt_output_ids)
+
+    # Generate with HuggingFace
+    print("Generating with HuggingFace...")
+    torch.manual_seed(42)
+    hf_input_ids = torch.tensor([hf_ids], dtype=torch.long)
+    hf_model.eval()
+
+    with torch.no_grad():
+        hf_generated_ids = hf_input_ids.clone()
+        for _ in range(max_new_tokens):
+            outputs = hf_model(hf_generated_ids)
+            next_token_logits = outputs.logits[:, -1, :]
+
+            if temperature > 0:
+                next_token_logits = next_token_logits / temperature
+                probs = torch.softmax(next_token_logits, dim=-1)
+                next_token = torch.multinomial(probs, num_samples=1)
+            else:
+                next_token = torch.argmax(next_token_logits, dim=-1, keepdim=True)
+
+            hf_generated_ids = torch.cat([hf_generated_ids, next_token], dim=1)
+
+    hf_output_ids = hf_generated_ids[0].tolist()
+    hf_generated_text = hf_tokenizer.decode(hf_output_ids, skip_special_tokens=False)
+
+    # Compare outputs
+    print("\n--- Generation Results ---")
+    print(f"\nLitGPT generated IDs: {litgpt_output_ids[len(litgpt_ids):]}")
+    print(f"HF generated IDs:     {hf_output_ids[len(hf_ids):]}")
+
+    print(f"\nLitGPT full output:\n{litgpt_generated_text}")
+    print(f"\nHF full output:\n{hf_generated_text}")
+
+    # Check if generated token IDs match
+    litgpt_gen_only = litgpt_output_ids[len(litgpt_ids):]
+    hf_gen_only = hf_output_ids[len(hf_ids):]
+
+    if litgpt_gen_only == hf_gen_only:
+        print("\n✅ SUCCESS: Generated token IDs match perfectly!")
+        print("(Note: Display differences like ⁇ vs <unk> are just formatting, the actual tokens are identical)")
+    else:
+        print("\n❌ WARNING: Generated token IDs differ!")
+        first_diff = next((i for i, (a, b) in enumerate(zip(litgpt_gen_only, hf_gen_only)) if a != b), None)
+        if first_diff is not None:
+            print(f"First difference at position {first_diff}:")
+            print(f"  LitGPT: {litgpt_gen_only[first_diff]}")
+            print(f"  HF: {hf_gen_only[first_diff]}")
+        else:
+            print(f"Sequences are different lengths: LitGPT={len(litgpt_gen_only)}, HF={len(hf_gen_only)}")
+
+    # Also compare the generated text with normalized unknown tokens
+    litgpt_normalized = litgpt_generated_text.replace('⁇', '<unk>')
+    if litgpt_normalized == hf_generated_text:
+        print("✅ Generated text also matches (after normalizing <unk> tokens)")
+    # --- TOKENIZER MAPPING VERIFICATION ---
+    print("\n--- Verifying Tokenizer Mapping ---")
+
+    # Special tokens that are expected to differ in representation
+    SPECIAL_TOKEN_IDS = {0, 1, 2}  # <unk>, <s>, </s>
+
+    print("Checking if token ID -> string mapping is identical...")
+
+    mismatches = []
+    special_token_mismatches = []
+    sample_size = min(1000, vocab_size)
+
+    for token_id in range(sample_size):
+        try:
+            sp_decoded = sp_processor.decode([token_id])
+            hf_decoded = hf_tokenizer.decode([token_id], skip_special_tokens=False)
+
+            # Normalize the unknown token representations
+            sp_normalized = sp_decoded.replace('⁇', '<unk>')
+
+            if sp_normalized != hf_decoded:
+                mismatch_info = {
+                    'id': token_id,
+                    'sp': sp_decoded,
+                    'hf': hf_decoded,
+                    'sp_normalized': sp_normalized
+                }
+
+                if token_id in SPECIAL_TOKEN_IDS:
+                    special_token_mismatches.append(mismatch_info)
+                else:
+                    mismatches.append(mismatch_info)
+        except Exception as e:
+            mismatches.append({
+                'id': token_id,
+                'error': str(e)
+            })
+
+    # Report special token differences (expected)
+    if special_token_mismatches:
+        print(f"ℹ️  Found {len(special_token_mismatches)} special token representation differences (expected):")
+        for mismatch in special_token_mismatches:
+            print(f"  Token {mismatch['id']}: SP='{mismatch['sp']}' vs HF='{mismatch['hf']}'")
+
+    # Report actual content mismatches (unexpected)
+    if not mismatches:
+        print(f"✅ SUCCESS: All {sample_size} non-special token mappings match perfectly!")
+    else:
+        print(f"❌ WARNING: Found {len(mismatches)} mismatches in first {sample_size} tokens:")
+        for mismatch in mismatches[:10]:
+            if 'error' in mismatch:
+                print(f"  Token {mismatch['id']}: ERROR - {mismatch['error']}")
+            else:
+                print(f"  Token {mismatch['id']}:")
+                print(f"    SentencePiece: '{mismatch['sp']}'")
+                print(f"    HuggingFace:   '{mismatch['hf']}'")
