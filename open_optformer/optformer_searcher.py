@@ -49,8 +49,10 @@ class ConfigGrammar:
     def __init__(
         self,
         tokenizer,
+        config_space,
         n_continuous: int,
         n_categorical: int,
+        hp_cat_names: list[str],
         num_numeric_tokens: int = 1000,
         num_categorical_tokens: int = 15,
     ):
@@ -65,6 +67,8 @@ class ConfigGrammar:
         self.tokenizer = tokenizer
         self.n_continuous = n_continuous
         self.n_categorical = n_categorical
+        self.hp_cat_names = hp_cat_names
+        self.config_space = config_space
         self.num_numeric_tokens = num_numeric_tokens
         self.num_categorical_tokens = num_categorical_tokens
 
@@ -116,13 +120,20 @@ class ConfigGrammar:
         escaped = [self._escape_regex(t) for t in tokens]
         return '(' + '|'.join(escaped) + ')'
 
-    def _build_categorical_pattern(self) -> str:
+    def _build_categorical_pattern(self, max_categories: int = None) -> str:
         """
         Build regex pattern matching any valid categorical token.
 
+        Args:
+            max_categories: If provided, only allow tokens <0> to <max_categories-1>.
+                           If None, allows all categorical tokens.
+
         Returns alternation of all valid categorical token strings.
         """
-        tokens = self._get_categorical_tokens()
+        if max_categories is None:
+            tokens = self._get_categorical_tokens()
+        else:
+            tokens = [f'<{i}>' for i in range(max_categories)]
         escaped = [self._escape_regex(t) for t in tokens]
         return '(' + '|'.join(escaped) + ')'
 
@@ -136,8 +147,9 @@ class ConfigGrammar:
         Returns:
             Regex pattern string for guided decoding
         """
+        # TODO important note, right now we contrain the model to predict a token among the 1000 options
+        #  it would be more efficient to check if values are in a range as values are continuous
         cont_pattern = self._build_continuous_pattern()
-        cat_pattern = self._build_categorical_pattern()
         separators = self._get_separator_tokens()
 
         comma = self._escape_regex(separators['comma'])
@@ -152,8 +164,10 @@ class ConfigGrammar:
             patterns.append(cont_pattern)
 
         # Add patterns for categorical hyperparameters (come after continuous)
-        for _ in range(self.n_categorical):
-            patterns.append(cat_pattern)
+        # Each categorical HP is restricted to only its valid category tokens
+        for hp_cat in self.hp_cat_names:
+            n_categories = len(self.config_space[hp_cat].categories)
+            patterns.append(self._build_categorical_pattern(n_categories))
 
         # Join all hyperparameter patterns with comma separator
         if patterns:
@@ -380,8 +394,10 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                 # Build regex grammar to constrain output to valid configurations
                 grammar = ConfigGrammar(
                     tokenizer=self.tokenizer,
+                    config_space=self.config_space,
                     n_continuous=len(self.hp_cont_names),
                     n_categorical=len(self.hp_cat_names),
+                    hp_cat_names=self.hp_cat_names,
                     num_numeric_tokens=self.num_numeric_tokens,
                     num_categorical_tokens=self.num_categorical_tokens,
                 )
