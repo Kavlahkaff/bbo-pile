@@ -18,10 +18,6 @@ from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import S
 from syne_tune.optimizer.schedulers.single_objective_scheduler import (
     SingleObjectiveScheduler,
 )
-from vllm import LLM, SamplingParams
-from vllm.sampling_params import StructuredOutputsParams
-from vllm.config.structured_outputs import StructuredOutputsConfig
-
 import os
 import glob
 
@@ -279,6 +275,8 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         if self.use_vllm:
             assert self.use_hf_checkpoint, "Can only use vllm with a HF checkpoint, convert the litgpt checkpoint first."
         if self.use_vllm:
+            from vllm import LLM
+            from vllm.config.structured_outputs import StructuredOutputsConfig
             self.model = LLM(model=str(checkpoint_dir), structured_outputs_config=StructuredOutputsConfig(backend="xgrammar"))
             self.tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
             self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -405,6 +403,8 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                 )
                 regex_pattern = grammar.build_regex()
 
+                from vllm import SamplingParams
+                from vllm.sampling_params import StructuredOutputsParams
                 sampling_params = SamplingParams(
                     max_tokens=max_new_tokens,
                     n=self.n_sample_configurations,
