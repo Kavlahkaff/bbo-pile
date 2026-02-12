@@ -18,11 +18,166 @@ from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import S
 from syne_tune.optimizer.schedulers.single_objective_scheduler import (
     SingleObjectiveScheduler,
 )
-
 import os
 import glob
 
 logger = logging.getLogger(__name__)
+
+
+class ConfigGrammar:
+    """
+    Generates a regex pattern to constrain LLM output to valid configurations.
+
+    The output format is: {cont_values},{cat_values}*{output}|
+
+    Example with 2 continuous and 1 categorical hyperparameter:
+        "500,400,<0>*123|"
+
+    Structure:
+        - Continuous values: token IDs 0 to num_numeric_tokens-1, decoded to their string representation
+        - Categorical values: tokens <0>, <1>, ..., <num_categorical_tokens-1>
+        - All hyperparameter values are comma-separated
+        - '*' separates hyperparameters from the predicted output
+        - '|' marks the end of the sequence
+
+    The regex is built using actual token strings from the tokenizer vocabulary,
+    ensuring the model only generates valid token sequences.
+    """
+
+    def __init__(
+        self,
+        tokenizer,
+        config_space,
+        n_continuous: int,
+        n_categorical: int,
+        hp_cat_names: list[str],
+        num_numeric_tokens: int = 1000,
+        num_categorical_tokens: int = 15,
+    ):
+        """
+        Args:
+            tokenizer: HuggingFace tokenizer with convert_ids_to_tokens method
+            n_continuous: Number of continuous hyperparameters
+            n_categorical: Number of categorical hyperparameters
+            num_numeric_tokens: Number of quantization levels for continuous values (token IDs 0 to num_numeric_tokens-1)
+            num_categorical_tokens: Maximum number of categories (tokens <0> to <num_categorical_tokens-1>)
+        """
+        self.tokenizer = tokenizer
+        self.n_continuous = n_continuous
+        self.n_categorical = n_categorical
+        self.hp_cat_names = hp_cat_names
+        self.config_space = config_space
+        self.num_numeric_tokens = num_numeric_tokens
+        self.num_categorical_tokens = num_categorical_tokens
+
+    def _get_continuous_tokens(self) -> list[str]:
+        """
+        Get string representations of valid continuous value tokens.
+
+        Token IDs 0 to num_numeric_tokens-1 are used directly as quantized values.
+        Returns their string representations from the tokenizer vocabulary.
+        """
+        return [
+            self.tokenizer.convert_ids_to_tokens(i)
+            for i in range(self.num_numeric_tokens)
+        ]
+
+    def _get_categorical_tokens(self) -> list[str]:
+        """
+        Get string representations of valid categorical tokens.
+
+        Categorical values are encoded as <0>, <1>, ..., <num_categorical_tokens-1>.
+        """
+        return [f'<{i}>' for i in range(self.num_categorical_tokens)]
+
+    def _get_separator_tokens(self) -> dict[str, str]:
+        """
+        Get string representations of separator tokens.
+
+        Returns dict with keys: 'comma', 'star', 'pipe'
+        """
+        token_to_id = self.tokenizer.convert_tokens_to_ids
+        return {
+            'comma': self.tokenizer.convert_ids_to_tokens(token_to_id(',')),
+            'star': self.tokenizer.convert_ids_to_tokens(token_to_id('*')),
+            'pipe': self.tokenizer.convert_ids_to_tokens(token_to_id('|')),
+        }
+
+    def _escape_regex(self, s: str) -> str:
+        """Escape special regex characters in a string."""
+        import re
+        return re.escape(s)
+
+    def _build_continuous_pattern(self) -> str:
+        """
+        Build regex pattern matching any valid continuous token.
+
+        Returns alternation of all valid continuous token strings.
+        """
+        tokens = self._get_continuous_tokens()
+        escaped = [self._escape_regex(t) for t in tokens]
+        return '(' + '|'.join(escaped) + ')'
+
+    def _build_categorical_pattern(self, max_categories: int = None) -> str:
+        """
+        Build regex pattern matching any valid categorical token.
+
+        Args:
+            max_categories: If provided, only allow tokens <0> to <max_categories-1>.
+                           If None, allows all categorical tokens.
+
+        Returns alternation of all valid categorical token strings.
+        """
+        if max_categories is None:
+            tokens = self._get_categorical_tokens()
+        else:
+            tokens = [f'<{i}>' for i in range(max_categories)]
+        escaped = [self._escape_regex(t) for t in tokens]
+        return '(' + '|'.join(escaped) + ')'
+
+    def build_regex(self) -> str:
+        """
+        Build the complete regex pattern for valid configuration strings.
+
+        Uses actual token strings from the tokenizer to ensure the model
+        only generates valid token sequences.
+
+        Returns:
+            Regex pattern string for guided decoding
+        """
+        # TODO important note, right now we contrain the model to predict a token among the 1000 options
+        #  it would be more efficient to check if values are in a range as values are continuous
+        cont_pattern = self._build_continuous_pattern()
+        separators = self._get_separator_tokens()
+
+        comma = self._escape_regex(separators['comma'])
+        star = self._escape_regex(separators['star'])
+        pipe = self._escape_regex(separators['pipe'])
+
+        # Build list of patterns for each hyperparameter
+        patterns = []
+
+        # Add patterns for continuous hyperparameters (come first)
+        for _ in range(self.n_continuous):
+            patterns.append(cont_pattern)
+
+        # Add patterns for categorical hyperparameters (come after continuous)
+        # Each categorical HP is restricted to only its valid category tokens
+        for hp_cat in self.hp_cat_names:
+            n_categories = len(self.config_space[hp_cat].categories)
+            patterns.append(self._build_categorical_pattern(n_categories))
+
+        # Join all hyperparameter patterns with comma separator
+        if patterns:
+            hp_pattern = comma.join(patterns)
+            # Full pattern: {hp_values}*{output}|
+            # Output is also a continuous value (predicted metric)
+            regex = hp_pattern + star + cont_pattern + pipe
+        else:
+            # Edge case: no hyperparameters, just output
+            regex = star + cont_pattern + pipe
+
+        return regex
 
 
 def detect_hf_checkpoint(path):
@@ -100,6 +255,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         num_categorical_tokens: int = 15,
         remove_names: bool = True,
         n_sample_configurations: int = 1,
+        use_vllm: bool = True,
     ):
         """
         :param checkpoint_dir:
@@ -114,8 +270,17 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         super().__init__(config_space, points_to_evaluate, random_seed)
         if random_seed is not None:
             torch.random.manual_seed(random_seed)
-        self.use_hf = detect_hf_checkpoint(checkpoint_dir)
-        if self.use_hf:
+        self.use_hf_checkpoint = detect_hf_checkpoint(checkpoint_dir)
+        self.use_vllm = use_vllm
+        if self.use_vllm:
+            assert self.use_hf_checkpoint, "Can only use vllm with a HF checkpoint, convert the litgpt checkpoint first."
+        if self.use_vllm:
+            from vllm import LLM
+            from vllm.config.structured_outputs import StructuredOutputsConfig
+            self.model = LLM(model=str(checkpoint_dir), structured_outputs_config=StructuredOutputsConfig(backend="xgrammar"))
+            self.tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        elif self.use_hf_checkpoint:
             self.model = Qwen3ForCausalLM.from_pretrained(checkpoint_dir)
             self.tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
             self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -199,8 +364,8 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
         configs = []
         ys = []
-
-        completions = self._generate_n_suggestions()
+        prompt = self.study.get_prompt()
+        completions = self._generate_n_suggestions(prompt=prompt)
 
         for completion in completions:
             try:
@@ -219,31 +384,58 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
 
         return configs, ys
 
-    def _generate_n_suggestions(self) -> List[List[int]]:
-        with torch.no_grad():
-            if self.use_hf:
-                prompt = self.study.get_prompt()
-                inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
-                prompt_length = inputs['input_ids'].shape[1]
-
-                # number of tokens to return including the prompt is 2 per hyperparameters counting for the comma
-                # minus one as there is trailing comma, plus two for the * and token of the predicted output
+    def _generate_n_suggestions(self, prompt: str) -> List[List[int]]:
+        "Generate a string like `500,400,<0>*123|`"
+        if self.use_hf_checkpoint:
+            if self.use_vllm:
+                # 500,400,<0>*123|
                 max_new_tokens = (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 + 1
-                eos_token_id = self.tokenizer.convert_tokens_to_ids("|")
 
-                outputs = self.model.generate(
-                    **inputs,
-                    max_new_tokens=max_new_tokens,
-                    num_return_sequences=self.n_sample_configurations,
-                    do_sample=True,
-                    eos_token_id=eos_token_id,
-                    pad_token_id=self.tokenizer.pad_token_id,
+                # Build regex grammar to constrain output to valid configurations
+                grammar = ConfigGrammar(
+                    tokenizer=self.tokenizer,
+                    config_space=self.config_space,
+                    n_continuous=len(self.hp_cont_names),
+                    n_categorical=len(self.hp_cat_names),
+                    hp_cat_names=self.hp_cat_names,
+                    num_numeric_tokens=self.num_numeric_tokens,
+                    num_categorical_tokens=self.num_categorical_tokens,
                 )
+                regex_pattern = grammar.build_regex()
 
-                # Remove prompt from the beginning of each sequence
-                tokens_configs = [output[prompt_length:].tolist() for output in outputs]
+                from vllm import SamplingParams
+                from vllm.sampling_params import StructuredOutputsParams
+                sampling_params = SamplingParams(
+                    max_tokens=max_new_tokens,
+                    n=self.n_sample_configurations,
+                    structured_outputs=StructuredOutputsParams(regex=regex_pattern),
+                )
+                outputs = self.model.generate([prompt], sampling_params)
+                tokens_configs = [list(output.token_ids) for output in outputs[0].outputs]
             else:
-                prompt = self.study.get_prompt()
+                with torch.no_grad():
+                    inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
+                    prompt_length = inputs['input_ids'].shape[1]
+
+                    # number of tokens to return including the prompt is 2 per hyperparameters counting for the comma
+                    # minus one as there is trailing comma, plus two for the * and token of the predicted output
+                    max_new_tokens = (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 + 1
+                    eos_token_id = self.tokenizer.convert_tokens_to_ids("|")
+
+                    outputs = self.model.generate(
+                        **inputs,
+                        max_new_tokens=max_new_tokens,
+                        num_return_sequences=self.n_sample_configurations,
+                        do_sample=True,
+                        eos_token_id=eos_token_id,
+                        pad_token_id=self.tokenizer.pad_token_id,
+                    )
+
+                    # Remove prompt from the beginning of each sequence
+                    tokens_configs = [output[prompt_length:].tolist() for output in outputs]
+        else:
+            with torch.no_grad():
+
                 prompt_tokens = self.tokenizer.encode(prompt)[-self.model.max_seq_length:]
                 self.model.set_kv_cache(batch_size=1)
 
@@ -275,11 +467,11 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                     ).tolist()
                     for _ in range(self.n_sample_configurations)
                 ]
-            return tokens_configs
+        return tokens_configs
 
     def _decode_config(self, tokens_config: list[int]) -> tuple[Dict[str, Any], float]:
         # decode configuration in the form of "500,500,<0>*0|"
-        token_to_id = self.tokenizer.convert_tokens_to_ids if self.use_hf else self.tokenizer.token_to_id
+        token_to_id = self.tokenizer.convert_tokens_to_ids if self.use_hf_checkpoint else self.tokenizer.token_to_id
 
         star_index = tokens_config.index(token_to_id("*"))
 
@@ -372,11 +564,11 @@ if __name__ == '__main__':
 
     config_space = {"a": choice([0, 1, 2, 3, 4])}
 
-    checkpoint_dir = pathlib.Path(__file__).parent / "models" / "small_custom_model" / "step-00000800"
+    checkpoint_dir = pathlib.Path(__file__).parent.parent / "models" / "checkpoint"
     searcher = OptFormerSearcher(config_space=config_space, checkpoint_dir=checkpoint_dir)
 
-    trial_id = 0
-    config = searcher.suggest()
-    print(config)
-    metric = np.random.rand()
-    searcher.on_trial_complete(trial_id, config, metric)
+    for trial_id in range(20):
+        config = searcher.suggest()
+        print(config)
+        metric = np.random.rand()
+        searcher.on_trial_complete(trial_id, config, metric)
