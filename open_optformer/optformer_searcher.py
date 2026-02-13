@@ -1,3 +1,4 @@
+import os
 import logging
 import numpy as np
 import torch
@@ -13,13 +14,11 @@ from litgpt.config import Config
 from open_optformer.history import History, dequantize
 from transformers import AutoTokenizer, Qwen3ForCausalLM
 
-from syne_tune.config_space import Integer, Categorical, Float, FiniteRange, is_log_space
+from syne_tune.config_space import Integer, Float, FiniteRange, is_log_space
 from syne_tune.optimizer.schedulers.searchers.single_objective_searcher import SingleObjectiveBaseSearcher
 from syne_tune.optimizer.schedulers.single_objective_scheduler import (
     SingleObjectiveScheduler,
 )
-import os
-import glob
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +144,7 @@ class ConfigGrammar:
         Returns:
             Regex pattern string for guided decoding
         """
-        # TODO important note, right now we contrain the model to predict a token among the 1000 options
+        # TODO important note, right now we constrain the model to predict a token among the 1000 options
         #  it would be more efficient to check if values are in a range as values are continuous
         cont_pattern = self._build_continuous_pattern()
         separators = self._get_separator_tokens()
