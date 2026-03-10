@@ -10,9 +10,7 @@ SEED = 0
 WANDB_PROJECT = f'open_optformer_qwen3_hp_sweep_{VERSION}'
 
 def generate_configs():
-    model_names = ['qwen3_5M', 'qwen3_10M', 'qwen3_20M',
-                   'qwen3_30M', 'qwen3_50M', 'qwen3_100M',
-                   'qwen3_200M', 'qwen3_500M']
+    model_names = ['new_qwen3_2M', 'new_qwen3_5M', 'new_qwen3_13M', 'new_qwen3_30M', 'new_qwen3_80M', 'new_qwen3_150M','new_qwen3_450M']
     for model_name in model_names:
         base_config_path = Path(__file__).parent / f"{model_name}.yaml"
 
