@@ -157,22 +157,47 @@ def convert_to_huggingface(path: Union[str, Path], output_dir: Union[str, Path] 
     fast_tokenizer = LlamaTokenizerFast.from_pretrained(output_dir)
     fast_tokenizer.save_pretrained(output_dir)
 
-    # 4. MANUALLY FIX THE tokenizer.json
-    # This removes the Pre-Tokenizer and Normalizer to prevent ID mismatches
+    # 4. Patch tokenizer.json to match SentencePiece's add_dummy_prefix behavior.
+    # HF's Unigram model doesn't support add_dummy_prefix, so we use the
+    # post_processor to prepend the ▁ token (id 1056) on every encode call.
     tokenizer_json_path = os.path.join(output_dir, "tokenizer.json")
 
     with open(tokenizer_json_path, "r") as f:
         data = json.load(f)
 
-    print(f"Patching tokenizer.json (Setting pre_tokenizer and normalizer to null)...")
-    # Bypass HF's default splitting logic to match LitGPT's raw SentencePiece behavior
     data["pre_tokenizer"] = None
     data["normalizer"] = None
+    data["post_processor"] = {
+        "type": "TemplateProcessing",
+        "single": [
+            {"SpecialToken": {"id": "\u2581", "type_id": 0}},
+            {"Sequence": {"id": "A", "type_id": 0}}
+        ],
+        "pair": [
+            {"SpecialToken": {"id": "\u2581", "type_id": 0}},
+            {"Sequence": {"id": "A", "type_id": 0}},
+            {"SpecialToken": {"id": "\u2581", "type_id": 1}},
+            {"Sequence": {"id": "B", "type_id": 1}}
+        ],
+        "special_tokens": {
+            "\u2581": {"id": "\u2581", "ids": [1056], "tokens": ["\u2581"]}
+        }
+    }
 
     with open(tokenizer_json_path, "w") as f:
         json.dump(data, f, indent=2)
 
-    print(f"✅ Success! Converted tokenizer saved to: {output_dir}")
+    # 5. Remove tokenizer_class to prevent LlamaTokenizerFast from overriding
+    # our post_processor, and disable add_bos_token.
+    tokenizer_config_path = os.path.join(output_dir, "tokenizer_config.json")
+    with open(tokenizer_config_path, "r") as f:
+        tok_config = json.load(f)
+    tok_config.pop("tokenizer_class", None)
+    tok_config["add_bos_token"] = False
+    with open(tokenizer_config_path, "w") as f:
+        json.dump(tok_config, f, indent=2)
+
+    print(f"Converted tokenizer saved to: {output_dir}")
 
     print("Save complete.")
 
@@ -266,7 +291,7 @@ if __name__ == '__main__':
     hf_tokenizer = AutoTokenizer.from_pretrained(hf_path)
 
     # Test string with your categorical and special tokens
-    test_text = " benchmark:test,algorithm:test,search-space:{name:x,type:UNI,min_value:0,max_value:1,linear_scale}{name:y,type:INT,min_value:0,max_value:10,linear_scale}{name:z,type:CAT,categories:[0,1,2]},history:500,500,<0>*0|600,600,<1>*1000|"
+    test_text = "benchmark:test,algorithm:test,search-space:{name:x,type:UNI,min_value:0,max_value:1,linear_scale}{name:y,type:INT,min_value:0,max_value:10,linear_scale}{name:z,type:CAT,categories:[0,1,2]},history:500,500,<0>*0|600,600,<1>*1000|"
     # Check ID 1035
     try:
         print(f"Token ID 1035 represents: '{sp_processor.decode([1035])}'")
@@ -274,7 +299,7 @@ if __name__ == '__main__':
         print("Token ID 1035 out of bounds for SentencePiece processor.")
 
     litgpt_ids = sp_processor.encode(test_text)
-    hf_ids = hf_tokenizer.encode(test_text, add_special_tokens=False)
+    hf_ids = hf_tokenizer.encode(test_text)
 
     print(f"LitGPT IDs: {litgpt_ids}")
     print(f"HF IDs:     {hf_ids}")
