@@ -9,8 +9,6 @@ from typing import Union
 import os
 import json
 
-from transformers import LlamaTokenizer, LlamaTokenizerFast
-
 
 def load_litgpt(path: Union[str, Path]):
     """Load a LitGPT model from checkpoint directory."""
@@ -143,60 +141,31 @@ def convert_to_huggingface(path: Union[str, Path], output_dir: Union[str, Path] 
     print(f"Saving HuggingFace model to {output_dir}")
     model.save_pretrained(output_dir)
 
+    # Convert the SentencePiece tokenizer to a HuggingFace PreTrainedTokenizerFast.
+    # Build the tokenizer directly from the SentencePiece vocab using the
+    # `tokenizers` library with Metaspace pre-tokenizer/decoder to handle
+    # the ▁ prefix correctly (matching SentencePiece's add_dummy_prefix).
+    import sentencepiece as spm
+    from tokenizers import Tokenizer as HFTokenizer, pre_tokenizers, decoders
+    from tokenizers.models import Unigram
+    from transformers import PreTrainedTokenizerFast
+
     print(f"Loading SentencePiece model from: {path}")
-    slow_tokenizer = LlamaTokenizer(vocab_file=path / "tokenizer.model", legacy=False)
+    sp = spm.SentencePieceProcessor(model_file=str(path / "tokenizer.model"))
 
-    # 2. Save "slow" version to directory
-    # This generates the initial config files
-    print(f"Saving temporary files to: {output_dir}")
-    slow_tokenizer.save_pretrained(output_dir)
+    vocab = [(sp.id_to_piece(i), sp.get_score(i)) for i in range(sp.get_piece_size())]
+    tokenizer_obj = HFTokenizer(Unigram(vocab, unk_id=sp.unk_id(), byte_fallback=False))
+    tokenizer_obj.pre_tokenizer = pre_tokenizers.Metaspace(replacement='\u2581', prepend_scheme='always')
+    tokenizer_obj.decoder = decoders.Metaspace(replacement='\u2581', prepend_scheme='always')
 
-    # 3. Convert to "Fast" (Rust-based) version
-    # This creates the critical tokenizer.json file
-    print(f"Generating Fast tokenizer...")
-    fast_tokenizer = LlamaTokenizerFast.from_pretrained(output_dir)
-    fast_tokenizer.save_pretrained(output_dir)
-
-    # 4. Patch tokenizer.json to match SentencePiece's add_dummy_prefix behavior.
-    # HF's Unigram model doesn't support add_dummy_prefix, so we use the
-    # post_processor to prepend the ▁ token (id 1056) on every encode call.
-    tokenizer_json_path = os.path.join(output_dir, "tokenizer.json")
-
-    with open(tokenizer_json_path, "r") as f:
-        data = json.load(f)
-
-    data["pre_tokenizer"] = None
-    data["normalizer"] = None
-    data["post_processor"] = {
-        "type": "TemplateProcessing",
-        "single": [
-            {"SpecialToken": {"id": "\u2581", "type_id": 0}},
-            {"Sequence": {"id": "A", "type_id": 0}}
-        ],
-        "pair": [
-            {"SpecialToken": {"id": "\u2581", "type_id": 0}},
-            {"Sequence": {"id": "A", "type_id": 0}},
-            {"SpecialToken": {"id": "\u2581", "type_id": 1}},
-            {"Sequence": {"id": "B", "type_id": 1}}
-        ],
-        "special_tokens": {
-            "\u2581": {"id": "\u2581", "ids": [1056], "tokens": ["\u2581"]}
-        }
-    }
-
-    with open(tokenizer_json_path, "w") as f:
-        json.dump(data, f, indent=2)
-
-    # 5. Remove tokenizer_class to prevent LlamaTokenizerFast from overriding
-    # our post_processor, and disable add_bos_token.
-    tokenizer_config_path = os.path.join(output_dir, "tokenizer_config.json")
-    with open(tokenizer_config_path, "r") as f:
-        tok_config = json.load(f)
-    tok_config.pop("tokenizer_class", None)
-    tok_config["add_bos_token"] = False
-    with open(tokenizer_config_path, "w") as f:
-        json.dump(tok_config, f, indent=2)
-
+    hf_tokenizer = PreTrainedTokenizerFast(
+        tokenizer_object=tokenizer_obj,
+        unk_token="<unk>",
+        bos_token="<s>",
+        eos_token="</s>",
+        model_input_names=["input_ids", "attention_mask"],
+    )
+    hf_tokenizer.save_pretrained(output_dir)
     print(f"Converted tokenizer saved to: {output_dir}")
 
     print("Save complete.")
