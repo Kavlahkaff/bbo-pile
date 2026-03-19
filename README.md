@@ -87,3 +87,43 @@ First, update BASE_PATH_CLUSTER, DATASET_NAME, and WANDB_PROJECT from ``benchmar
 At the end we can start the model training:
 
     python open_optformer/training/pretrain.py pythia410M --config benchmarks/syne_tune_benchmarks/configs/NAME_OF_YOUR_CONFIG.yaml
+
+
+# Dataset History
+
+## v0.1: 
+
+Initial version of the datasets with 30 seeds of all methods on each dataset. We used the following format:
+
+        benchmark:fcnet-slice
+        algorithm:RS
+        search-space:
+        {name:hp_dropout_2,type:UNI,min_value:0.0,max_value:0.6,linear_scale}
+        {name:hp_n_units_2,type:INT,min_value:16,max_value:512,log_scale}
+        {name:hp_dropout_1,type:UNI,min_value:0.0,max_value:0.6,linear_scale}
+        {name:hp_n_units_1,type:INT,min_value:16,max_value:512,log_scale}
+        {name:hp_batch_size,type:INT,min_value:8,max_value:64,log_scale}
+        {name:hp_init_lr,type:CAT,categories:[0.0005,0.001,0.005,0.01,0.05,0.1]}
+        {name:hp_activation_fn_1,type:CAT,categories:['tanh','relu']}
+        {name:hp_activation_fn_2,type:CAT,categories:['tanh','relu']}
+        {name:hp_lr_schedule,type:CAT,categories:['cosine','const']}
+        history
+        500,0,0,400,667,<3>,<1>,<0>,<1>*7|500,1000,500,0,333,<1>,<0>,<0>,<0>*2|
+
+
+## v0.2: 
+
+We changed the format to a single line per trajectories, i.e remove all '\n' except the last one. That allowed us to reshuffles row to break any order in the dataset
+
+## v0.3: 
+
+We removed hyperparameter names to avoid overfitting of the model. Example trajectories looked like this:
+
+    algorithm:BORE,search-space:{type:INT,min_value:8,max_value:64,log_scale}{type:UNI,min_value:0.0,max_value:0.6,linear_scale}{type:UNI,min_value:0.0,max_value:0.6,linear_scale}{type:INT,min_value:16,max_value:512,log_scale}{type:INT,min_value:16,max_value:512,log_scale}{type:CAT,categories:['tanh','relu']}{type:CAT,categories:['tanh','relu']}{type:CAT,categories:[0.0005,0.001,0.005,0.01,0.05,0.1]}{type:CAT,categories:['cosine','const']},history:0,500,500,400,0,<1>,<1>,<4>,<1>*0|0,500,0,1000,800,<1>,<0>,<5>,<0>*0|
+
+## v0.4: 
+
+We found a bug in our data collection script that didn't encode whether a blackbox problem is maximized or minimized. We now map every problem to a minimization problem.
+Also, we removed names of categorical variables to avoid additional overfitting:
+
+    algorithm:REA,search-space:{type:INT,min_value:8,max_value:64,log_scale}{type:INT,min_value:16,max_value:512,log_scale}{type:UNI,min_value:0.0,max_value:0.6,linear_scale}{type:UNI,min_value:0.0,max_value:0.6,linear_scale}{type:INT,min_value:16,max_value:512,log_scale}{type:CAT,categories:[0,1]}{type:CAT,categories:[0,1]}{type:CAT,categories:[0,1]}{type:CAT,categories:[0,1,2,3,4,5]},history:0,0,0,500,0,<1>,<1>,<1>,<3>*159|1000,800,500,0,1000,<1>,<0>,<0>,<1>*67|
