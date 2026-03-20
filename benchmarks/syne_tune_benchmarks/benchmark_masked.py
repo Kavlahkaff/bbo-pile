@@ -17,38 +17,10 @@ from syne_tune.tuner import Tuner
 from baselines import MethodArguments, methods
 
 
-def fixed_value_global_optimum(
-    blackbox,
-    metric: str,
-    mode: str,
-    masked_params: tuple,
-    already_fixed: dict,
-) -> dict:
-    """
-    Fix every masked HP to its value in the single globally best config,
-    i.e. argmin/argmax over the full joint table.
-
-    This is an oracle: the chosen values are optimal in the joint sense,
-    not the marginal sense. Use as an upper-bound baseline only.
-    """
-    objectives = (
-        blackbox.objectives_evaluations
-    )  # (n_configs, n_seeds, n_fidelities, n_objectives)
-    metric_idx = list(blackbox.objectives_names).index(metric)
-
-    flat = objectives[:, :, :, metric_idx].reshape(objectives.shape[0], -1)
-    best_idx = (
-        int(np.nanargmax(np.nanmax(flat, axis=1)))
-        if mode == "max"
-        else int(np.nanargmin(np.nanmin(flat, axis=1)))
-    )
-    best_row = blackbox.hyperparameters.iloc[best_idx].to_dict()
-    return {hp: best_row[hp] for hp in masked_params}
-
-
 def _per_config_best(blackbox, metric_idx: int, mode: str) -> np.ndarray:
     """
     Collapse seeds and fidelities to a single scalar per config.
+    `blackbox` must be a BlackboxTabular.
     Returns array of shape (n_configs,).
     """
     flat = blackbox.objectives_evaluations[:, :, :, metric_idx].reshape(
@@ -58,9 +30,6 @@ def _per_config_best(blackbox, metric_idx: int, mode: str) -> np.ndarray:
 
 
 def _best_value_from_groups(groups: dict, mode: str):
-    """
-    Given {hp_value: [perf, ...]} pick the HP value with the best mean.
-    """
     if mode == "max":
         return max(groups, key=lambda v: np.nanmean(groups[v]))
     else:
@@ -68,15 +37,11 @@ def _best_value_from_groups(groups: dict, mode: str):
 
 
 def _marginal_best_single(
-    blackbox,
-    hp_name: str,
-    metric_idx: int,
-    mode: str,
-    config_mask: np.ndarray | None = None,
+    blackbox, hp_name: str, metric_idx: int, mode: str, config_mask=None
 ) -> Any:
     """
-    For configs selected by config_mask (or all configs if None), group by
-    hp_name value and return the value with the best mean performance.
+    Group configs by hp_name value and return the value with the best mean.
+    `blackbox` must be a BlackboxTabular.
     """
     per_config = _per_config_best(blackbox, metric_idx, mode)
     hps = blackbox.hyperparameters
@@ -92,6 +57,30 @@ def _marginal_best_single(
     return _best_value_from_groups(groups, mode)
 
 
+def fixed_value_global_optimum(
+    blackbox,
+    metric: str,
+    mode: str,
+    masked_params: tuple,
+    already_fixed: dict,
+) -> dict:
+    """
+    Fix each masked HP to its value in the best
+    config.
+    """
+    objectives = blackbox.objectives_evaluations
+    metric_idx = list(blackbox.objectives_names).index(metric)
+
+    flat = objectives[:, :, :, metric_idx].reshape(objectives.shape[0], -1)
+    best_idx = (
+        int(np.nanargmax(np.nanmax(flat, axis=1)))
+        if mode == "max"
+        else int(np.nanargmin(np.nanmin(flat, axis=1)))
+    )
+    best_row = blackbox.hyperparameters.iloc[best_idx].to_dict()
+    return {hp: best_row[hp] for hp in masked_params}
+
+
 def fixed_value_marginal_best(
     blackbox,
     metric: str,
@@ -101,11 +90,7 @@ def fixed_value_marginal_best(
 ) -> dict:
     """
     For each masked HP independently, pick the value with the best mean
-    performance across all configs that use it (marginalising over all other
-    HPs including other masked ones).
-
-    Note: because each HP is treated independently, interactions between
-    simultaneously masked HPs are ignored.
+    performance marginalising over all other HPs.
     """
     metric_idx = list(blackbox.objectives_names).index(metric)
     return {
@@ -122,29 +107,15 @@ def fixed_value_conditional_marginal(
     already_fixed: dict,
 ) -> dict:
     """
-    Fix masked HPs one by one, in the order they appear in masked_params.
-    Each HP's value is chosen by marginalising over configs that are
-    consistent with all *previously fixed* HPs. Falls back to the unconditional marginal if the
-    conditioning set is empty.
-
-    This handles interactions between simultaneously masked HPs: the best
-    value of HP B is computed knowing what HP A was fixed to, which matters
-    whenever A and B interact.
-
-    The order of masked_params determines a greedy sequential dependence;
-    a different ordering may yield different results for strongly interacting
-    pairs.
+    Fix masked HPs one by one, conditioning each on all previously fixed HPs.
+    Falls back to the unconditional marginal if the conditioning set is empty.
     """
     metric_idx = list(blackbox.objectives_names).index(metric)
     hps_df = blackbox.hyperparameters
     result: dict = {}
-
-    # Combine externally fixed HPs (from a previous masking round) with the
-    # ones we are deciding in this call, accumulated greedily left-to-right.
     running_fixed = dict(already_fixed)
 
     for hp in masked_params:
-        # Build a boolean mask: keep configs consistent with running_fixed
         if running_fixed:
             config_mask = np.ones(len(hps_df), dtype=bool)
             for k, v in running_fixed.items():
@@ -153,15 +124,14 @@ def fixed_value_conditional_marginal(
         else:
             config_mask = None
 
-        # Fall back to unconditional marginal if conditioning set is empty
         if config_mask is not None and config_mask.sum() == 0:
-            config_mask = None
+            config_mask = None  # fall back to unconditional
 
         best_val = _marginal_best_single(
             blackbox, hp, metric_idx, mode, config_mask=config_mask
         )
         result[hp] = best_val
-        running_fixed[hp] = best_val  # condition subsequent HPs on this choice
+        running_fixed[hp] = best_val
 
     return result
 
@@ -209,8 +179,8 @@ class MaskedBlackboxBackend(UserBlackboxBackend):
 
     - Scheduler sees `reduced_config_space` via the `blackbox` property.
     - `config_objectives` injects fixed_params before calling super().
-    - `_filter_config` uses the real full config space so that injected
-      fixed params are not stripped before the table lookup.
+    - `_filter_config` uses the real full config space so injected fixed
+      params are not stripped before the table/surrogate lookup.
     """
 
     def __init__(
@@ -242,8 +212,7 @@ class MaskedBlackboxBackend(UserBlackboxBackend):
         return {k: v for k, v in config.items() if k in real_config_space}
 
     def config_objectives(self, config: dict[str, Any], seed: int) -> list[dict]:
-        completed_config = {**config, **self._fixed_params}
-        return super().config_objectives(completed_config, seed)
+        return super().config_objectives({**config, **self._fixed_params}, seed)
 
 
 def run(
@@ -306,15 +275,28 @@ def run(
         else:
             raise NotImplementedError(f"Unknown benchmark name: {benchmark_name}")
 
-        # load bb once
-        _probe = BlackboxRepositoryBackend(
+        # Some blackboxes use the surrogate wrapper.
+        # In these cases we cant access the objective evaluations
+        # and need to instantiate another tabular blackbox
+        _eval_probe = BlackboxRepositoryBackend(
             elapsed_time_attr=benchmark.elapsed_time_attr,
             blackbox_name=benchmark.blackbox_name,
             dataset=benchmark.dataset_name,
             surrogate=benchmark.surrogate,
             surrogate_kwargs=benchmark.surrogate_kwargs,
         )
-        loaded_blackbox = _probe.blackbox
+        loaded_blackbox = _eval_probe.blackbox
+
+        _tabular_probe = BlackboxRepositoryBackend(
+            elapsed_time_attr=benchmark.elapsed_time_attr,
+            blackbox_name=benchmark.blackbox_name,
+            dataset=benchmark.dataset_name,
+            surrogate=None,
+        )
+        tabular_blackbox = _tabular_probe.blackbox
+
+        # Config space and HP names come from the evaluation blackbox so that
+        # the scheduler sees the correct (possibly continuous surrogate) space.
         full_config_space = loaded_blackbox.configuration_space
         hp_names = list(full_config_space.keys())
 
@@ -330,10 +312,10 @@ def run(
         shared_backend_kwargs = dict(elapsed_time_attr=benchmark.elapsed_time_attr)
 
         for masked_params in tqdm(mask_combinations, leave=False):
-            # Compute fixed values using the chosen strategy.
+            # Strategy functions always receive the tabular blackbox.
             fixed_params = (
                 strategy_fn(
-                    blackbox=loaded_blackbox,
+                    blackbox=tabular_blackbox,
                     metric=benchmark.metric,
                     mode=benchmark.mode,
                     masked_params=masked_params,
@@ -350,7 +332,6 @@ def run(
                 reduced_config_space if masked_params else full_config_space
             )
 
-            # Random initial points over the reduced space
             num_random_candidates = 5
             random_state = np.random.RandomState(seed)
             points_to_evaluate = make_reduced_points(
@@ -366,6 +347,7 @@ def run(
                 masked_params,
             )
 
+            # Backends receive the evaluation blackbox (surrogate if applicable).
             if masked_params:
                 backend = MaskedBlackboxBackend(
                     blackbox=loaded_blackbox,
@@ -433,7 +415,7 @@ def run(
                 metadata={
                     "seed": seed,
                     "algorithm": method,
-                    "benchmark": benchmark_name + "-" + mask_label,
+                    "benchmark": benchmark_name,
                     "masked_params": list(masked_params),
                     "fixed_params": {k: str(v) for k, v in fixed_params.items()},
                     "mask_n": mask_n,
@@ -452,7 +434,7 @@ if __name__ == "__main__":
     parser.add_argument("--run_all_seeds", type=int, default=0)
     parser.add_argument("--method", type=str, required=False)
     parser.add_argument("--benchmark", type=str, required=True)
-    parser.add_argument("--n_workers", type=int, default=1)
+    parser.add_argument("--n_workers", type=int, default=4)
     parser.add_argument("--checkpoint_dir", type=str, default="")
     parser.add_argument(
         "--mask_n",
@@ -460,7 +442,7 @@ if __name__ == "__main__":
         default=1,
         help=(
             "Number of HPs to mask per run. 0 = no masking. "
-            "k = run every combination of k masked HPs."
+            "k = run every C(|HPs|, k) combination of k masked HPs."
         ),
     )
     parser.add_argument(
@@ -470,13 +452,11 @@ if __name__ == "__main__":
         choices=list(HP_VALUE_STRATEGIES.keys()),
         help=(
             "How to choose the fixed value for each masked HP:\n"
-            "  global_optimum       — value from the single best joint config.\n"
-            "  marginal_best        — value with the best mean performance across all\n"
-            "                         configs, marginalising over other HPs.\n"
-            "  conditional_marginal — like marginal_best but conditions on previously\n"
-            "                         fixed HPs to account for interactions. HPs are\n"
-            "                         decided greedily in the order given by the\n"
-            "                         combination iterator."
+            "  global_optimum       — value from the single best joint config (oracle).\n"
+            "  marginal_best        — value with the best mean performance, "
+            "marginalising over other HPs.\n"
+            "  conditional_marginal — like marginal_best but conditions on previously "
+            "fixed HPs to account for interactions."
         ),
     )
     args, _ = parser.parse_known_args()
