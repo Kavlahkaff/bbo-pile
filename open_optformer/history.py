@@ -10,7 +10,8 @@ from syne_tune.experiments import ExperimentResult
 
 def quantize(x, x_min, x_max, q=1000, log_scale=False):
     """
-    Quantize a value x to be in [0, q] based on the range [x_min, x_max].
+    Quantize a value x to be in [0, q-1] based on the range [x_min, x_max].
+    q is the number of quantization levels.
     """
     if x_min == x_max:
         return 0
@@ -19,18 +20,19 @@ def quantize(x, x_min, x_max, q=1000, log_scale=False):
         x_min = np.log(x_min + 1e-10)
         x_max = np.log(x_max + 1e-10)
     x_norm = (x - x_min)/(x_max - x_min)
-    return int(round(x_norm * q))
+    return int(round(x_norm * (q - 1)))
 
 
 def dequantize(x, x_min, x_max, q=1000, log_scale=False):
     """
-    Dequantize a value x from [0, q] to the range [x_min, x_max].
+    Dequantize a value x from [0, q-1] to the range [x_min, x_max].
+    q is the number of quantization levels.
     """
     if log_scale:
         x_min = np.log(x_min + 1e-10)
         x_max = np.log(x_max + 1e-10)
-        return np.exp(x / q * (x_max - x_min) + x_min)
-    return x / q * (x_max - x_min) + x_min
+        return np.exp(x / (q - 1) * (x_max - x_min) + x_min)
+    return x / (q - 1) * (x_max - x_min) + x_min
 
 
 def encode(x, hp: Domain, q: int = 1000, hp_name: str = ""):
@@ -211,9 +213,9 @@ if __name__ == "__main__":
         x_dequantized = dequantize(x_quantized, x_min, x_max, q, log_scale)
 
         if log_scale:
-            expected_error = np.exp(np.log(x_max + 1e-10) - np.log(x_min + 1e-10) / (2 * q))
+            expected_error = np.exp(np.log(x_max + 1e-10) - np.log(x_min + 1e-10) / (2 * (q - 1)))
         else:
-            expected_error = (x_max - x_min) / (2 * q)
+            expected_error = (x_max - x_min) / (2 * (q - 1))
 
         assert abs(x - x_dequantized) < expected_error, (
             f"x: {x}, x_min: {x_min}, x_max: {x_max}, log_scale: {log_scale}, "

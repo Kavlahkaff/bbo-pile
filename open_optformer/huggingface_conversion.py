@@ -260,7 +260,7 @@ if __name__ == '__main__':
     hf_tokenizer = AutoTokenizer.from_pretrained(hf_path)
 
     # Test string with your categorical and special tokens
-    test_text = "benchmark:test,algorithm:test,search-space:{name:x,type:UNI,min_value:0,max_value:1,linear_scale}{name:y,type:INT,min_value:0,max_value:10,linear_scale}{name:z,type:CAT,categories:[0,1,2]},history:500,500,<0>*0|600,600,<1>*1000|"
+    test_text = "benchmark:test,algorithm:test,search-space:{name:x,type:UNI,min_value:0,max_value:1,linear_scale}{name:y,type:INT,min_value:0,max_value:10,linear_scale}{name:z,type:CAT,categories:[0,1,2]},history:500,500,<0>*0|599,599,<1>*999|"
     # Check ID 1035
     try:
         print(f"Token ID 1035 represents: '{sp_processor.decode([1035])}'")
