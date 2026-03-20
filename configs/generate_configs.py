@@ -93,8 +93,8 @@ def generate_configs():
                     new_filename = f"{run_name}.yaml"
                     new_filepath = base_config_path.parent / new_filename
 
-#                        with open(new_filepath, 'w') as f:
-#                            yaml.dump(new_config, f, sort_keys=False)
+                    with open(new_filepath, 'w') as f:
+                       yaml.dump(new_config, f, sort_keys=False)
 
                     #print(f"Generated {new_filepath}")
                     counter += 1
