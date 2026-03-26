@@ -66,11 +66,11 @@ def generate_configs():
 
                     new_config['train']['max_tokens'] = tokens
                     new_config['train']['global_batch_size'] = bsz
-                    new_config['train']['log_interval'] = math.ceil(number_of_steps / 50)
+                    new_config['train']['log_interval'] = math.ceil(number_of_steps / 200)
                     new_config['train']['lr_warmup_steps'] = ws
                     new_config['train']['micro_batch_size'] = bsz
                     new_config['train']['save_interval'] = math.ceil(number_of_steps / 10)  # Save 10 checkpoints per model
-                    new_config['eval']['interval'] = math.ceil(number_of_steps / 20)
+                    new_config['eval']['interval'] = math.ceil(number_of_steps / 50)
 
                     run_name = f"{model_name}_token_{name}_lr_{lr_name}_bsz_{bsz}_ws_{ws}_seed_{SEED}"
 
