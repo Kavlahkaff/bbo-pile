@@ -24,7 +24,7 @@ def generate_configs():
 
     counter = 0
     for model_name, model_size in model_names.items():
-        base_config_path = Path(__file__).parent / f"new_{model_name}.yaml"
+        base_config_path = Path(__file__).parent / f"{model_name}.yaml"
 
         with open(base_config_path, 'r') as f:
             base_config = yaml.safe_load(f)
