@@ -82,7 +82,7 @@ train:
   max_steps: null
   max_tokens: 8_000_000_000 
   micro_batch_size: 32
-  min_lr: 0.0000
+  min_lr: 1e-5
   save_interval: 2000
   tie_embeddings: true
 log:
