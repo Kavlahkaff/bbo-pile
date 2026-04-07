@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import numpy as np
 import pathlib
 import argparse
@@ -112,6 +115,10 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_dir", type=str,
                         default="qwen3_150M_token_2B_lr_1e-2_bsz_16_ws_2288_seed_0",
                         help="Path to a valid trained OptFormer model checkpoint directory.")
+    parser.add_argument("--output_dir", type=str,
+                        default="./results",
+                        help="Path to store the results json.")
+
 
     args = parser.parse_args()
 
@@ -189,3 +196,8 @@ if __name__ == "__main__":
         print(f"KL Divergence (CQR vs OptFormer): {kl_divergence:.4f}")
 
     print("Script finished.")
+
+    results = vars(args)
+    results.pop('output_dir')
+    results['kl_divergence'] = kl_divergence
+    json.dump(results, open(Path(args.output_dir) / 'results.json', 'w'))
