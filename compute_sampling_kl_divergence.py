@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -197,6 +198,6 @@ if __name__ == "__main__":
     print("Script finished.")
 
     results = vars(args)
-    results.pop('output_dir')
     results['kl_divergence'] = kl_divergence
+    os.makedirs(args.output_dir, exist_ok=True)
     json.dump(results, open(Path(args.output_dir) / f'results_seed_{random_seed}.json', 'w'))
