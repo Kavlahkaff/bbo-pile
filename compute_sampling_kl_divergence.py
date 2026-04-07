@@ -160,6 +160,9 @@ if __name__ == "__main__":
         do_minimize= mode == "min",
         random_seed=random_seed,
     )
+    print(f"Collecting {num_iterations} samples for CQR...")
+    cqr_samples = collect_samples(cqr_scheduler, initial_design, observations)
+    print(f"Collected {len(cqr_samples)} samples for CQR.")
 
     # 2. Initialize OptFormer Scheduler
     print("Initializing OptFormer Scheduler...")
@@ -176,11 +179,6 @@ if __name__ == "__main__":
         random_seed=random_seed,
         n_sample_configurations=1, # We want the final suggested config for comparison
     )
-
-    # 3. Collect samples
-    print(f"Collecting {num_iterations} samples for CQR...")
-    cqr_samples = collect_samples(cqr_scheduler, initial_design, observations)
-    print(f"Collected {len(cqr_samples)} samples for CQR.")
 
     print(f"Collecting {num_iterations} samples for OptFormer...")
     optformer_samples = collect_samples(optformer_scheduler, initial_design, observations)
@@ -200,4 +198,4 @@ if __name__ == "__main__":
     results = vars(args)
     results.pop('output_dir')
     results['kl_divergence'] = kl_divergence
-    json.dump(results, open(Path(args.output_dir) / 'results.json', 'w'))
+    json.dump(results, open(Path(args.output_dir) / f'results_seed_{random_seed}.json', 'w'))
