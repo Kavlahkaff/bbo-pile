@@ -10,6 +10,7 @@ from scipy.stats import entropy
 from collections import Counter
 from typing import Dict, Any, List
 
+from syne_tune.blackbox_repository import add_surrogate
 from syne_tune.blackbox_repository.blackbox_tabular import BlackboxTabular
 from syne_tune.backend.trial_status import Trial
 from syne_tune.blackbox_repository.repository import load_blackbox
@@ -148,6 +149,7 @@ if __name__ == "__main__":
         exit()
 
     blackbox = load_blackbox(benchmark.blackbox_name)[benchmark.dataset_name]
+    blackbox = add_surrogate(blackbox=blackbox)
     config_space = blackbox.configuration_space
     metric_name = benchmark.metric
     mode = benchmark.mode
