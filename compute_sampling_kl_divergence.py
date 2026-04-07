@@ -33,6 +33,7 @@ def objective_function(config: Dict[str, Any], blackbox: BlackboxTabular) -> flo
 def collect_samples(scheduler,
                     initial_design: List[Dict[str, Any]],
                     observations: List[float],
+                    num_samples: int,
                     ) -> List[Dict[str, Any]]:
     """
     Collects configurations suggested by a scheduler over a fixed number of iterations.
@@ -160,8 +161,8 @@ if __name__ == "__main__":
         do_minimize= mode == "min",
         random_seed=random_seed,
     )
-    print(f"Collecting {num_iterations} samples for CQR...")
-    cqr_samples = collect_samples(cqr_scheduler, initial_design, observations)
+    print(f"Collecting {num_samples} samples for CQR...")
+    cqr_samples = collect_samples(cqr_scheduler, initial_design, observations, num_samples)
     print(f"Collected {len(cqr_samples)} samples for CQR.")
 
     # 2. Initialize OptFormer Scheduler
@@ -180,8 +181,8 @@ if __name__ == "__main__":
         n_sample_configurations=1, # We want the final suggested config for comparison
     )
 
-    print(f"Collecting {num_iterations} samples for OptFormer...")
-    optformer_samples = collect_samples(optformer_scheduler, initial_design, observations)
+    print(f"Collecting {num_samples} samples for OptFormer...")
+    optformer_samples = collect_samples(optformer_scheduler, initial_design, observations, num_samples=num_samples)
     print(f"Collected {len(optformer_samples)} samples for OptFormer.")
 
     # Ensure both lists have samples before proceeding
