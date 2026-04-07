@@ -19,8 +19,12 @@ from syne_tune.optimizer.baselines import CQR
 from open_optformer.optformer_searcher import OptformerScheduler
 
 from benchmarks.syne_tune_benchmarks.fcnet_benchmarks import fcnet_benchmark_definitions
+from benchmarks.syne_tune_benchmarks.nas201_benchmarks import nas201_benchmark_definitions
+from benchmarks.syne_tune_benchmarks.lcbench_benchmarks import lcbench_benchmark_definitions
+from benchmarks.syne_tune_benchmarks.tabrepo_benchmarks import tabrepo_benchmark_definitions
+from benchmarks.syne_tune_benchmarks.hpob_benchmarks import hpob_benchmark_definitions
+from benchmarks.syne_tune_benchmarks.pd1_benchmarks import pd1_benchmark_definitions
 
-benchmark_definitions = fcnet_benchmark_definitions
 
 # --- Helper Functions ---
 def objective_function(config: Dict[str, Any], blackbox: BlackboxTabular) -> float:
@@ -132,6 +136,13 @@ if __name__ == "__main__":
     num_samples = args.num_samples
     optformer_checkpoint_dir = pathlib.Path(args.checkpoint_dir)
 
+    benchmark_definitions = {**fcnet_benchmark_definitions,
+                             **nas201_benchmark_definitions,
+                             **tabrepo_benchmark_definitions,
+                             **lcbench_benchmark_definitions,
+                             **pd1_benchmark_definitions,
+                             **tabrepo_benchmark_definitions}
+    print(benchmark_definitions.keys())
     # Load benchmark definition and setup backend
     try:
         benchmark = benchmark_definitions[benchmark_name]
