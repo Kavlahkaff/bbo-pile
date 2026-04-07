@@ -112,10 +112,8 @@ if __name__ == "__main__":
         description="Compute KL Divergence between CQR and OptFormer sampling distributions.")
     parser.add_argument("--benchmark_name", type=str, default="fcnet-protein",
                         help="Name of the benchmark to use (e.g., 'fcnet-protein').")
-    parser.add_argument("--num_iterations", type=int, default=50,
-                        help="Number of observed configurations for the schedulers.")
-    parser.add_argument("--random_seed", type=int, default=42,
-                        help="Random seed for reproducibility.")
+    parser.add_argument("--num_seeds", type=int, default=5,
+                        help="Number of random seeds for reproducibility.")
     parser.add_argument("--num_samples", type=int, default=50,
                         help="Number of samples to collect from each scheduler for KL divergence computation.")
     parser.add_argument("--checkpoint_dir", type=str,
@@ -131,8 +129,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     benchmark_name = args.benchmark_name
-    num_iterations = args.num_iterations
-    random_seed = args.random_seed
     num_samples = args.num_samples
     optformer_checkpoint_dir = pathlib.Path(args.checkpoint_dir)
 
@@ -156,62 +152,70 @@ if __name__ == "__main__":
     metric_name = benchmark.metric
     mode = benchmark.mode
     max_fidelity = max(blackbox.fidelity_values)
-    print(f"Starting KL Divergence computation for benchmark '{benchmark_name}' with {num_iterations} iterations...")
 
     # Initial Design
-    initial_design = []
-    observations = []
-    for i in range(num_iterations - 1):
-        config = {k: v.sample() for k, v in config_space.items()}
-        initial_design.append(config)
-        observation = objective_function(config, blackbox)
-        observations.append(observation)
+    for seed in range(args.num_seeds):
+        initial_design = []
+        observations = []
+        rng = np.random.RandomState(seed)
+        for num_iterations in [5, 10, 20, 50, 90]:
+            print(
+                f"Starting KL Divergence computation for benchmark '{benchmark_name}' with {num_iterations} iterations...")
+            for i in range(len(initial_design), num_iterations - 1):
+                config = {k: v.sample(random_state=rng) for k, v in config_space.items()}
+                initial_design.append(config)
+                observation = objective_function(config, blackbox)
+                observations.append(observation)
 
-    # 1. Initialize Scheduler
-    print("Initializing Scheduler...")
-    if args.method == 'CQR':
-        scheduler = CQR(
-            config_space=config_space,
-            metric=metric_name,
-            do_minimize= mode == "min",
-            random_seed=random_seed,
-        )
-    print(f"Collecting {num_samples} samples for {args.method}...")
-    original_samples = collect_samples(scheduler, initial_design, observations, num_samples)
-    print(f"Collected {len(original_samples)} samples for {args.method}.")
+            # 1. Initialize Scheduler
+            print("Initializing Scheduler...")
+            if args.method == 'CQR':
+                scheduler = CQR(
+                    config_space=config_space,
+                    metric=metric_name,
+                    do_minimize= mode == "min",
+                    random_seed=seed,
+                )
+            print(f"Collecting {num_samples} samples for {args.method}...")
+            original_samples = collect_samples(scheduler, initial_design, observations, num_samples)
+            print(f"Collected {len(original_samples)} samples for {args.method}.")
 
-    # 2. Initialize OptFormer Scheduler
-    print("Initializing OptFormer Scheduler...")
-    optformer_scheduler = OptformerScheduler(
-        config_space=config_space,
-        metric=metric_name,
-        checkpoint_dir=optformer_checkpoint_dir,
-        task_info={
-            'name': benchmark_name,
-            'algorithm': args.method, # This is important for OptFormer's internal prompt generation
-            'metric_names': metric_name
-        },
-        do_minimize= mode== "min",
-        random_seed=random_seed,
-        n_sample_configurations=1, # We want the final suggested config for comparison
-    )
+            # 2. Initialize OptFormer Scheduler
+            print("Initializing OptFormer Scheduler...")
+            optformer_scheduler = OptformerScheduler(
+                config_space=config_space,
+                metric=metric_name,
+                checkpoint_dir=optformer_checkpoint_dir,
+                task_info={
+                    'name': benchmark_name,
+                    'algorithm': args.method, # This is important for OptFormer's internal prompt generation
+                    'metric_names': metric_name
+                },
+                do_minimize= mode== "min",
+                random_seed=seed,
+                n_sample_configurations=1, # We want the final suggested config for comparison
+            )
 
-    print(f"Collecting {num_samples} samples for OptFormer...")
-    optformer_samples = collect_samples(optformer_scheduler, initial_design, observations, num_samples=num_samples)
-    print(f"Collected {len(optformer_samples)} samples for OptFormer.")
+            print(f"Collecting {num_samples} samples for OptFormer...")
+            optformer_samples = collect_samples(optformer_scheduler, initial_design, observations, num_samples=num_samples)
+            print(f"Collected {len(optformer_samples)} samples for OptFormer.")
 
-    # Ensure both lists have samples before proceeding
-    if not original_samples or not optformer_samples:
-        print("Error: One or both schedulers failed to collect samples. Cannot compute KL divergence.")
-    else:
-        # 4. Compute KL Divergence
-        print("Computing KL Divergence...")
-        kl_divergence = compute_kl_divergence(original_samples, optformer_samples)
-        print(f"KL Divergence (CQR vs OptFormer): {kl_divergence:.4f}")
+            # Ensure both lists have samples before proceeding
+            if not original_samples or not optformer_samples:
+                print("Error: One or both schedulers failed to collect samples. Cannot compute KL divergence.")
+            else:
+                # 4. Compute KL Divergence
+                print("Computing KL Divergence...")
+                kl_divergence = compute_kl_divergence(original_samples, optformer_samples)
+                print(f"KL Divergence (CQR vs OptFormer): {kl_divergence:.4f}")
 
-    print("Script finished.")
+            print("Script finished.")
 
-    results = vars(args)
-    results['kl_divergence'] = kl_divergence
-    os.makedirs(args.output_dir, exist_ok=True)
-    json.dump(results, open(Path(args.output_dir) / f'results_{args.method}_{args.benchmark_name}_iters_{num_iterations}_seed_{random_seed}.json', 'w'))
+            results = dict()
+            results['method'] = args.method
+            results['benchmark_name'] = benchmark_name
+            results['kl_divergence'] = kl_divergence
+            results['seed'] = seed
+            results['num_iterations'] = num_iterations
+            os.makedirs(args.output_dir, exist_ok=True)
+            json.dump(results, open(Path(args.output_dir) / f'results_{args.method}_{args.benchmark_name}_iters_{num_iterations}_seed_{seed}.json', 'w'))
