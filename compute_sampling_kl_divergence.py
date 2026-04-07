@@ -149,7 +149,7 @@ if __name__ == "__main__":
         exit()
 
     blackbox = load_blackbox(benchmark.blackbox_name)[benchmark.dataset_name]
-    blackbox = add_surrogate(blackbox=blackbox)
+    blackbox = add_surrogate(blackbox=blackbox, predict_curves=False)
     config_space = blackbox.configuration_space
     metric_name = benchmark.metric
     mode = benchmark.mode
