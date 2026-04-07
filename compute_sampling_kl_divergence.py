@@ -203,4 +203,4 @@ if __name__ == "__main__":
     results = vars(args)
     results['kl_divergence'] = kl_divergence
     os.makedirs(args.output_dir, exist_ok=True)
-    json.dump(results, open(Path(args.output_dir) / f'results_iters_{num_iterations}_seed_{random_seed}.json', 'w'))
+    json.dump(results, open(Path(args.output_dir) / f'results_{args.method}_{args.benchmark_name}_iters_{num_iterations}_seed_{random_seed}.json', 'w'))
