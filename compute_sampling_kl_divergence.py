@@ -120,7 +120,9 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", type=str,
                         default="./results",
                         help="Path to store the results json.")
-
+    parser.add_argument("--method", type=str,
+                        default="CQR",
+                        help="Optimization method.")
 
     args = parser.parse_args()
 
@@ -154,17 +156,18 @@ if __name__ == "__main__":
         observation = objective_function(config, blackbox)
         observations.append(observation)
 
-    # 1. Initialize CQR Scheduler
-    print("Initializing CQR Scheduler...")
-    cqr_scheduler = CQR(
-        config_space=config_space,
-        metric=metric_name,
-        do_minimize= mode == "min",
-        random_seed=random_seed,
-    )
-    print(f"Collecting {num_samples} samples for CQR...")
-    cqr_samples = collect_samples(cqr_scheduler, initial_design, observations, num_samples)
-    print(f"Collected {len(cqr_samples)} samples for CQR.")
+    # 1. Initialize Scheduler
+    print("Initializing Scheduler...")
+    if args.method == 'CQR':
+        scheduler = CQR(
+            config_space=config_space,
+            metric=metric_name,
+            do_minimize= mode == "min",
+            random_seed=random_seed,
+        )
+    print(f"Collecting {num_samples} samples for {args.method}...")
+    original_samples = collect_samples(scheduler, initial_design, observations, num_samples)
+    print(f"Collected {len(original_samples)} samples for {args.method}.")
 
     # 2. Initialize OptFormer Scheduler
     print("Initializing OptFormer Scheduler...")
@@ -174,7 +177,7 @@ if __name__ == "__main__":
         checkpoint_dir=optformer_checkpoint_dir,
         task_info={
             'name': benchmark_name,
-            'algorithm': "CQR", # This is important for OptFormer's internal prompt generation
+            'algorithm': args.method, # This is important for OptFormer's internal prompt generation
             'metric_names': metric_name
         },
         do_minimize= mode== "min",
@@ -187,12 +190,12 @@ if __name__ == "__main__":
     print(f"Collected {len(optformer_samples)} samples for OptFormer.")
 
     # Ensure both lists have samples before proceeding
-    if not cqr_samples or not optformer_samples:
+    if not original_samples or not optformer_samples:
         print("Error: One or both schedulers failed to collect samples. Cannot compute KL divergence.")
     else:
         # 4. Compute KL Divergence
         print("Computing KL Divergence...")
-        kl_divergence = compute_kl_divergence(cqr_samples, optformer_samples)
+        kl_divergence = compute_kl_divergence(original_samples, optformer_samples)
         print(f"KL Divergence (CQR vs OptFormer): {kl_divergence:.4f}")
 
     print("Script finished.")
