@@ -39,7 +39,7 @@ def generate_configs():
             '2B': 2_000_000_000,
             '4B': 4_000_000_000,
         }
-        lr_grid = {"6e-3": 6e-3, "8e-3": 8e-3, "1e-2": 1e-2}
+        lr_grid = {"5e-3": 5e-3, "1e-2": 1e-2, "2e-2": 2e-2}
 
 #        gas_grid = [1, 2, 4, 8, 16]
 #        mbs = 16
@@ -60,7 +60,7 @@ def generate_configs():
                     number_of_steps = tokens // (bsz * base_config['train']['max_seq_length'])
                     new_config = base_config.copy()
 
-                    ws = np.min([model_size // (bsz * base_config['train']['max_seq_length']), int(number_of_steps * 0.1)])
+                    ws = int(number_of_steps * 0.1)  # 10% warm-up
                     print(model_name, name, number_of_steps, bsz, ws, str(ws / number_of_steps * 100) + '%')
                     new_config['optimizer']['init_args']['lr'] = lr
 
