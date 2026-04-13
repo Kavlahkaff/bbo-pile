@@ -76,10 +76,7 @@ class ConfigGrammar:
         Token IDs 0 to num_numeric_tokens-1 are used directly as quantized values.
         Returns their string representations from the tokenizer vocabulary.
         """
-        return [
-            self.tokenizer.convert_ids_to_tokens(i)
-            for i in range(self.num_numeric_tokens)
-        ]
+        return [str(i) for i in range(self.num_numeric_tokens)]
 
     def _get_categorical_tokens(self) -> list[str]:
         """
@@ -387,8 +384,8 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         "Generate a string like `500,400,<0>*123|`"
         if self.use_hf_checkpoint:
             if self.use_vllm:
-                # 500,400,<0>*123|
-                max_new_tokens = (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 + 1
+                # 500,400,<0>*123| => 2N+2 tokens (should count | as well in vllm)
+                max_new_tokens = (len(self.hp_cont_names) + len(self.hp_cat_names)) * 2 + 2
 
                 # Build regex grammar to constrain output to valid configurations
                 grammar = ConfigGrammar(
@@ -490,8 +487,12 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         for i, (hp_name, hp_token) in enumerate(zip(self.hp_cont_names + self.hp_cat_names, hp_value_tokens)):
             is_continuous_hp = i < len(self.hp_cont_names)
             if is_continuous_hp:
+                if self.use_hf_checkpoint:
+                    int_token = int(self.tokenizer.convert_ids_to_tokens(hp_token))
+                else:
+                    int_token = int(self.tokenizer.id_to_token(hp_token))
                 config[hp_name] = dequantize(
-                    x=hp_token,
+                    x=int_token,
                     x_min=self.config_space[hp_name].lower,
                     x_max=self.config_space[hp_name].upper,
                     q=self.num_numeric_tokens,
