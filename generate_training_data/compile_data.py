@@ -4,6 +4,7 @@ import os
 import tqdm
 import random
 import itertools
+import numpy as np
 
 from pathlib import Path
 from argparse import ArgumentParser
@@ -27,6 +28,11 @@ if __name__ == "__main__":
         type=int,
         required=False,
         default=30,
+    )
+    parser.add_argument(
+        "--sample_shorter_trajectories",
+        action='store_true',
+        help="additionally add just the first [1, 5, 10, 20] trials of the trajectory",
     )
     parser.add_argument(
         "--num_permutation",
@@ -101,6 +107,12 @@ if __name__ == "__main__":
                         hist_train.extend(create_history_from_results(name, metadata, path, max_num_trials,
                                                                       remove_names=args.remove_names,
                                                                       n_permutation=args.num_permutation))
+                        if args.sample_shorter_trajectories:
+                            for mt in [1, 5, 10, 20]:
+                                hist_train.extend(create_history_from_results(name, metadata, path,
+                                                                            mt,
+                                                                            remove_names=args.remove_names,
+                                                                            n_permutation=0))
 
             random.shuffle(hist_train)
             for split in ['train', 'valid']:
