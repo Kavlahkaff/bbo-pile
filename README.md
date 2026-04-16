@@ -60,6 +60,8 @@ Then, switch to the directory:
 First to compile the results of all benchmark family into a dataset
 
     python compile_data.py --path $RESULTS_PATH/fcnet/ --output_path $BASE_PATH/dataset/$VERSION/fcnet/ --remove_names
+    python compile_data.py --path $RESULTS_PATH/masked_fcnet/ --output_path $BASE_PATH/dataset/$VERSION/masked_fcnet/ --remove_names
+    python compile_data.py --path $RESULTS_PATH/masked_nas201/ --output_path $BASE_PATH/dataset/$VERSION/masked_nas201/ --remove_names
     python compile_data.py --path $RESULTS_PATH/global_optimization_benchmarks/ --output_path $BASE_PATH/dataset/$VERSION/global_optimization_benchmarks/ --remove_names
     python compile_data.py --path $RESULTS_PATH/hpob/ --output_path $BASE_PATH/dataset/$VERSION/hpob/ --remove_names
     python compile_data.py --path $RESULTS_PATH/lcbench/ --output_path $BASE_PATH/dataset/$VERSION/lcbench/ --remove_names
@@ -73,12 +75,12 @@ Generate a new directory:
 
 Concat all datasets for training
 
-    python concat_text_files.py $BASE_PATH/dataset/$VERSION/fcnet/train.txt $BASE_PATH/dataset/$VERSION/nas201/train.txt $BASE_PATH/dataset/$VERSION/hpob/train.txt $BASE_PATH/dataset/$VERSION/tabrepo/train.txt $BASE_PATH/dataset/$VERSION/pd1/train.txt $BASE_PATH/dataset/$VERSION/lcbench/train.txt $BASE_PATH/dataset/$VERSION/global_optimization_benchmarks/train.txt $BASE_PATH/dataset/$VERSION/all/unshuffled_train.txt
+    python concat_text_files.py $BASE_PATH/dataset/$VERSION/fcnet/train.txt $BASE_PATH/dataset/$VERSION/nas201/train.txt $BASE_PATH/dataset/$VERSION/masked_fcnet/train.txt $BASE_PATH/dataset/$VERSION/masked_nas201/train.txt $BASE_PATH/dataset/$VERSION/hpob/train.txt $BASE_PATH/dataset/$VERSION/tabrepo/train.txt $BASE_PATH/dataset/$VERSION/pd1/train.txt $BASE_PATH/dataset/$VERSION/lcbench/train.txt $BASE_PATH/dataset/$VERSION/global_optimization_benchmarks/train.txt $BASE_PATH/dataset/$VERSION/all/unshuffled_train.txt
 
 
 and validation:
 
-    python concat_text_files.py $BASE_PATH/dataset/$VERSION/fcnet/valid.txt $BASE_PATH/dataset/$VERSION/nas201/valid.txt $BASE_PATH/dataset/$VERSION/hpob/valid.txt $BASE_PATH/dataset/$VERSION/tabrepo/valid.txt $BASE_PATH/dataset/$VERSION/pd1/valid.txt $BASE_PATH/dataset/$VERSION/lcbench/valid.txt $BASE_PATH/dataset/$VERSION/global_optimization_benchmarks/valid.txt $BASE_PATH/dataset/$VERSION/all/unshuffled_valid.txt
+    python concat_text_files.py $BASE_PATH/dataset/$VERSION/fcnet/valid.txt $BASE_PATH/dataset/$VERSION/nas201/valid.txt $BASE_PATH/dataset/$VERSION/masked_fcnet/valid.txt $BASE_PATH/dataset/$VERSION/masked_nas201/valid.txt $BASE_PATH/dataset/$VERSION/hpob/valid.txt $BASE_PATH/dataset/$VERSION/tabrepo/valid.txt $BASE_PATH/dataset/$VERSION/pd1/valid.txt $BASE_PATH/dataset/$VERSION/lcbench/valid.txt $BASE_PATH/dataset/$VERSION/global_optimization_benchmarks/valid.txt $BASE_PATH/dataset/$VERSION/all/unshuffled_valid.txt
 
 Change the directory:
 
@@ -152,3 +154,15 @@ Also, we removed names of categorical variables to avoid additional overfitting:
 ## v0.5: 
 
 There was a bug in the quantization: values were mapped to [0, 1000], but our tokenizer only encodes integers from 0 to 999. Parameters with a value of 1000 were therefore mapped to two tokens, which interfered with the sampling process.
+
+## v0.6: 
+
+We add a data augmentation step and ran all optimizers on different sub-spaces of the original FCNET and NAS201 search space, but masking out one or two hyperparameters.
+
+## v0.7:
+
+We changed the permutation numbers of each dataset to better balance the relative distribution of the different benchmark families.
+
+## v0.8:
+
+Adjust the number of permutations for each family, sample shorter sequences with T_max in [1, 5, 10, 20] trials to account for a different distributions during the optimization process.
