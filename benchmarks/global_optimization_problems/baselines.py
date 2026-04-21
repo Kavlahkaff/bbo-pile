@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from syne_tune.optimizer.baselines import REA, RandomSearch, CQR, TPE, BOTorch, BORE
+from syne_tune.optimizer.baselines import REA, RandomSearch, CQR, TPE, BORE
 from syne_tune.optimizer.schedulers.single_objective_scheduler import SingleObjectiveScheduler
 from open_optformer.hebo_searcher import HEBOSearcher
 from open_optformer.optformer_searcher import OptformerScheduler
@@ -20,7 +20,6 @@ class Methods:
     RS = "RS"
     TPE = "TPE"
     REA = "REA"
-    BOTorch = "BOTorch"
     CQR = "CQR"
     HEBO = 'HEBO'
     OPT_CQR = 'OPT-CQR'
@@ -61,13 +60,6 @@ methods = {
         points_to_evaluate=method_arguments.points_to_evaluate
     ),
     Methods.REA: lambda method_arguments: REA(
-        config_space=method_arguments.config_space,
-        metric=method_arguments.metric,
-        do_minimize=method_arguments.mode == "min",
-        random_seed=method_arguments.random_seed,
-        points_to_evaluate=method_arguments.points_to_evaluate
-    ),
-    Methods.BOTorch: lambda method_arguments: BOTorch(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
         do_minimize=method_arguments.mode == "min",

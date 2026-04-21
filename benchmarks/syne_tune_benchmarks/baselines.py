@@ -33,14 +33,8 @@ class Methods:
     RS = "RS"
     TPE = "TPE"
     REA = "REA"
-    BOTorch = "BOTorch"
     CQR = "CQR"
     HEBO = "HEBO"
-    OptFormerBBOB_HillClimb = "OptFormerBBOB-HillClimb"
-    OptFormerBBOB_GP = "OptFormerBBOB-GP"
-    OptFormerBBOB_REGEVO = "OptFormerBBOB-REGEVO"
-    OptFormerBBOB_RS = "OptFormerBBOB-RS"
-    OptFormerHPOB_GP = "OptFormerHPOB-GP"
     OPT_RS = "OPT-RS"
     OPT_REA = "OPT-REA"
     OPT_BORE = "OPT-BORE"
@@ -82,16 +76,6 @@ methods = {
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
         searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate},
-    ),
-    Methods.BOTorch: lambda method_arguments: SingleObjectiveScheduler(
-        config_space=method_arguments.config_space,
-        searcher="botorch",
-        metric=method_arguments.metric,
-        do_minimize=method_arguments.mode == "min",
-        random_seed=method_arguments.random_seed,
-        searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate, 
-                         'optimization_strategy': 'random',
-                         'num_raw_samples': 1000},
     ),
     Methods.HEBO: lambda method_arguments: SingleObjectiveScheduler(
         config_space=method_arguments.config_space,
