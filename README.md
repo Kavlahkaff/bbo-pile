@@ -1,5 +1,5 @@
 
-# Open Foundation Models for Black-box Optimization
+# BBO-Pile: A Dataset for Pre-training Open Foundation Models for Black-box Optimization
 
 ## Installation
 
