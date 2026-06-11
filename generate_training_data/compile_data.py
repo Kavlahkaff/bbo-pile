@@ -55,6 +55,11 @@ if __name__ == "__main__":
         action='store_true',
         help="only keep the best performing algorithm trajectory for each blackbox task",
     )
+    parser.add_argument(
+        "--rename_best",
+        action='store_true',
+        help="replace the algorithm name with 'best' when using --only_best",
+    )
 
     methods = [
         "REA",
@@ -120,6 +125,11 @@ if __name__ == "__main__":
 
                 best_names = {v[0] for v in best_experiments.values()}
                 metadatas = {k: v for k, v in metadatas.items() if k in best_names}
+                
+                if args.rename_best:
+                    for v in metadatas.values():
+                        v['algorithm'] = 'best'
+                        
                 print(f"Filtered to {len(metadatas)} best experiment metadata")
 
         with catchtime("Load results dataframes"):
