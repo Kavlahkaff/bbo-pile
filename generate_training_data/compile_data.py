@@ -12,7 +12,6 @@ from syne_tune.util import catchtime
 
 from load_data import get_metadata, create_history_from_results
 
-
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
 
@@ -50,6 +49,11 @@ if __name__ == "__main__":
         "--remove_names",
         action='store_true',
         help="remove names of benchmark and hypers",
+    )
+    parser.add_argument(
+        "--only_best",
+        action='store_true',
+        help="only keep the best performing algorithm trajectory for each blackbox task",
     )
 
     methods = [
@@ -92,27 +96,53 @@ if __name__ == "__main__":
         print(f"loaded {len(metadatas)} experiment metadata")
         # metadatas = {k: v for k, v in metadatas.items() if "yahpo" not in v["benchmark"]}
 
+        if args.only_best:
+            with catchtime("Find best trajectories for each benchmark"):
+                from syne_tune.config_space import config_space_from_json_dict
+                from load_data import load_result
+
+                best_experiments = {}
+                for name, metadata in tqdm.tqdm(metadatas.items(), desc="Finding best trajectories"):
+                    benchmark_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+                    metric_name = metadata["metric_names"][0]
+                    metric_mode = metadata.get('metric_mode', 'min')
+                    config_space = config_space_from_json_dict(json.loads(metadata['config_space']))
+                    res = load_result(name, metric_name, config_space, path)
+
+                    if res is not None and metric_name in res.columns:
+                        if metric_mode == 'max':
+                            val = -res[metric_name].max()
+                        else:
+                            val = res[metric_name].min()
+
+                        if benchmark_name not in best_experiments or val < best_experiments[benchmark_name][1]:
+                            best_experiments[benchmark_name] = (name, val)
+
+                best_names = {v[0] for v in best_experiments.values()}
+                metadatas = {k: v for k, v in metadatas.items() if k in best_names}
+                print(f"Filtered to {len(metadatas)} best experiment metadata")
+
         with catchtime("Load results dataframes"):
             # load results in parallel
 
             hist_train = list()
             hist_valid = list()
             for name, metadata in tqdm.tqdm(metadatas.items()):
-                    benchmark_name = metadata['benchmark']
-                    if benchmark_name in validation_tasks:
-                        hist_valid.extend(create_history_from_results(name, metadata, path, max_num_trials,
-                                                                      remove_names=args.remove_names,
-                                                                      n_permutation=args.num_permutation))
-                    else:
-                        hist_train.extend(create_history_from_results(name, metadata, path, max_num_trials,
-                                                                      remove_names=args.remove_names,
-                                                                      n_permutation=args.num_permutation))
-                        if args.sample_shorter_trajectories:
-                            for mt in [1, 5, 10, 20]:
-                                hist_train.extend(create_history_from_results(name, metadata, path,
-                                                                            mt,
-                                                                            remove_names=args.remove_names,
-                                                                            n_permutation=0))
+                benchmark_name = metadata['benchmark']
+                if benchmark_name in validation_tasks:
+                    hist_valid.extend(create_history_from_results(name, metadata, path, max_num_trials,
+                                                                  remove_names=args.remove_names,
+                                                                  n_permutation=args.num_permutation))
+                else:
+                    hist_train.extend(create_history_from_results(name, metadata, path, max_num_trials,
+                                                                  remove_names=args.remove_names,
+                                                                  n_permutation=args.num_permutation))
+                    if args.sample_shorter_trajectories:
+                        for mt in [1, 5, 10, 20]:
+                            hist_train.extend(create_history_from_results(name, metadata, path,
+                                                                          mt,
+                                                                          remove_names=args.remove_names,
+                                                                          n_permutation=0))
 
             random.shuffle(hist_train)
             for split in ['train', 'valid']:
