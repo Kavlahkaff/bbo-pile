@@ -1,10 +1,16 @@
 import json
 import pandas as pd
+import os
+import concurrent.futures
+import logging
+from tqdm import tqdm
 
 from pathlib import Path
 from pyparfor import parfor
 
 from json import JSONDecodeError
+
+logger = logging.getLogger(__name__)
 
 from syne_tune.experiments import ExperimentResult
 from syne_tune.config_space import config_space_from_json_dict
@@ -68,15 +74,36 @@ def create_history_from_results(name, metadata, path: Path,
         traj.append(hist.get_prompt(shuffle=True))
     return traj
 
+def read_single_metadata(metadata_path):
+    try:
+        with open(metadata_path, "r") as f:
+            folder = os.path.basename(os.path.dirname(metadata_path))
+            return folder, json.load(f)
+    except JSONDecodeError as e:
+        logger.error(f"JSONDecodeError at {metadata_path}")
+        raise e
+
 def get_metadata(root: Path):
     metadatas = {}
-    for metadata_path in root.rglob(f"*metadata.json"):
-        with open(metadata_path, "r") as f:
-            folder = metadata_path.parent.name
-            try:
-                metadatas[folder] = json.load(f)
-            except JSONDecodeError as e:
-                print(metadata_path)
-                raise e
+    metadata_paths = []
+    
+    logger.info(f"Scanning directory tree at '{root}' for metadata files (using os.walk)...")
+    for dirpath, dirnames, filenames in os.walk(str(root)):
+        for filename in filenames:
+            if filename.endswith("metadata.json"):
+                metadata_paths.append(os.path.join(dirpath, filename))
+                
+    logger.info(f"Found {len(metadata_paths)} metadata files. Loading in parallel...")
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+        results = list(tqdm(
+            executor.map(read_single_metadata, metadata_paths), 
+            total=len(metadata_paths), 
+            desc="Reading metadata JSONs", 
+            mininterval=5.0
+        ))
+        
+    for folder, data in results:
+        metadatas[folder] = data
 
     return metadatas
