@@ -5,12 +5,54 @@ import tqdm
 import random
 import itertools
 import numpy as np
+import multiprocessing
 
 from pathlib import Path
 from argparse import ArgumentParser
 from syne_tune.util import catchtime
 
 from load_data import get_metadata, create_history_from_results
+
+def process_best_trajectory(args_tuple):
+    name, metadata, path = args_tuple
+    from load_data import load_result, get_config_space_from_metadata
+    benchmark_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+    metric_name = metadata["metric_names"][0]
+    metric_mode = metadata.get('metric_mode', 'min')
+    
+    try:
+        config_space = get_config_space_from_metadata(metadata)
+        res = load_result(name, metric_name, config_space, path)
+    except Exception:
+        res = None
+
+    val = None
+    if res is not None and metric_name in res.columns:
+        if metric_mode == 'max':
+            val = -res[metric_name].max()
+        else:
+            val = res[metric_name].min()
+    return benchmark_name, name, val
+
+def process_metadata(args_tuple):
+    name, metadata, path, max_num_trials, remove_names, num_permutation, sample_shorter_trajectories, is_valid = args_tuple
+    from load_data import create_history_from_results
+    histories = []
+    
+    try:
+        histories.extend(create_history_from_results(name, metadata, path, max_num_trials,
+                                                     remove_names=remove_names,
+                                                     n_permutation=num_permutation))
+        if not is_valid and sample_shorter_trajectories:
+            for mt in [1, 5, 10, 20]:
+                histories.extend(create_history_from_results(name, metadata, path,
+                                                             mt,
+                                                             remove_names=remove_names,
+                                                             n_permutation=0))
+    except Exception as e:
+        print(f"Error processing {name}: {e}")
+        
+    return is_valid, histories
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
@@ -103,25 +145,18 @@ if __name__ == "__main__":
 
         if args.only_best:
             with catchtime("Find best trajectories for each benchmark"):
-                from syne_tune.config_space import config_space_from_json_dict
-                from load_data import load_result, get_config_space_from_metadata
-
                 best_experiments = {}
-                for name, metadata in tqdm.tqdm(metadatas.items(), desc="Finding best trajectories"):
-                    benchmark_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
-                    metric_name = metadata["metric_names"][0]
-                    metric_mode = metadata.get('metric_mode', 'min')
-                    config_space = get_config_space_from_metadata(metadata)
-                    res = load_result(name, metric_name, config_space, path)
-
-                    if res is not None and metric_name in res.columns:
-                        if metric_mode == 'max':
-                            val = -res[metric_name].max()
-                        else:
-                            val = res[metric_name].min()
-
-                        if benchmark_name not in best_experiments or val < best_experiments[benchmark_name][1]:
-                            best_experiments[benchmark_name] = (name, val)
+                tasks_best = [(name, metadata, path) for name, metadata in metadatas.items()]
+                
+                num_cores = multiprocessing.cpu_count()
+                with multiprocessing.Pool(processes=num_cores) as pool:
+                    for benchmark_name, name, val in tqdm.tqdm(
+                            pool.imap_unordered(process_best_trajectory, tasks_best), 
+                            total=len(tasks_best), 
+                            desc="Finding best trajectories"):
+                        if val is not None:
+                            if benchmark_name not in best_experiments or val < best_experiments[benchmark_name][1]:
+                                best_experiments[benchmark_name] = (name, val)
 
                 best_names = {v[0] for v in best_experiments.values()}
                 metadatas = {k: v for k, v in metadatas.items() if k in best_names}
@@ -137,22 +172,23 @@ if __name__ == "__main__":
 
             hist_train = list()
             hist_valid = list()
-            for name, metadata in tqdm.tqdm(metadatas.items()):
-                benchmark_name = metadata['benchmark']
-                if benchmark_name in validation_tasks:
-                    hist_valid.extend(create_history_from_results(name, metadata, path, max_num_trials,
-                                                                  remove_names=args.remove_names,
-                                                                  n_permutation=args.num_permutation))
-                else:
-                    hist_train.extend(create_history_from_results(name, metadata, path, max_num_trials,
-                                                                  remove_names=args.remove_names,
-                                                                  n_permutation=args.num_permutation))
-                    if args.sample_shorter_trajectories:
-                        for mt in [1, 5, 10, 20]:
-                            hist_train.extend(create_history_from_results(name, metadata, path,
-                                                                          mt,
-                                                                          remove_names=args.remove_names,
-                                                                          n_permutation=0))
+            
+            tasks_metadata = []
+            for name, metadata in metadatas.items():
+                benchmark_name = metadata.get('benchmark', '')
+                is_valid = benchmark_name in validation_tasks
+                tasks_metadata.append((name, metadata, path, max_num_trials, args.remove_names, args.num_permutation, args.sample_shorter_trajectories, is_valid))
+            
+            num_cores = multiprocessing.cpu_count()
+            with multiprocessing.Pool(processes=num_cores) as pool:
+                for is_valid, histories in tqdm.tqdm(
+                        pool.imap_unordered(process_metadata, tasks_metadata), 
+                        total=len(tasks_metadata),
+                        desc="Loading results"):
+                    if is_valid:
+                        hist_valid.extend(histories)
+                    else:
+                        hist_train.extend(histories)
 
             random.shuffle(hist_train)
             for split in ['train', 'valid']:
