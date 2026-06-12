@@ -148,7 +148,11 @@ if __name__ == "__main__":
                 best_experiments = {}
                 tasks_best = [(name, metadata, path) for name, metadata in metadatas.items()]
                 
-                num_cores = multiprocessing.cpu_count()
+                try:
+                    num_cores = len(os.sched_getaffinity(0))
+                except AttributeError:
+                    num_cores = multiprocessing.cpu_count()
+                
                 with multiprocessing.Pool(processes=num_cores) as pool:
                     for benchmark_name, name, val in tqdm.tqdm(
                             pool.imap_unordered(process_best_trajectory, tasks_best), 
@@ -179,7 +183,11 @@ if __name__ == "__main__":
                 is_valid = benchmark_name in validation_tasks
                 tasks_metadata.append((name, metadata, path, max_num_trials, args.remove_names, args.num_permutation, args.sample_shorter_trajectories, is_valid))
             
-            num_cores = multiprocessing.cpu_count()
+            try:
+                num_cores = len(os.sched_getaffinity(0))
+            except AttributeError:
+                num_cores = multiprocessing.cpu_count()
+                
             with multiprocessing.Pool(processes=num_cores) as pool:
                 for is_valid, histories in tqdm.tqdm(
                         pool.imap_unordered(process_metadata, tasks_metadata), 
