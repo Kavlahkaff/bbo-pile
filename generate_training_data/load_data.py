@@ -11,6 +11,31 @@ from syne_tune.config_space import config_space_from_json_dict
 from open_optformer.history import History
 
 
+def get_config_space_from_metadata(metadata):
+    if 'config_space' in metadata:
+        return config_space_from_json_dict(json.loads(metadata['config_space']))
+    
+    benchmark_name = metadata.get('benchmark', '')
+    if benchmark_name.startswith('global-optimization'):
+        import sys
+        from syne_tune.config_space import config_space_to_json_dict
+        
+        # Dynamically include the benchmark directory in sys.path
+        import_path = str(Path(__file__).parent.parent / "benchmarks" / "global_optimization_problems")
+        if import_path not in sys.path:
+            sys.path.append(import_path)
+            
+        from benchmarks_definitions import benchmark_definitions
+        
+        if benchmark_name in benchmark_definitions:
+            config_space = benchmark_definitions[benchmark_name].configuration_space
+            # Artificially inject it back into metadata so history generation can see it
+            metadata['config_space'] = json.dumps(config_space_to_json_dict(config_space))
+            return config_space
+            
+    raise KeyError(f"'config_space' missing in metadata for benchmark '{benchmark_name}'")
+
+
 def load_result(name, metric_name, config_space, path):
     usecols = [metric_name, "st_tuner_time", "trial_id", "st_decision"]
     usecols.extend(['config_{}'.format(k) for k in config_space.keys()])
@@ -25,7 +50,7 @@ def create_history_from_results(name, metadata, path: Path,
                                 num_numeric_tokens: int = 1000,
                                 remove_names: bool = False,
                                 n_permutation: int = 0) -> list[str]:
-    config_space = config_space_from_json_dict(json.loads(metadata['config_space']))
+    config_space = get_config_space_from_metadata(metadata)
     metric_name = metadata["metric_names"][0]
     res = load_result(name, metric_name, config_space, path)
 

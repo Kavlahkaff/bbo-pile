@@ -104,14 +104,14 @@ if __name__ == "__main__":
         if args.only_best:
             with catchtime("Find best trajectories for each benchmark"):
                 from syne_tune.config_space import config_space_from_json_dict
-                from load_data import load_result
+                from load_data import load_result, get_config_space_from_metadata
 
                 best_experiments = {}
                 for name, metadata in tqdm.tqdm(metadatas.items(), desc="Finding best trajectories"):
                     benchmark_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
                     metric_name = metadata["metric_names"][0]
                     metric_mode = metadata.get('metric_mode', 'min')
-                    config_space = config_space_from_json_dict(json.loads(metadata['config_space']))
+                    config_space = get_config_space_from_metadata(metadata)
                     res = load_result(name, metric_name, config_space, path)
 
                     if res is not None and metric_name in res.columns:
