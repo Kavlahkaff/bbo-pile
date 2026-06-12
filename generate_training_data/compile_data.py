@@ -13,6 +13,8 @@ from syne_tune.util import catchtime
 
 from load_data import get_metadata, create_history_from_results
 
+logger = logging.getLogger(__name__)
+
 def process_best_trajectory(args_tuple):
     name, metadata, path = args_tuple
     from load_data import load_result, get_config_space_from_metadata
@@ -50,12 +52,12 @@ def process_metadata(args_tuple):
                                                              remove_names=remove_names,
                                                              n_permutation=0))
     except Exception as e:
-        print(f"Error processing {name}: {e}")
+        logger.error(f"Error processing {name}: {e}")
         
     return is_valid, histories
 
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
     parser = ArgumentParser()
     parser.add_argument(
@@ -113,6 +115,7 @@ if __name__ == "__main__":
     ]
 
     args, _ = parser.parse_known_args()
+    logger.info(f"Starting data compilation. Reading from '{args.path}', Output to '{args.output_path}'.")
 
     assert Path(args.path).exists()
     max_seed = args.max_seed
@@ -140,7 +143,7 @@ if __name__ == "__main__":
         }
         if experiment_filter:
             metadatas = {k: v for k, v in metadatas.items() if experiment_filter(v)}
-        print(f"loaded {len(metadatas)} experiment metadata")
+        logger.info(f"Loaded {len(metadatas)} experiment metadata items matching criteria.")
         # metadatas = {k: v for k, v in metadatas.items() if "yahpo" not in v["benchmark"]}
 
         if args.only_best:
@@ -153,11 +156,14 @@ if __name__ == "__main__":
                 except AttributeError:
                     num_cores = multiprocessing.cpu_count()
                 
+                logger.info(f"Detecting best trajectories using {num_cores} cores for {len(tasks_best)} tasks...")
+                
                 with multiprocessing.Pool(processes=num_cores) as pool:
                     for benchmark_name, name, val in tqdm.tqdm(
                             pool.imap_unordered(process_best_trajectory, tasks_best), 
                             total=len(tasks_best), 
-                            desc="Finding best trajectories"):
+                            desc="Finding best trajectories",
+                            mininterval=5.0):
                         if val is not None:
                             if benchmark_name not in best_experiments or val < best_experiments[benchmark_name][1]:
                                 best_experiments[benchmark_name] = (name, val)
@@ -169,7 +175,7 @@ if __name__ == "__main__":
                     for v in metadatas.values():
                         v['algorithm'] = 'best'
                         
-                print(f"Filtered to {len(metadatas)} best experiment metadata")
+                logger.info(f"Filtered down to {len(metadatas)} best experiment metadata entries.")
 
         with catchtime("Load results dataframes"):
             # load results in parallel
@@ -188,16 +194,20 @@ if __name__ == "__main__":
             except AttributeError:
                 num_cores = multiprocessing.cpu_count()
                 
+            logger.info(f"Loading and processing dataframes using {num_cores} cores for {len(tasks_metadata)} tasks...")
+                
             with multiprocessing.Pool(processes=num_cores) as pool:
                 for is_valid, histories in tqdm.tqdm(
                         pool.imap_unordered(process_metadata, tasks_metadata), 
                         total=len(tasks_metadata),
-                        desc="Loading results"):
+                        desc="Loading results",
+                        mininterval=5.0):
                     if is_valid:
                         hist_valid.extend(histories)
                     else:
                         hist_train.extend(histories)
 
+            logger.info(f"Data loading complete. Writing outputs to {output_path}...")
             random.shuffle(hist_train)
             for split in ['train', 'valid']:
                 file_name = f"{split}.txt"
