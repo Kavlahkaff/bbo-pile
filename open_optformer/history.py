@@ -89,6 +89,8 @@ class History:
         continues_hypers = []
         categorical_hypers = []
         for hp_name, hp in hypers:
+            if not isinstance(hp, Domain):
+                continue
             if isinstance(hp, Categorical):
                 categorical_hypers.append((hp_name, hp))
             else:

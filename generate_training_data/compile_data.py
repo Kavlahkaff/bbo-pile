@@ -6,6 +6,7 @@ import random
 import itertools
 import numpy as np
 import multiprocessing
+import sys
 
 from pathlib import Path
 from argparse import ArgumentParser
@@ -57,7 +58,17 @@ def process_metadata(args_tuple):
     return is_valid, histories
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+    class FlushingStreamHandler(logging.StreamHandler):
+        def emit(self, record):
+            super().emit(record)
+            self.flush()
+
+    logging.basicConfig(
+        level=logging.INFO, 
+        format='%(asctime)s [%(levelname)s] %(message)s', 
+        force=True, 
+        handlers=[FlushingStreamHandler(sys.stdout)]
+    )
 
     parser = ArgumentParser()
     parser.add_argument(

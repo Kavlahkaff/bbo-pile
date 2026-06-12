@@ -74,11 +74,12 @@ def create_history_from_results(name, metadata, path: Path,
         traj.append(hist.get_prompt(shuffle=True))
     return traj
 
-def read_single_metadata(metadata_path):
+def read_single_metadata(args):
+    metadata_path, root_path = args
     try:
         with open(metadata_path, "r") as f:
-            folder = os.path.basename(os.path.dirname(metadata_path))
-            return folder, json.load(f)
+            rel_path = str(Path(metadata_path).parent.relative_to(root_path))
+            return rel_path, json.load(f)
     except JSONDecodeError as e:
         logger.error(f"JSONDecodeError at {metadata_path}")
         raise e
@@ -91,7 +92,7 @@ def get_metadata(root: Path):
     for dirpath, dirnames, filenames in os.walk(str(root)):
         for filename in filenames:
             if filename.endswith("metadata.json"):
-                metadata_paths.append(os.path.join(dirpath, filename))
+                metadata_paths.append((os.path.join(dirpath, filename), root))
                 
     logger.info(f"Found {len(metadata_paths)} metadata files. Loading in parallel...")
     
@@ -103,7 +104,7 @@ def get_metadata(root: Path):
             mininterval=5.0
         ))
         
-    for folder, data in results:
-        metadatas[folder] = data
+    for rel_path, data in results:
+        metadatas[rel_path] = data
 
     return metadatas
