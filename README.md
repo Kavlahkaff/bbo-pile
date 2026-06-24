@@ -17,7 +17,7 @@ Furthermore, you need to install the following packages, if you want to install 
 
 To run the benchmark locally, first go to the syne_tune_benchmarks folder
 
-    cd benchmarks/syne-tune-benchmarks
+    cd benchmarks/syne_tune_benchmarks
 
 and run the following command:
 
@@ -64,11 +64,14 @@ Compile the results of all benchmark families directly into a combined dataset (
 
 Now we can train the tokenizer
 
-    python train_tokenizer.py --input_folder  $BASE_PATH/dataset/$VERSION/all --output_path $BASE_PATH/tokenizer/$VERSION --vocab_size 1069 
+    python train_tokenizer.py --input_folder $BASE_PATH/dataset/$VERSION/all --output_path $BASE_PATH/tokenizer/$VERSION --vocab_size 1061
 
 And pre-process the dataset to a litdata format, which is required for training the model. This is memory intensive, and you might want to run this on a SLURM cluster.
 
-    python preprocess_data.py --input_path $BASE_PATH/data/raw --output_path $BASE_PATH/data/tokenized_data --tokenizer_dir $BASE_PATH/tokenizer
+    python preprocess_data.py \
+      --input_path $BASE_PATH/dataset/$VERSION/all \
+      --output_path $BASE_PATH/dataset/$VERSION/tokenized_data \
+      --tokenizer_dir $BASE_PATH/tokenizer/$VERSION
 
 ### Pre-training
 
