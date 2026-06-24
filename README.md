@@ -60,11 +60,25 @@ Then, switch to the directory:
 Compile the results of all benchmark families directly into a combined dataset (the script recursively discovers all benchmarks, splits the validation sets, and automatically shuffles the training data):
 
     mkdir -p $BASE_PATH/dataset/$VERSION/all/
-    python compile_data.py --path $RESULTS_PATH --output_path $BASE_PATH/dataset/$VERSION/all/ --remove_names
+    python compile_data.py \
+      --path $RESULTS_PATH \
+      --output_path $BASE_PATH/dataset/$VERSION/all/ \
+      --remove_names \
+      --max_seed 30 \
+      --num_permutation 5 \
+      --sample_shorter_trajectories
+
+The `compile_data.py` script supports several arguments:
+- `--path`: The input path where the benchmark results are stored.
+- `--output_path`: The directory where the compiled dataset will be saved.
+- `--remove_names`: Flag to remove names of benchmarks and hyperparameters, avoiding overfitting.
+- `--max_seed`: Maximum number of seeds to include (default: 30).
+- `--num_permutation`: Number of times the order of variables in the trajectories is permuted to augment the data (default: 5).
+- `--sample_shorter_trajectories`: Flag to additionally include shorter trajectories (first 1, 5, 10, and 20 trials) in the training data.
 
 Now we can train the tokenizer
 
-    python train_tokenizer.py --input_folder $BASE_PATH/dataset/$VERSION/all --output_path $BASE_PATH/tokenizer/$VERSION --vocab_size 1061
+    python train_tokenizer.py --input_folder $BASE_PATH/dataset/$VERSION/all --output_path $BASE_PATH/tokenizer/$VERSION --vocab_size 1069
 
 And pre-process the dataset to a litdata format, which is required for training the model. This is memory intensive, and you might want to run this on a SLURM cluster.
 
