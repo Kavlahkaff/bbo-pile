@@ -168,6 +168,10 @@ if __name__ == "__main__":
             if (max_seed is None or v["seed"] < max_seed)
                and (methods is None or v["algorithm"] in methods)
         }
+        # Save original algorithms before they might get renamed
+        for k, v in metadatas.items():
+            v['original_algorithm'] = v['algorithm']
+            
         if experiment_filter:
             metadatas = {k: v for k, v in metadatas.items() if experiment_filter(v)}
         logger.info(f"Loaded {len(metadatas)} experiment metadata items matching criteria.")
@@ -210,21 +214,24 @@ if __name__ == "__main__":
                     best_names = {v[0] for v in best_experiments.values()}
                     metadatas = {k: v for k, v in metadatas.items() if k in best_names}
 
-                summary_data = []
-                for k, v in metadatas.items():
-                    summary_data.append({
-                        "experiment_name": k,
-                        "benchmark": v.get("benchmark", v.get("entrypoint", "unknown")),
-                        "algorithm": v["algorithm"]
-                    })
-                with open(str(output_path / "dataset_summary.json"), "w") as f:
-                    json.dump(summary_data, f, indent=4)
-                
                 if args.rename_best:
                     for v in metadatas.values():
                         v['algorithm'] = 'best'
                         
                 logger.info(f"Filtered down to {len(metadatas)} best experiment metadata entries.")
+
+        summary_data = []
+        for k, v in metadatas.items():
+            summary_data.append({
+                "experiment_name": k,
+                "benchmark": v.get("benchmark", v.get("entrypoint", "unknown")),
+                # If renamed, we try to recover the original algorithm if needed, 
+                # but wait, if it's renamed, `v['algorithm']` is already 'best'.
+                # Let's just output the current algorithm. Wait, the user wants the distribution!
+                "algorithm": v.get("original_algorithm", v["algorithm"])
+            })
+        with open(str(output_path / "dataset_summary.json"), "w") as f:
+            json.dump(summary_data, f, indent=4)
 
         with catchtime("Load results dataframes"):
             # load results in parallel
