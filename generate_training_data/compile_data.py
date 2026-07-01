@@ -17,7 +17,7 @@ from load_data import get_metadata, create_history_from_results
 logger = logging.getLogger(__name__)
 
 def process_best_trajectory(args_tuple):
-    name, metadata, path = args_tuple
+    name, metadata, path, use_auc = args_tuple
     from load_data import load_result, get_config_space_from_metadata
     benchmark_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
     metric_name = metadata["metric_names"][0]
@@ -31,10 +31,16 @@ def process_best_trajectory(args_tuple):
 
     val = None
     if res is not None and metric_name in res.columns:
-        if metric_mode == 'max':
-            val = -res[metric_name].max()
+        if use_auc:
+            if metric_mode == 'max':
+                val = -np.maximum.accumulate(res[metric_name]).sum()
+            else:
+                val = np.minimum.accumulate(res[metric_name]).sum()
         else:
-            val = res[metric_name].min()
+            if metric_mode == 'max':
+                val = -res[metric_name].max()
+            else:
+                val = res[metric_name].min()
     return benchmark_name, name, val
 
 def process_metadata(args_tuple):
@@ -115,6 +121,16 @@ if __name__ == "__main__":
         action='store_true',
         help="replace the algorithm name with 'best' when using --only_best",
     )
+    parser.add_argument(
+        "--keep_all_seeds_of_best",
+        action='store_true',
+        help="when using --only_best, keep all seeds of the best performing algorithm for each benchmark",
+    )
+    parser.add_argument(
+        "--best_by_auc",
+        action='store_true',
+        help="when using --only_best, select the best trajectory based on Area Under the Curve (AUC) of the cumulative best instead of the final best value",
+    )
 
     methods = [
         "REA",
@@ -160,7 +176,7 @@ if __name__ == "__main__":
         if args.only_best:
             with catchtime("Find best trajectories for each benchmark"):
                 best_experiments = {}
-                tasks_best = [(name, metadata, path) for name, metadata in metadatas.items()]
+                tasks_best = [(name, metadata, path, args.best_by_auc) for name, metadata in metadatas.items()]
                 
                 try:
                     num_cores = len(os.sched_getaffinity(0))
@@ -179,8 +195,30 @@ if __name__ == "__main__":
                             if benchmark_name not in best_experiments or val < best_experiments[benchmark_name][1]:
                                 best_experiments[benchmark_name] = (name, val)
 
-                best_names = {v[0] for v in best_experiments.values()}
-                metadatas = {k: v for k, v in metadatas.items() if k in best_names}
+                if args.keep_all_seeds_of_best:
+                    best_algorithms = {
+                        bench: metadatas[name]["algorithm"] 
+                        for bench, (name, _) in best_experiments.items()
+                    }
+                    new_metadatas = {}
+                    for k, v in metadatas.items():
+                        bench = v.get('benchmark', v.get('entrypoint', 'unknown'))
+                        if bench in best_algorithms and v["algorithm"] == best_algorithms[bench]:
+                            new_metadatas[k] = v
+                    metadatas = new_metadatas
+                else:
+                    best_names = {v[0] for v in best_experiments.values()}
+                    metadatas = {k: v for k, v in metadatas.items() if k in best_names}
+
+                summary_data = []
+                for k, v in metadatas.items():
+                    summary_data.append({
+                        "experiment_name": k,
+                        "benchmark": v.get("benchmark", v.get("entrypoint", "unknown")),
+                        "algorithm": v["algorithm"]
+                    })
+                with open(str(output_path / "dataset_summary.json"), "w") as f:
+                    json.dump(summary_data, f, indent=4)
                 
                 if args.rename_best:
                     for v in metadatas.values():

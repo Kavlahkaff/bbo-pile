@@ -43,6 +43,7 @@ class Methods:
     OPT_CQR = "OPT-CQR"
     OPT_CQR_TS = 'OPT-CQR-TS'
     OPT_CQR_TS_5 = 'OPT-CQR-TS-5'
+    OPT_BEST = 'OPT-best'
 
 methods = {
     Methods.RS: lambda method_arguments: SingleObjectiveScheduler(
@@ -190,6 +191,18 @@ methods = {
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=50,
+    ),
+    Methods.OPT_BEST: lambda method_arguments: OptformerScheduler(
+        config_space=method_arguments.config_space,
+        metric=method_arguments.metric,
+        checkpoint_dir=Path(method_arguments.checkpoint_dir),
+        task_info={'name': method_arguments.benchmark_name,
+                   'algorithm': "best",
+                   'metric_names': "feval"},
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
+        points_to_evaluate=method_arguments.points_to_evaluate,
+        n_sample_configurations=1,
     ),
 }
 
