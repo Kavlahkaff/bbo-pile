@@ -222,7 +222,10 @@ def main(
     train_dataloader, val_dataloader = fabric.setup_dataloaders(train_dataloader, val_dataloader)
 
     if initial_checkpoint_dir:
-        fabric.load_raw(initial_checkpoint_dir / "lit_model.pth", model)
+        try:
+            fabric.load(initial_checkpoint_dir / "lit_model.pth", {"model": model})
+        except Exception:
+            fabric.load_raw(initial_checkpoint_dir / "lit_model.pth", model)
 
     state = {
         "model": model,
