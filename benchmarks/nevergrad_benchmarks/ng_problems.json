@@ -1,0 +1,5697 @@
+{
+  "nevergrad_basic_sphere_2d": {
+    "suite": "basic",
+    "name": "sphere",
+    "dimension": 2
+  },
+  "nevergrad_repeated_basic_sphere_2d": {
+    "suite": "repeated_basic",
+    "name": "sphere",
+    "dimension": 2
+  },
+  "nevergrad_illcond_ellipsoid_100d": {
+    "suite": "illcond",
+    "name": "ellipsoid",
+    "dimension": 100
+  },
+  "nevergrad_illcond_cigar_100d": {
+    "suite": "illcond",
+    "name": "cigar",
+    "dimension": 100
+  },
+  "nevergrad_compabasedillcond_ellipsoid_30d": {
+    "suite": "compabasedillcond",
+    "name": "ellipsoid",
+    "dimension": 30
+  },
+  "nevergrad_compabasedillcond_cigar_30d": {
+    "suite": "compabasedillcond",
+    "name": "cigar",
+    "dimension": 30
+  },
+  "nevergrad_noise_sphere_20d": {
+    "suite": "noise",
+    "name": "sphere",
+    "dimension": 20
+  },
+  "nevergrad_noise_cigar_20d": {
+    "suite": "noise",
+    "name": "cigar",
+    "dimension": 20
+  },
+  "nevergrad_noise_sphere4_20d": {
+    "suite": "noise",
+    "name": "sphere4",
+    "dimension": 20
+  },
+  "nevergrad_dim10_smallbudget_sphere_10d": {
+    "suite": "dim10_smallbudget",
+    "name": "sphere",
+    "dimension": 10
+  },
+  "nevergrad_dim10_select_two_features_sphere_12d": {
+    "suite": "dim10_select_two_features",
+    "name": "sphere",
+    "dimension": 12
+  },
+  "nevergrad_dim10_select_one_feature_sphere_11d": {
+    "suite": "dim10_select_one_feature",
+    "name": "sphere",
+    "dimension": 11
+  },
+  "nevergrad_doe_dim4_sphere_4d": {
+    "suite": "doe_dim4",
+    "name": "sphere",
+    "dimension": 4
+  },
+  "nevergrad_oneshot4_sphere_1d": {
+    "suite": "oneshot4",
+    "name": "sphere",
+    "dimension": 1
+  },
+  "nevergrad_oneshot4_sphere_11d": {
+    "suite": "oneshot4",
+    "name": "sphere",
+    "dimension": 11
+  },
+  "nevergrad_oneshot3_sphere_4d": {
+    "suite": "oneshot3",
+    "name": "sphere",
+    "dimension": 4
+  },
+  "nevergrad_oneshot3_sphere_20d": {
+    "suite": "oneshot3",
+    "name": "sphere",
+    "dimension": 20
+  },
+  "nevergrad_oneshot2_sphere_22d": {
+    "suite": "oneshot2",
+    "name": "sphere",
+    "dimension": 22
+  },
+  "nevergrad_oneshot2_altcigar_22d": {
+    "suite": "oneshot2",
+    "name": "altcigar",
+    "dimension": 22
+  },
+  "nevergrad_oneshot1_sphere_20d": {
+    "suite": "oneshot1",
+    "name": "sphere",
+    "dimension": 20
+  },
+  "nevergrad_oneshot1_cigar_20d": {
+    "suite": "oneshot1",
+    "name": "cigar",
+    "dimension": 20
+  },
+  "nevergrad_oneshot1_hm_20d": {
+    "suite": "oneshot1",
+    "name": "hm",
+    "dimension": 20
+  },
+  "nevergrad_oneshot1_ellipsoid_20d": {
+    "suite": "oneshot1",
+    "name": "ellipsoid",
+    "dimension": 20
+  },
+  "nevergrad_metanoise_sphere_1d": {
+    "suite": "metanoise",
+    "name": "sphere",
+    "dimension": 1
+  },
+  "nevergrad_ng_gym_CartPole-v0__noisy_semideep_neural__1_unseeded_44d": {
+    "suite": "ng_gym",
+    "name": "CartPole-v0__noisy_semideep_neural__1_unseeded",
+    "dimension": 44
+  },
+  "nevergrad_ng_gym_CartPole-v1__noisy_semideep_neural__1_unseeded_44d": {
+    "suite": "ng_gym",
+    "name": "CartPole-v1__noisy_semideep_neural__1_unseeded",
+    "dimension": 44
+  },
+  "nevergrad_ng_gym_Acrobot-v1__noisy_semideep_neural__1_unseeded_96d": {
+    "suite": "ng_gym",
+    "name": "Acrobot-v1__noisy_semideep_neural__1_unseeded",
+    "dimension": 96
+  },
+  "nevergrad_ng_gym_CartPole-v0__noisy_semideep_neural__2_unseeded_120d": {
+    "suite": "ng_gym",
+    "name": "CartPole-v0__noisy_semideep_neural__2_unseeded",
+    "dimension": 120
+  },
+  "nevergrad_ng_gym_CartPole-v1__noisy_semideep_neural__2_unseeded_120d": {
+    "suite": "ng_gym",
+    "name": "CartPole-v1__noisy_semideep_neural__2_unseeded",
+    "dimension": 120
+  },
+  "nevergrad_ng_stacking_gym_CartPole-v0__stackingmemory_neural__1_unseeded_168d": {
+    "suite": "ng_stacking_gym",
+    "name": "CartPole-v0__stackingmemory_neural__1_unseeded",
+    "dimension": 168
+  },
+  "nevergrad_ng_stacking_gym_CartPole-v1__stackingmemory_neural__1_unseeded_168d": {
+    "suite": "ng_stacking_gym",
+    "name": "CartPole-v1__stackingmemory_neural__1_unseeded",
+    "dimension": 168
+  },
+  "nevergrad_ng_stacking_gym_Acrobot-v1__stackingmemory_neural__1_unseeded_372d": {
+    "suite": "ng_stacking_gym",
+    "name": "Acrobot-v1__stackingmemory_neural__1_unseeded",
+    "dimension": 372
+  },
+  "nevergrad_ng_stacking_gym_CartPole-v0__deep_stackingmemory_neural__1_unseeded_360d": {
+    "suite": "ng_stacking_gym",
+    "name": "CartPole-v0__deep_stackingmemory_neural__1_unseeded",
+    "dimension": 360
+  },
+  "nevergrad_ng_stacking_gym_CartPole-v1__deep_stackingmemory_neural__1_unseeded_360d": {
+    "suite": "ng_stacking_gym",
+    "name": "CartPole-v1__deep_stackingmemory_neural__1_unseeded",
+    "dimension": 360
+  },
+  "nevergrad_keras_tuning_keras_dense_nnDimNone_7d": {
+    "suite": "keras_tuning",
+    "name": "keras_dense_nnDimNone",
+    "dimension": 7
+  },
+  "nevergrad_mltuning_mlpDimNone_11d": {
+    "suite": "mltuning",
+    "name": "mlpDimNone",
+    "dimension": 11
+  },
+  "nevergrad_mltuning_decision_treeDimNone_6d": {
+    "suite": "mltuning",
+    "name": "decision_treeDimNone",
+    "dimension": 6
+  },
+  "nevergrad_mltuning_decision_tree_depthDimNone_1d": {
+    "suite": "mltuning",
+    "name": "decision_tree_depthDimNone",
+    "dimension": 1
+  },
+  "nevergrad_mltuning_mlpDim1_11d": {
+    "suite": "mltuning",
+    "name": "mlpDim1",
+    "dimension": 11
+  },
+  "nevergrad_mltuning_decision_treeDim1_6d": {
+    "suite": "mltuning",
+    "name": "decision_treeDim1",
+    "dimension": 6
+  },
+  "nevergrad_mltuning_decision_tree_depthDim1_1d": {
+    "suite": "mltuning",
+    "name": "decision_tree_depthDim1",
+    "dimension": 1
+  },
+  "nevergrad_mltuning_mlpDim2_11d": {
+    "suite": "mltuning",
+    "name": "mlpDim2",
+    "dimension": 11
+  },
+  "nevergrad_mltuning_decision_treeDim2_6d": {
+    "suite": "mltuning",
+    "name": "decision_treeDim2",
+    "dimension": 6
+  },
+  "nevergrad_naivemltuning_mlpDimNone_11d": {
+    "suite": "naivemltuning",
+    "name": "mlpDimNone",
+    "dimension": 11
+  },
+  "nevergrad_naivemltuning_decision_treeDimNone_6d": {
+    "suite": "naivemltuning",
+    "name": "decision_treeDimNone",
+    "dimension": 6
+  },
+  "nevergrad_naivemltuning_decision_tree_depthDimNone_1d": {
+    "suite": "naivemltuning",
+    "name": "decision_tree_depthDimNone",
+    "dimension": 1
+  },
+  "nevergrad_naivemltuning_mlpDim1_11d": {
+    "suite": "naivemltuning",
+    "name": "mlpDim1",
+    "dimension": 11
+  },
+  "nevergrad_naivemltuning_decision_treeDim1_6d": {
+    "suite": "naivemltuning",
+    "name": "decision_treeDim1",
+    "dimension": 6
+  },
+  "nevergrad_naivemltuning_decision_tree_depthDim1_1d": {
+    "suite": "naivemltuning",
+    "name": "decision_tree_depthDim1",
+    "dimension": 1
+  },
+  "nevergrad_naivemltuning_mlpDim2_11d": {
+    "suite": "naivemltuning",
+    "name": "mlpDim2",
+    "dimension": 11
+  },
+  "nevergrad_naivemltuning_decision_treeDim2_6d": {
+    "suite": "naivemltuning",
+    "name": "decision_treeDim2",
+    "dimension": 6
+  },
+  "nevergrad_veryseq_keras_tuning_keras_dense_nnDimNone_7d": {
+    "suite": "veryseq_keras_tuning",
+    "name": "keras_dense_nnDimNone",
+    "dimension": 7
+  },
+  "nevergrad_seq_keras_tuning_keras_dense_nnDimNone_7d": {
+    "suite": "seq_keras_tuning",
+    "name": "keras_dense_nnDimNone",
+    "dimension": 7
+  },
+  "nevergrad_naive_seq_keras_tuning_keras_dense_nnDimNone_7d": {
+    "suite": "naive_seq_keras_tuning",
+    "name": "keras_dense_nnDimNone",
+    "dimension": 7
+  },
+  "nevergrad_naive_veryseq_keras_tuning_keras_dense_nnDimNone_7d": {
+    "suite": "naive_veryseq_keras_tuning",
+    "name": "keras_dense_nnDimNone",
+    "dimension": 7
+  },
+  "nevergrad_oneshot_mltuning_mlpDimNone_11d": {
+    "suite": "oneshot_mltuning",
+    "name": "mlpDimNone",
+    "dimension": 11
+  },
+  "nevergrad_oneshot_mltuning_decision_treeDimNone_6d": {
+    "suite": "oneshot_mltuning",
+    "name": "decision_treeDimNone",
+    "dimension": 6
+  },
+  "nevergrad_oneshot_mltuning_decision_tree_depthDimNone_1d": {
+    "suite": "oneshot_mltuning",
+    "name": "decision_tree_depthDimNone",
+    "dimension": 1
+  },
+  "nevergrad_oneshot_mltuning_mlpDim1_11d": {
+    "suite": "oneshot_mltuning",
+    "name": "mlpDim1",
+    "dimension": 11
+  },
+  "nevergrad_oneshot_mltuning_decision_treeDim1_6d": {
+    "suite": "oneshot_mltuning",
+    "name": "decision_treeDim1",
+    "dimension": 6
+  },
+  "nevergrad_oneshot_mltuning_decision_tree_depthDim1_1d": {
+    "suite": "oneshot_mltuning",
+    "name": "decision_tree_depthDim1",
+    "dimension": 1
+  },
+  "nevergrad_oneshot_mltuning_mlpDim2_11d": {
+    "suite": "oneshot_mltuning",
+    "name": "mlpDim2",
+    "dimension": 11
+  },
+  "nevergrad_oneshot_mltuning_decision_treeDim2_6d": {
+    "suite": "oneshot_mltuning",
+    "name": "decision_treeDim2",
+    "dimension": 6
+  },
+  "nevergrad_seq_mltuning_mlpDimNone_11d": {
+    "suite": "seq_mltuning",
+    "name": "mlpDimNone",
+    "dimension": 11
+  },
+  "nevergrad_seq_mltuning_decision_treeDimNone_6d": {
+    "suite": "seq_mltuning",
+    "name": "decision_treeDimNone",
+    "dimension": 6
+  },
+  "nevergrad_seq_mltuning_decision_tree_depthDimNone_1d": {
+    "suite": "seq_mltuning",
+    "name": "decision_tree_depthDimNone",
+    "dimension": 1
+  },
+  "nevergrad_nano_seq_mltuning_mlpDimNone_11d": {
+    "suite": "nano_seq_mltuning",
+    "name": "mlpDimNone",
+    "dimension": 11
+  },
+  "nevergrad_nano_seq_mltuning_decision_treeDimNone_6d": {
+    "suite": "nano_seq_mltuning",
+    "name": "decision_treeDimNone",
+    "dimension": 6
+  },
+  "nevergrad_nano_seq_mltuning_decision_tree_depthDimNone_1d": {
+    "suite": "nano_seq_mltuning",
+    "name": "decision_tree_depthDimNone",
+    "dimension": 1
+  },
+  "nevergrad_nano_veryseq_mltuning_mlpDimNone_11d": {
+    "suite": "nano_veryseq_mltuning",
+    "name": "mlpDimNone",
+    "dimension": 11
+  },
+  "nevergrad_nano_veryseq_mltuning_decision_treeDimNone_6d": {
+    "suite": "nano_veryseq_mltuning",
+    "name": "decision_treeDimNone",
+    "dimension": 6
+  },
+  "nevergrad_nano_veryseq_mltuning_decision_tree_depthDimNone_1d": {
+    "suite": "nano_veryseq_mltuning",
+    "name": "decision_tree_depthDimNone",
+    "dimension": 1
+  },
+  "nevergrad_nano_veryseq_mltuning_mlpDim1_11d": {
+    "suite": "nano_veryseq_mltuning",
+    "name": "mlpDim1",
+    "dimension": 11
+  },
+  "nevergrad_nano_veryseq_mltuning_decision_treeDim1_6d": {
+    "suite": "nano_veryseq_mltuning",
+    "name": "decision_treeDim1",
+    "dimension": 6
+  },
+  "nevergrad_nano_veryseq_mltuning_decision_tree_depthDim1_1d": {
+    "suite": "nano_veryseq_mltuning",
+    "name": "decision_tree_depthDim1",
+    "dimension": 1
+  },
+  "nevergrad_nano_naive_veryseq_mltuning_mlpDimNone_11d": {
+    "suite": "nano_naive_veryseq_mltuning",
+    "name": "mlpDimNone",
+    "dimension": 11
+  },
+  "nevergrad_nano_naive_veryseq_mltuning_decision_treeDimNone_6d": {
+    "suite": "nano_naive_veryseq_mltuning",
+    "name": "decision_treeDimNone",
+    "dimension": 6
+  },
+  "nevergrad_nano_naive_veryseq_mltuning_decision_tree_depthDimNone_1d": {
+    "suite": "nano_naive_veryseq_mltuning",
+    "name": "decision_tree_depthDimNone",
+    "dimension": 1
+  },
+  "nevergrad_nano_naive_veryseq_mltuning_mlpDim1_11d": {
+    "suite": "nano_naive_veryseq_mltuning",
+    "name": "mlpDim1",
+    "dimension": 11
+  },
+  "nevergrad_nano_naive_veryseq_mltuning_decision_treeDim1_6d": {
+    "suite": "nano_naive_veryseq_mltuning",
+    "name": "decision_treeDim1",
+    "dimension": 6
+  },
+  "nevergrad_nano_naive_veryseq_mltuning_decision_tree_depthDim1_1d": {
+    "suite": "nano_naive_veryseq_mltuning",
+    "name": "decision_tree_depthDim1",
+    "dimension": 1
+  },
+  "nevergrad_nano_naive_seq_mltuning_mlpDimNone_11d": {
+    "suite": "nano_naive_seq_mltuning",
+    "name": "mlpDimNone",
+    "dimension": 11
+  },
+  "nevergrad_nano_naive_seq_mltuning_decision_treeDimNone_6d": {
+    "suite": "nano_naive_seq_mltuning",
+    "name": "decision_treeDimNone",
+    "dimension": 6
+  },
+  "nevergrad_nano_naive_seq_mltuning_decision_tree_depthDimNone_1d": {
+    "suite": "nano_naive_seq_mltuning",
+    "name": "decision_tree_depthDimNone",
+    "dimension": 1
+  },
+  "nevergrad_naive_seq_mltuning_mlpDimNone_11d": {
+    "suite": "naive_seq_mltuning",
+    "name": "mlpDimNone",
+    "dimension": 11
+  },
+  "nevergrad_naive_seq_mltuning_decision_treeDimNone_6d": {
+    "suite": "naive_seq_mltuning",
+    "name": "decision_treeDimNone",
+    "dimension": 6
+  },
+  "nevergrad_naive_seq_mltuning_decision_tree_depthDimNone_1d": {
+    "suite": "naive_seq_mltuning",
+    "name": "decision_tree_depthDimNone",
+    "dimension": 1
+  },
+  "nevergrad_yawidebbob_cigar_50d": {
+    "suite": "yawidebbob",
+    "name": "cigar",
+    "dimension": 50
+  },
+  "nevergrad_yawidebbob_ellipsoid_50d": {
+    "suite": "yawidebbob",
+    "name": "ellipsoid",
+    "dimension": 50
+  },
+  "nevergrad_yawidebbob_hm_5d": {
+    "suite": "yawidebbob",
+    "name": "hm",
+    "dimension": 5
+  },
+  "nevergrad_yawidebbob_hm_70d": {
+    "suite": "yawidebbob",
+    "name": "hm",
+    "dimension": 70
+  },
+  "nevergrad_yawidebbob_rastrigin_70d": {
+    "suite": "yawidebbob",
+    "name": "rastrigin",
+    "dimension": 70
+  },
+  "nevergrad_yawidebbob_rastrigin_10000d": {
+    "suite": "yawidebbob",
+    "name": "rastrigin",
+    "dimension": 10000
+  },
+  "nevergrad_yawidebbob_sphere_40d": {
+    "suite": "yawidebbob",
+    "name": "sphere",
+    "dimension": 40
+  },
+  "nevergrad_yawidebbob_doublelinearslope_560d": {
+    "suite": "yawidebbob",
+    "name": "doublelinearslope",
+    "dimension": 560
+  },
+  "nevergrad_yawidebbob_doublelinearslope_80000d": {
+    "suite": "yawidebbob",
+    "name": "doublelinearslope",
+    "dimension": 80000
+  },
+  "nevergrad_yawidebbob_ellipsoid_80000d": {
+    "suite": "yawidebbob",
+    "name": "ellipsoid",
+    "dimension": 80000
+  },
+  "nevergrad_yawidebbob_ellipsoid_5d": {
+    "suite": "yawidebbob",
+    "name": "ellipsoid",
+    "dimension": 5
+  },
+  "nevergrad_parallel_small_budget_hm_2d": {
+    "suite": "parallel_small_budget",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_parallel_small_budget_hm_4d": {
+    "suite": "parallel_small_budget",
+    "name": "hm",
+    "dimension": 4
+  },
+  "nevergrad_parallel_small_budget_hm_8d": {
+    "suite": "parallel_small_budget",
+    "name": "hm",
+    "dimension": 8
+  },
+  "nevergrad_parallel_small_budget_rastrigin_2d": {
+    "suite": "parallel_small_budget",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_parallel_small_budget_rastrigin_4d": {
+    "suite": "parallel_small_budget",
+    "name": "rastrigin",
+    "dimension": 4
+  },
+  "nevergrad_parallel_small_budget_rastrigin_8d": {
+    "suite": "parallel_small_budget",
+    "name": "rastrigin",
+    "dimension": 8
+  },
+  "nevergrad_deceptive_deceptivemultimodal_2d": {
+    "suite": "deceptive",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_deceptive_deceptivemultimodal_4d": {
+    "suite": "deceptive",
+    "name": "deceptivemultimodal",
+    "dimension": 4
+  },
+  "nevergrad_lowbudget_sphere_7d": {
+    "suite": "lowbudget",
+    "name": "sphere",
+    "dimension": 7
+  },
+  "nevergrad_parallel_sphere_25d": {
+    "suite": "parallel",
+    "name": "sphere",
+    "dimension": 25
+  },
+  "nevergrad_parallel_sphere_150d": {
+    "suite": "parallel",
+    "name": "sphere",
+    "dimension": 150
+  },
+  "nevergrad_parallel_rastrigin_25d": {
+    "suite": "parallel",
+    "name": "rastrigin",
+    "dimension": 25
+  },
+  "nevergrad_parallel_rastrigin_150d": {
+    "suite": "parallel",
+    "name": "rastrigin",
+    "dimension": 150
+  },
+  "nevergrad_parallel_cigar_25d": {
+    "suite": "parallel",
+    "name": "cigar",
+    "dimension": 25
+  },
+  "nevergrad_parallel_cigar_150d": {
+    "suite": "parallel",
+    "name": "cigar",
+    "dimension": 150
+  },
+  "nevergrad_harderparallel_sphere_5d": {
+    "suite": "harderparallel",
+    "name": "sphere",
+    "dimension": 5
+  },
+  "nevergrad_harderparallel_sphere_30d": {
+    "suite": "harderparallel",
+    "name": "sphere",
+    "dimension": 30
+  },
+  "nevergrad_harderparallel_sphere_25d": {
+    "suite": "harderparallel",
+    "name": "sphere",
+    "dimension": 25
+  },
+  "nevergrad_harderparallel_sphere_150d": {
+    "suite": "harderparallel",
+    "name": "sphere",
+    "dimension": 150
+  },
+  "nevergrad_oneshot_sphere_3d": {
+    "suite": "oneshot",
+    "name": "sphere",
+    "dimension": 3
+  },
+  "nevergrad_oneshot_sphere_10d": {
+    "suite": "oneshot",
+    "name": "sphere",
+    "dimension": 10
+  },
+  "nevergrad_doe_sphere_2000d": {
+    "suite": "doe",
+    "name": "sphere",
+    "dimension": 2000
+  },
+  "nevergrad_doe_sphere_20000d": {
+    "suite": "doe",
+    "name": "sphere",
+    "dimension": 20000
+  },
+  "nevergrad_newdoe_sphere_2000d": {
+    "suite": "newdoe",
+    "name": "sphere",
+    "dimension": 2000
+  },
+  "nevergrad_newdoe_sphere_20d": {
+    "suite": "newdoe",
+    "name": "sphere",
+    "dimension": 20
+  },
+  "nevergrad_fiveshots_sphere_3d": {
+    "suite": "fiveshots",
+    "name": "sphere",
+    "dimension": 3
+  },
+  "nevergrad_fiveshots_sphere_18d": {
+    "suite": "fiveshots",
+    "name": "sphere",
+    "dimension": 18
+  },
+  "nevergrad_fiveshots_sphere_25d": {
+    "suite": "fiveshots",
+    "name": "sphere",
+    "dimension": 25
+  },
+  "nevergrad_fiveshots_sphere_150d": {
+    "suite": "fiveshots",
+    "name": "sphere",
+    "dimension": 150
+  },
+  "nevergrad_fiveshots_rastrigin_3d": {
+    "suite": "fiveshots",
+    "name": "rastrigin",
+    "dimension": 3
+  },
+  "nevergrad_fiveshots_rastrigin_18d": {
+    "suite": "fiveshots",
+    "name": "rastrigin",
+    "dimension": 18
+  },
+  "nevergrad_fiveshots_rastrigin_25d": {
+    "suite": "fiveshots",
+    "name": "rastrigin",
+    "dimension": 25
+  },
+  "nevergrad_fiveshots_rastrigin_150d": {
+    "suite": "fiveshots",
+    "name": "rastrigin",
+    "dimension": 150
+  },
+  "nevergrad_fiveshots_cigar_3d": {
+    "suite": "fiveshots",
+    "name": "cigar",
+    "dimension": 3
+  },
+  "nevergrad_fiveshots_cigar_18d": {
+    "suite": "fiveshots",
+    "name": "cigar",
+    "dimension": 18
+  },
+  "nevergrad_fiveshots_cigar_25d": {
+    "suite": "fiveshots",
+    "name": "cigar",
+    "dimension": 25
+  },
+  "nevergrad_fiveshots_cigar_150d": {
+    "suite": "fiveshots",
+    "name": "cigar",
+    "dimension": 150
+  },
+  "nevergrad_multimodal_hm_3d": {
+    "suite": "multimodal",
+    "name": "hm",
+    "dimension": 3
+  },
+  "nevergrad_multimodal_hm_18d": {
+    "suite": "multimodal",
+    "name": "hm",
+    "dimension": 18
+  },
+  "nevergrad_multimodal_hm_25d": {
+    "suite": "multimodal",
+    "name": "hm",
+    "dimension": 25
+  },
+  "nevergrad_multimodal_hm_150d": {
+    "suite": "multimodal",
+    "name": "hm",
+    "dimension": 150
+  },
+  "nevergrad_multimodal_rastrigin_3d": {
+    "suite": "multimodal",
+    "name": "rastrigin",
+    "dimension": 3
+  },
+  "nevergrad_multimodal_rastrigin_18d": {
+    "suite": "multimodal",
+    "name": "rastrigin",
+    "dimension": 18
+  },
+  "nevergrad_multimodal_rastrigin_25d": {
+    "suite": "multimodal",
+    "name": "rastrigin",
+    "dimension": 25
+  },
+  "nevergrad_multimodal_rastrigin_150d": {
+    "suite": "multimodal",
+    "name": "rastrigin",
+    "dimension": 150
+  },
+  "nevergrad_multimodal_griewank_3d": {
+    "suite": "multimodal",
+    "name": "griewank",
+    "dimension": 3
+  },
+  "nevergrad_multimodal_griewank_18d": {
+    "suite": "multimodal",
+    "name": "griewank",
+    "dimension": 18
+  },
+  "nevergrad_multimodal_griewank_25d": {
+    "suite": "multimodal",
+    "name": "griewank",
+    "dimension": 25
+  },
+  "nevergrad_hdmultimodal_hm_1000d": {
+    "suite": "hdmultimodal",
+    "name": "hm",
+    "dimension": 1000
+  },
+  "nevergrad_hdmultimodal_hm_6000d": {
+    "suite": "hdmultimodal",
+    "name": "hm",
+    "dimension": 6000
+  },
+  "nevergrad_hdmultimodal_hm_36000d": {
+    "suite": "hdmultimodal",
+    "name": "hm",
+    "dimension": 36000
+  },
+  "nevergrad_hdmultimodal_rastrigin_1000d": {
+    "suite": "hdmultimodal",
+    "name": "rastrigin",
+    "dimension": 1000
+  },
+  "nevergrad_hdmultimodal_rastrigin_6000d": {
+    "suite": "hdmultimodal",
+    "name": "rastrigin",
+    "dimension": 6000
+  },
+  "nevergrad_hdmultimodal_rastrigin_36000d": {
+    "suite": "hdmultimodal",
+    "name": "rastrigin",
+    "dimension": 36000
+  },
+  "nevergrad_hdmultimodal_griewank_1000d": {
+    "suite": "hdmultimodal",
+    "name": "griewank",
+    "dimension": 1000
+  },
+  "nevergrad_hdmultimodal_griewank_6000d": {
+    "suite": "hdmultimodal",
+    "name": "griewank",
+    "dimension": 6000
+  },
+  "nevergrad_hdmultimodal_griewank_36000d": {
+    "suite": "hdmultimodal",
+    "name": "griewank",
+    "dimension": 36000
+  },
+  "nevergrad_hdmultimodal_rosenbrock_1000d": {
+    "suite": "hdmultimodal",
+    "name": "rosenbrock",
+    "dimension": 1000
+  },
+  "nevergrad_hdmultimodal_rosenbrock_6000d": {
+    "suite": "hdmultimodal",
+    "name": "rosenbrock",
+    "dimension": 6000
+  },
+  "nevergrad_hdmultimodal_rosenbrock_36000d": {
+    "suite": "hdmultimodal",
+    "name": "rosenbrock",
+    "dimension": 36000
+  },
+  "nevergrad_hdmultimodal_ackley_1000d": {
+    "suite": "hdmultimodal",
+    "name": "ackley",
+    "dimension": 1000
+  },
+  "nevergrad_hdmultimodal_ackley_6000d": {
+    "suite": "hdmultimodal",
+    "name": "ackley",
+    "dimension": 6000
+  },
+  "nevergrad_hdmultimodal_ackley_36000d": {
+    "suite": "hdmultimodal",
+    "name": "ackley",
+    "dimension": 36000
+  },
+  "nevergrad_hdmultimodal_lunacek_1000d": {
+    "suite": "hdmultimodal",
+    "name": "lunacek",
+    "dimension": 1000
+  },
+  "nevergrad_hdmultimodal_lunacek_6000d": {
+    "suite": "hdmultimodal",
+    "name": "lunacek",
+    "dimension": 6000
+  },
+  "nevergrad_hdmultimodal_lunacek_36000d": {
+    "suite": "hdmultimodal",
+    "name": "lunacek",
+    "dimension": 36000
+  },
+  "nevergrad_hdmultimodal_deceptivemultimodal_1000d": {
+    "suite": "hdmultimodal",
+    "name": "deceptivemultimodal",
+    "dimension": 1000
+  },
+  "nevergrad_hdmultimodal_deceptivemultimodal_6000d": {
+    "suite": "hdmultimodal",
+    "name": "deceptivemultimodal",
+    "dimension": 6000
+  },
+  "nevergrad_hdmultimodal_deceptivemultimodal_36000d": {
+    "suite": "hdmultimodal",
+    "name": "deceptivemultimodal",
+    "dimension": 36000
+  },
+  "nevergrad_paramultimodal_hm_3d": {
+    "suite": "paramultimodal",
+    "name": "hm",
+    "dimension": 3
+  },
+  "nevergrad_paramultimodal_hm_18d": {
+    "suite": "paramultimodal",
+    "name": "hm",
+    "dimension": 18
+  },
+  "nevergrad_paramultimodal_hm_25d": {
+    "suite": "paramultimodal",
+    "name": "hm",
+    "dimension": 25
+  },
+  "nevergrad_paramultimodal_hm_150d": {
+    "suite": "paramultimodal",
+    "name": "hm",
+    "dimension": 150
+  },
+  "nevergrad_paramultimodal_rastrigin_3d": {
+    "suite": "paramultimodal",
+    "name": "rastrigin",
+    "dimension": 3
+  },
+  "nevergrad_paramultimodal_rastrigin_18d": {
+    "suite": "paramultimodal",
+    "name": "rastrigin",
+    "dimension": 18
+  },
+  "nevergrad_paramultimodal_rastrigin_25d": {
+    "suite": "paramultimodal",
+    "name": "rastrigin",
+    "dimension": 25
+  },
+  "nevergrad_paramultimodal_rastrigin_150d": {
+    "suite": "paramultimodal",
+    "name": "rastrigin",
+    "dimension": 150
+  },
+  "nevergrad_paramultimodal_griewank_3d": {
+    "suite": "paramultimodal",
+    "name": "griewank",
+    "dimension": 3
+  },
+  "nevergrad_paramultimodal_griewank_18d": {
+    "suite": "paramultimodal",
+    "name": "griewank",
+    "dimension": 18
+  },
+  "nevergrad_paramultimodal_griewank_25d": {
+    "suite": "paramultimodal",
+    "name": "griewank",
+    "dimension": 25
+  },
+  "nevergrad_yabbob_hm_2d": {
+    "suite": "yabbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yabbob_hm_10d": {
+    "suite": "yabbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yabbob_hm_50d": {
+    "suite": "yabbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yabbob_rastrigin_2d": {
+    "suite": "yabbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yabbob_rastrigin_10d": {
+    "suite": "yabbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yabbob_rastrigin_50d": {
+    "suite": "yabbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yabbob_griewank_2d": {
+    "suite": "yabbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yabbob_griewank_10d": {
+    "suite": "yabbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yabbob_griewank_50d": {
+    "suite": "yabbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yabbob_rosenbrock_2d": {
+    "suite": "yabbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yabbob_rosenbrock_10d": {
+    "suite": "yabbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yabbob_rosenbrock_50d": {
+    "suite": "yabbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yabbob_ackley_2d": {
+    "suite": "yabbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yabbob_ackley_10d": {
+    "suite": "yabbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yabbob_ackley_50d": {
+    "suite": "yabbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yabbob_lunacek_2d": {
+    "suite": "yabbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yabbob_lunacek_10d": {
+    "suite": "yabbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yabbob_lunacek_50d": {
+    "suite": "yabbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yabbob_deceptivemultimodal_2d": {
+    "suite": "yabbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yabbob_deceptivemultimodal_10d": {
+    "suite": "yabbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yabbob_deceptivemultimodal_50d": {
+    "suite": "yabbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yahdlbbbob_hm_100d": {
+    "suite": "yahdlbbbob",
+    "name": "hm",
+    "dimension": 100
+  },
+  "nevergrad_yahdlbbbob_hm_1000d": {
+    "suite": "yahdlbbbob",
+    "name": "hm",
+    "dimension": 1000
+  },
+  "nevergrad_yahdlbbbob_hm_3000d": {
+    "suite": "yahdlbbbob",
+    "name": "hm",
+    "dimension": 3000
+  },
+  "nevergrad_yahdlbbbob_rastrigin_100d": {
+    "suite": "yahdlbbbob",
+    "name": "rastrigin",
+    "dimension": 100
+  },
+  "nevergrad_yahdlbbbob_rastrigin_1000d": {
+    "suite": "yahdlbbbob",
+    "name": "rastrigin",
+    "dimension": 1000
+  },
+  "nevergrad_yahdlbbbob_rastrigin_3000d": {
+    "suite": "yahdlbbbob",
+    "name": "rastrigin",
+    "dimension": 3000
+  },
+  "nevergrad_yahdlbbbob_griewank_100d": {
+    "suite": "yahdlbbbob",
+    "name": "griewank",
+    "dimension": 100
+  },
+  "nevergrad_yahdlbbbob_griewank_1000d": {
+    "suite": "yahdlbbbob",
+    "name": "griewank",
+    "dimension": 1000
+  },
+  "nevergrad_yahdlbbbob_griewank_3000d": {
+    "suite": "yahdlbbbob",
+    "name": "griewank",
+    "dimension": 3000
+  },
+  "nevergrad_yahdlbbbob_rosenbrock_100d": {
+    "suite": "yahdlbbbob",
+    "name": "rosenbrock",
+    "dimension": 100
+  },
+  "nevergrad_yahdlbbbob_rosenbrock_1000d": {
+    "suite": "yahdlbbbob",
+    "name": "rosenbrock",
+    "dimension": 1000
+  },
+  "nevergrad_yahdlbbbob_rosenbrock_3000d": {
+    "suite": "yahdlbbbob",
+    "name": "rosenbrock",
+    "dimension": 3000
+  },
+  "nevergrad_yahdlbbbob_ackley_100d": {
+    "suite": "yahdlbbbob",
+    "name": "ackley",
+    "dimension": 100
+  },
+  "nevergrad_yahdlbbbob_ackley_1000d": {
+    "suite": "yahdlbbbob",
+    "name": "ackley",
+    "dimension": 1000
+  },
+  "nevergrad_yahdlbbbob_ackley_3000d": {
+    "suite": "yahdlbbbob",
+    "name": "ackley",
+    "dimension": 3000
+  },
+  "nevergrad_yahdlbbbob_lunacek_100d": {
+    "suite": "yahdlbbbob",
+    "name": "lunacek",
+    "dimension": 100
+  },
+  "nevergrad_yahdlbbbob_lunacek_1000d": {
+    "suite": "yahdlbbbob",
+    "name": "lunacek",
+    "dimension": 1000
+  },
+  "nevergrad_yahdlbbbob_lunacek_3000d": {
+    "suite": "yahdlbbbob",
+    "name": "lunacek",
+    "dimension": 3000
+  },
+  "nevergrad_yahdlbbbob_deceptivemultimodal_100d": {
+    "suite": "yahdlbbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 100
+  },
+  "nevergrad_yahdlbbbob_deceptivemultimodal_1000d": {
+    "suite": "yahdlbbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 1000
+  },
+  "nevergrad_yahdlbbbob_deceptivemultimodal_3000d": {
+    "suite": "yahdlbbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 3000
+  },
+  "nevergrad_yahdlbbbob_bucherastrigin_100d": {
+    "suite": "yahdlbbbob",
+    "name": "bucherastrigin",
+    "dimension": 100
+  },
+  "nevergrad_yahdlbbbob_bucherastrigin_1000d": {
+    "suite": "yahdlbbbob",
+    "name": "bucherastrigin",
+    "dimension": 1000
+  },
+  "nevergrad_yahdlbbbob_bucherastrigin_3000d": {
+    "suite": "yahdlbbbob",
+    "name": "bucherastrigin",
+    "dimension": 3000
+  },
+  "nevergrad_yahdlbbbob_multipeak_100d": {
+    "suite": "yahdlbbbob",
+    "name": "multipeak",
+    "dimension": 100
+  },
+  "nevergrad_yahdlbbbob_multipeak_1000d": {
+    "suite": "yahdlbbbob",
+    "name": "multipeak",
+    "dimension": 1000
+  },
+  "nevergrad_yahdlbbbob_multipeak_3000d": {
+    "suite": "yahdlbbbob",
+    "name": "multipeak",
+    "dimension": 3000
+  },
+  "nevergrad_yahdlbbbob_sphere_100d": {
+    "suite": "yahdlbbbob",
+    "name": "sphere",
+    "dimension": 100
+  },
+  "nevergrad_yahdlbbbob_sphere_1000d": {
+    "suite": "yahdlbbbob",
+    "name": "sphere",
+    "dimension": 1000
+  },
+  "nevergrad_yahdlbbbob_sphere_3000d": {
+    "suite": "yahdlbbbob",
+    "name": "sphere",
+    "dimension": 3000
+  },
+  "nevergrad_yahdlbbbob_doublelinearslope_100d": {
+    "suite": "yahdlbbbob",
+    "name": "doublelinearslope",
+    "dimension": 100
+  },
+  "nevergrad_yahdlbbbob_doublelinearslope_1000d": {
+    "suite": "yahdlbbbob",
+    "name": "doublelinearslope",
+    "dimension": 1000
+  },
+  "nevergrad_yahdlbbbob_doublelinearslope_3000d": {
+    "suite": "yahdlbbbob",
+    "name": "doublelinearslope",
+    "dimension": 3000
+  },
+  "nevergrad_yahdlbbbob_stepdoublelinearslope_100d": {
+    "suite": "yahdlbbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 100
+  },
+  "nevergrad_yahdlbbbob_stepdoublelinearslope_1000d": {
+    "suite": "yahdlbbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 1000
+  },
+  "nevergrad_reduced_yahdlbbbob_hm_100d": {
+    "suite": "reduced_yahdlbbbob",
+    "name": "hm",
+    "dimension": 100
+  },
+  "nevergrad_reduced_yahdlbbbob_griewank_3000d": {
+    "suite": "reduced_yahdlbbbob",
+    "name": "griewank",
+    "dimension": 3000
+  },
+  "nevergrad_reduced_yahdlbbbob_lunacek_1000d": {
+    "suite": "reduced_yahdlbbbob",
+    "name": "lunacek",
+    "dimension": 1000
+  },
+  "nevergrad_reduced_yahdlbbbob_multipeak_100d": {
+    "suite": "reduced_yahdlbbbob",
+    "name": "multipeak",
+    "dimension": 100
+  },
+  "nevergrad_reduced_yahdlbbbob_stepdoublelinearslope_3000d": {
+    "suite": "reduced_yahdlbbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 3000
+  },
+  "nevergrad_reduced_yahdlbbbob_ellipsoid_1000d": {
+    "suite": "reduced_yahdlbbbob",
+    "name": "ellipsoid",
+    "dimension": 1000
+  },
+  "nevergrad_reduced_yahdlbbbob_discus_100d": {
+    "suite": "reduced_yahdlbbbob",
+    "name": "discus",
+    "dimension": 100
+  },
+  "nevergrad_reduced_yahdlbbbob_deceptiveillcond_3000d": {
+    "suite": "reduced_yahdlbbbob",
+    "name": "deceptiveillcond",
+    "dimension": 3000
+  },
+  "nevergrad_yanoisysplitbbob_hm_14d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 14
+  },
+  "nevergrad_yanoisysplitbbob_hm_21d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 21
+  },
+  "nevergrad_yanoisysplitbbob_hm_35d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 35
+  },
+  "nevergrad_yanoisysplitbbob_hm_70d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 70
+  },
+  "nevergrad_yanoisysplitbbob_hm_105d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 105
+  },
+  "nevergrad_yanoisysplitbbob_hm_140d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 140
+  },
+  "nevergrad_yanoisysplitbbob_hm_350d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 350
+  },
+  "nevergrad_yanoisysplitbbob_hm_24d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 24
+  },
+  "nevergrad_yanoisysplitbbob_hm_36d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 36
+  },
+  "nevergrad_yanoisysplitbbob_hm_60d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 60
+  },
+  "nevergrad_yanoisysplitbbob_hm_120d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 120
+  },
+  "nevergrad_yanoisysplitbbob_hm_180d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 180
+  },
+  "nevergrad_yanoisysplitbbob_hm_240d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 240
+  },
+  "nevergrad_yanoisysplitbbob_hm_600d": {
+    "suite": "yanoisysplitbbob",
+    "name": "hm",
+    "dimension": 600
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_14d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 14
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_21d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 21
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_35d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 35
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_70d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 70
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_105d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 105
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_140d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 140
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_350d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 350
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_24d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 24
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_36d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 36
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_60d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 60
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_120d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 120
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_180d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 180
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_240d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 240
+  },
+  "nevergrad_yanoisysplitbbob_rastrigin_600d": {
+    "suite": "yanoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 600
+  },
+  "nevergrad_yahdnoisysplitbbob_hm_700d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "hm",
+    "dimension": 700
+  },
+  "nevergrad_yahdnoisysplitbbob_hm_7000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "hm",
+    "dimension": 7000
+  },
+  "nevergrad_yahdnoisysplitbbob_hm_21000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "hm",
+    "dimension": 21000
+  },
+  "nevergrad_yahdnoisysplitbbob_hm_1200d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "hm",
+    "dimension": 1200
+  },
+  "nevergrad_yahdnoisysplitbbob_hm_12000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "hm",
+    "dimension": 12000
+  },
+  "nevergrad_yahdnoisysplitbbob_hm_36000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "hm",
+    "dimension": 36000
+  },
+  "nevergrad_yahdnoisysplitbbob_rastrigin_700d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 700
+  },
+  "nevergrad_yahdnoisysplitbbob_rastrigin_7000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 7000
+  },
+  "nevergrad_yahdnoisysplitbbob_rastrigin_21000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 21000
+  },
+  "nevergrad_yahdnoisysplitbbob_rastrigin_1200d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 1200
+  },
+  "nevergrad_yahdnoisysplitbbob_rastrigin_12000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 12000
+  },
+  "nevergrad_yahdnoisysplitbbob_rastrigin_36000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "rastrigin",
+    "dimension": 36000
+  },
+  "nevergrad_yahdnoisysplitbbob_griewank_700d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "griewank",
+    "dimension": 700
+  },
+  "nevergrad_yahdnoisysplitbbob_griewank_7000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "griewank",
+    "dimension": 7000
+  },
+  "nevergrad_yahdnoisysplitbbob_griewank_21000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "griewank",
+    "dimension": 21000
+  },
+  "nevergrad_yahdnoisysplitbbob_griewank_1200d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "griewank",
+    "dimension": 1200
+  },
+  "nevergrad_yahdnoisysplitbbob_griewank_12000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "griewank",
+    "dimension": 12000
+  },
+  "nevergrad_yahdnoisysplitbbob_griewank_36000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "griewank",
+    "dimension": 36000
+  },
+  "nevergrad_yahdnoisysplitbbob_rosenbrock_700d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "rosenbrock",
+    "dimension": 700
+  },
+  "nevergrad_yahdnoisysplitbbob_rosenbrock_7000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "rosenbrock",
+    "dimension": 7000
+  },
+  "nevergrad_yahdnoisysplitbbob_rosenbrock_21000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "rosenbrock",
+    "dimension": 21000
+  },
+  "nevergrad_yahdnoisysplitbbob_rosenbrock_1200d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "rosenbrock",
+    "dimension": 1200
+  },
+  "nevergrad_yahdnoisysplitbbob_rosenbrock_12000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "rosenbrock",
+    "dimension": 12000
+  },
+  "nevergrad_yahdnoisysplitbbob_rosenbrock_36000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "rosenbrock",
+    "dimension": 36000
+  },
+  "nevergrad_yahdnoisysplitbbob_ackley_700d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "ackley",
+    "dimension": 700
+  },
+  "nevergrad_yahdnoisysplitbbob_ackley_7000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "ackley",
+    "dimension": 7000
+  },
+  "nevergrad_yahdnoisysplitbbob_ackley_21000d": {
+    "suite": "yahdnoisysplitbbob",
+    "name": "ackley",
+    "dimension": 21000
+  },
+  "nevergrad_yaconstrainedbbob_hm_2d": {
+    "suite": "yaconstrainedbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yaconstrainedbbob_hm_10d": {
+    "suite": "yaconstrainedbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yaconstrainedbbob_hm_50d": {
+    "suite": "yaconstrainedbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yaconstrainedbbob_rastrigin_2d": {
+    "suite": "yaconstrainedbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yaconstrainedbbob_rastrigin_10d": {
+    "suite": "yaconstrainedbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yaconstrainedbbob_rastrigin_50d": {
+    "suite": "yaconstrainedbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yaconstrainedbbob_griewank_2d": {
+    "suite": "yaconstrainedbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yaconstrainedbbob_griewank_10d": {
+    "suite": "yaconstrainedbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yaconstrainedbbob_griewank_50d": {
+    "suite": "yaconstrainedbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yaconstrainedbbob_rosenbrock_2d": {
+    "suite": "yaconstrainedbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yaconstrainedbbob_rosenbrock_10d": {
+    "suite": "yaconstrainedbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yaconstrainedbbob_rosenbrock_50d": {
+    "suite": "yaconstrainedbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yaconstrainedbbob_ackley_2d": {
+    "suite": "yaconstrainedbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yaconstrainedbbob_ackley_10d": {
+    "suite": "yaconstrainedbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yaconstrainedbbob_ackley_50d": {
+    "suite": "yaconstrainedbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yaconstrainedbbob_lunacek_2d": {
+    "suite": "yaconstrainedbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yaconstrainedbbob_lunacek_10d": {
+    "suite": "yaconstrainedbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yaconstrainedbbob_lunacek_50d": {
+    "suite": "yaconstrainedbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yaconstrainedbbob_deceptivemultimodal_2d": {
+    "suite": "yaconstrainedbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yaconstrainedbbob_deceptivemultimodal_10d": {
+    "suite": "yaconstrainedbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yaconstrainedbbob_deceptivemultimodal_50d": {
+    "suite": "yaconstrainedbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yapenbbob_hm_2d": {
+    "suite": "yapenbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yapenbbob_hm_10d": {
+    "suite": "yapenbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yapenbbob_hm_50d": {
+    "suite": "yapenbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yapenbbob_rastrigin_2d": {
+    "suite": "yapenbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yapenbbob_rastrigin_10d": {
+    "suite": "yapenbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yapenbbob_rastrigin_50d": {
+    "suite": "yapenbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yapenbbob_griewank_2d": {
+    "suite": "yapenbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yapenbbob_griewank_10d": {
+    "suite": "yapenbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yapenbbob_griewank_50d": {
+    "suite": "yapenbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yapenbbob_rosenbrock_2d": {
+    "suite": "yapenbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yapenbbob_rosenbrock_10d": {
+    "suite": "yapenbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yapenbbob_rosenbrock_50d": {
+    "suite": "yapenbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yapenbbob_ackley_2d": {
+    "suite": "yapenbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yapenbbob_ackley_10d": {
+    "suite": "yapenbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yapenbbob_ackley_50d": {
+    "suite": "yapenbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yapenbbob_lunacek_2d": {
+    "suite": "yapenbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yapenbbob_lunacek_10d": {
+    "suite": "yapenbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yapenbbob_lunacek_50d": {
+    "suite": "yapenbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yapenbbob_deceptivemultimodal_2d": {
+    "suite": "yapenbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yapenbbob_deceptivemultimodal_10d": {
+    "suite": "yapenbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yapenbbob_deceptivemultimodal_50d": {
+    "suite": "yapenbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenhdbbob_hm_100d": {
+    "suite": "yamegapenhdbbob",
+    "name": "hm",
+    "dimension": 100
+  },
+  "nevergrad_yamegapenhdbbob_hm_1000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "hm",
+    "dimension": 1000
+  },
+  "nevergrad_yamegapenhdbbob_hm_3000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "hm",
+    "dimension": 3000
+  },
+  "nevergrad_yamegapenhdbbob_rastrigin_100d": {
+    "suite": "yamegapenhdbbob",
+    "name": "rastrigin",
+    "dimension": 100
+  },
+  "nevergrad_yamegapenhdbbob_rastrigin_1000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "rastrigin",
+    "dimension": 1000
+  },
+  "nevergrad_yamegapenhdbbob_rastrigin_3000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "rastrigin",
+    "dimension": 3000
+  },
+  "nevergrad_yamegapenhdbbob_griewank_100d": {
+    "suite": "yamegapenhdbbob",
+    "name": "griewank",
+    "dimension": 100
+  },
+  "nevergrad_yamegapenhdbbob_griewank_1000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "griewank",
+    "dimension": 1000
+  },
+  "nevergrad_yamegapenhdbbob_griewank_3000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "griewank",
+    "dimension": 3000
+  },
+  "nevergrad_yamegapenhdbbob_rosenbrock_100d": {
+    "suite": "yamegapenhdbbob",
+    "name": "rosenbrock",
+    "dimension": 100
+  },
+  "nevergrad_yamegapenhdbbob_rosenbrock_1000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "rosenbrock",
+    "dimension": 1000
+  },
+  "nevergrad_yamegapenhdbbob_rosenbrock_3000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "rosenbrock",
+    "dimension": 3000
+  },
+  "nevergrad_yamegapenhdbbob_ackley_100d": {
+    "suite": "yamegapenhdbbob",
+    "name": "ackley",
+    "dimension": 100
+  },
+  "nevergrad_yamegapenhdbbob_ackley_1000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "ackley",
+    "dimension": 1000
+  },
+  "nevergrad_yamegapenhdbbob_ackley_3000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "ackley",
+    "dimension": 3000
+  },
+  "nevergrad_yamegapenhdbbob_lunacek_100d": {
+    "suite": "yamegapenhdbbob",
+    "name": "lunacek",
+    "dimension": 100
+  },
+  "nevergrad_yamegapenhdbbob_lunacek_1000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "lunacek",
+    "dimension": 1000
+  },
+  "nevergrad_yamegapenhdbbob_lunacek_3000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "lunacek",
+    "dimension": 3000
+  },
+  "nevergrad_yamegapenhdbbob_deceptivemultimodal_100d": {
+    "suite": "yamegapenhdbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 100
+  },
+  "nevergrad_yamegapenhdbbob_deceptivemultimodal_1000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 1000
+  },
+  "nevergrad_yamegapenhdbbob_deceptivemultimodal_3000d": {
+    "suite": "yamegapenhdbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 3000
+  },
+  "nevergrad_yaonepenbigbbob_hm_2d": {
+    "suite": "yaonepenbigbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbigbbob_hm_10d": {
+    "suite": "yaonepenbigbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbigbbob_hm_50d": {
+    "suite": "yaonepenbigbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbigbbob_rastrigin_2d": {
+    "suite": "yaonepenbigbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbigbbob_rastrigin_10d": {
+    "suite": "yaonepenbigbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbigbbob_rastrigin_50d": {
+    "suite": "yaonepenbigbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbigbbob_griewank_2d": {
+    "suite": "yaonepenbigbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbigbbob_griewank_10d": {
+    "suite": "yaonepenbigbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbigbbob_griewank_50d": {
+    "suite": "yaonepenbigbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbigbbob_rosenbrock_2d": {
+    "suite": "yaonepenbigbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbigbbob_rosenbrock_10d": {
+    "suite": "yaonepenbigbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbigbbob_rosenbrock_50d": {
+    "suite": "yaonepenbigbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbigbbob_ackley_2d": {
+    "suite": "yaonepenbigbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbigbbob_ackley_10d": {
+    "suite": "yaonepenbigbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbigbbob_ackley_50d": {
+    "suite": "yaonepenbigbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbigbbob_lunacek_2d": {
+    "suite": "yaonepenbigbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbigbbob_lunacek_10d": {
+    "suite": "yaonepenbigbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbigbbob_lunacek_50d": {
+    "suite": "yaonepenbigbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbigbbob_deceptivemultimodal_2d": {
+    "suite": "yaonepenbigbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbigbbob_deceptivemultimodal_10d": {
+    "suite": "yaonepenbigbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbigbbob_deceptivemultimodal_50d": {
+    "suite": "yaonepenbigbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbigbbob_bucherastrigin_2d": {
+    "suite": "yaonepenbigbbob",
+    "name": "bucherastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbigbbob_bucherastrigin_10d": {
+    "suite": "yaonepenbigbbob",
+    "name": "bucherastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbigbbob_bucherastrigin_50d": {
+    "suite": "yaonepenbigbbob",
+    "name": "bucherastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbigbbob_multipeak_2d": {
+    "suite": "yaonepenbigbbob",
+    "name": "multipeak",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbigbbob_multipeak_10d": {
+    "suite": "yaonepenbigbbob",
+    "name": "multipeak",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbigbbob_multipeak_50d": {
+    "suite": "yaonepenbigbbob",
+    "name": "multipeak",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbigbbob_hm_2d": {
+    "suite": "yamegapenbigbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbigbbob_hm_10d": {
+    "suite": "yamegapenbigbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbigbbob_hm_50d": {
+    "suite": "yamegapenbigbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbigbbob_rastrigin_2d": {
+    "suite": "yamegapenbigbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbigbbob_rastrigin_10d": {
+    "suite": "yamegapenbigbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbigbbob_rastrigin_50d": {
+    "suite": "yamegapenbigbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbigbbob_griewank_2d": {
+    "suite": "yamegapenbigbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbigbbob_griewank_10d": {
+    "suite": "yamegapenbigbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbigbbob_griewank_50d": {
+    "suite": "yamegapenbigbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbigbbob_rosenbrock_2d": {
+    "suite": "yamegapenbigbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbigbbob_rosenbrock_10d": {
+    "suite": "yamegapenbigbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbigbbob_rosenbrock_50d": {
+    "suite": "yamegapenbigbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbigbbob_ackley_2d": {
+    "suite": "yamegapenbigbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbigbbob_ackley_10d": {
+    "suite": "yamegapenbigbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbigbbob_ackley_50d": {
+    "suite": "yamegapenbigbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbigbbob_lunacek_2d": {
+    "suite": "yamegapenbigbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbigbbob_lunacek_10d": {
+    "suite": "yamegapenbigbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbigbbob_lunacek_50d": {
+    "suite": "yamegapenbigbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbigbbob_deceptivemultimodal_2d": {
+    "suite": "yamegapenbigbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbigbbob_deceptivemultimodal_10d": {
+    "suite": "yamegapenbigbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbigbbob_deceptivemultimodal_50d": {
+    "suite": "yamegapenbigbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbigbbob_bucherastrigin_2d": {
+    "suite": "yamegapenbigbbob",
+    "name": "bucherastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbigbbob_bucherastrigin_10d": {
+    "suite": "yamegapenbigbbob",
+    "name": "bucherastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbigbbob_bucherastrigin_50d": {
+    "suite": "yamegapenbigbbob",
+    "name": "bucherastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbigbbob_multipeak_2d": {
+    "suite": "yamegapenbigbbob",
+    "name": "multipeak",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbigbbob_multipeak_10d": {
+    "suite": "yamegapenbigbbob",
+    "name": "multipeak",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbigbbob_multipeak_50d": {
+    "suite": "yamegapenbigbbob",
+    "name": "multipeak",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenboxbbob_hm_2d": {
+    "suite": "yamegapenboxbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenboxbbob_hm_10d": {
+    "suite": "yamegapenboxbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenboxbbob_hm_50d": {
+    "suite": "yamegapenboxbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenboxbbob_rastrigin_2d": {
+    "suite": "yamegapenboxbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenboxbbob_rastrigin_10d": {
+    "suite": "yamegapenboxbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenboxbbob_rastrigin_50d": {
+    "suite": "yamegapenboxbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenboxbbob_griewank_2d": {
+    "suite": "yamegapenboxbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenboxbbob_griewank_10d": {
+    "suite": "yamegapenboxbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenboxbbob_griewank_50d": {
+    "suite": "yamegapenboxbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenboxbbob_rosenbrock_2d": {
+    "suite": "yamegapenboxbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenboxbbob_rosenbrock_10d": {
+    "suite": "yamegapenboxbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenboxbbob_rosenbrock_50d": {
+    "suite": "yamegapenboxbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenboxbbob_ackley_2d": {
+    "suite": "yamegapenboxbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenboxbbob_ackley_10d": {
+    "suite": "yamegapenboxbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenboxbbob_ackley_50d": {
+    "suite": "yamegapenboxbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenboxbbob_lunacek_2d": {
+    "suite": "yamegapenboxbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenboxbbob_lunacek_10d": {
+    "suite": "yamegapenboxbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenboxbbob_lunacek_50d": {
+    "suite": "yamegapenboxbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenboxbbob_deceptivemultimodal_2d": {
+    "suite": "yamegapenboxbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenboxbbob_deceptivemultimodal_10d": {
+    "suite": "yamegapenboxbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenboxbbob_deceptivemultimodal_50d": {
+    "suite": "yamegapenboxbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbbob_hm_2d": {
+    "suite": "yamegapenbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbbob_hm_10d": {
+    "suite": "yamegapenbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbbob_hm_50d": {
+    "suite": "yamegapenbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbbob_rastrigin_2d": {
+    "suite": "yamegapenbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbbob_rastrigin_10d": {
+    "suite": "yamegapenbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbbob_rastrigin_50d": {
+    "suite": "yamegapenbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbbob_griewank_2d": {
+    "suite": "yamegapenbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbbob_griewank_10d": {
+    "suite": "yamegapenbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbbob_griewank_50d": {
+    "suite": "yamegapenbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbbob_rosenbrock_2d": {
+    "suite": "yamegapenbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbbob_rosenbrock_10d": {
+    "suite": "yamegapenbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbbob_rosenbrock_50d": {
+    "suite": "yamegapenbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbbob_ackley_2d": {
+    "suite": "yamegapenbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbbob_ackley_10d": {
+    "suite": "yamegapenbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbbob_ackley_50d": {
+    "suite": "yamegapenbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbbob_lunacek_2d": {
+    "suite": "yamegapenbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbbob_lunacek_10d": {
+    "suite": "yamegapenbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbbob_lunacek_50d": {
+    "suite": "yamegapenbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenbbob_deceptivemultimodal_2d": {
+    "suite": "yamegapenbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yamegapenbbob_deceptivemultimodal_10d": {
+    "suite": "yamegapenbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yamegapenbbob_deceptivemultimodal_50d": {
+    "suite": "yamegapenbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yamegapenboundedbbob_hm_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "hm",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_rastrigin_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "rastrigin",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_griewank_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "griewank",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_rosenbrock_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "rosenbrock",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_ackley_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "ackley",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_lunacek_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "lunacek",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_deceptivemultimodal_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_bucherastrigin_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "bucherastrigin",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_multipeak_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "multipeak",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_sphere_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "sphere",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_doublelinearslope_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "doublelinearslope",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_stepdoublelinearslope_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_cigar_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "cigar",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_altcigar_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "altcigar",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_ellipsoid_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "ellipsoid",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_altellipsoid_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "altellipsoid",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_stepellipsoid_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "stepellipsoid",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_discus_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "discus",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_bentcigar_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "bentcigar",
+    "dimension": 40
+  },
+  "nevergrad_yamegapenboundedbbob_deceptiveillcond_40d": {
+    "suite": "yamegapenboundedbbob",
+    "name": "deceptiveillcond",
+    "dimension": 40
+  },
+  "nevergrad_yapensmallbbob_hm_2d": {
+    "suite": "yapensmallbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yapensmallbbob_hm_10d": {
+    "suite": "yapensmallbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yapensmallbbob_hm_50d": {
+    "suite": "yapensmallbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yapensmallbbob_rastrigin_2d": {
+    "suite": "yapensmallbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yapensmallbbob_rastrigin_10d": {
+    "suite": "yapensmallbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yapensmallbbob_rastrigin_50d": {
+    "suite": "yapensmallbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yapensmallbbob_griewank_2d": {
+    "suite": "yapensmallbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yapensmallbbob_griewank_10d": {
+    "suite": "yapensmallbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yapensmallbbob_griewank_50d": {
+    "suite": "yapensmallbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yapensmallbbob_rosenbrock_2d": {
+    "suite": "yapensmallbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yapensmallbbob_rosenbrock_10d": {
+    "suite": "yapensmallbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yapensmallbbob_rosenbrock_50d": {
+    "suite": "yapensmallbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yapensmallbbob_ackley_2d": {
+    "suite": "yapensmallbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yapensmallbbob_ackley_10d": {
+    "suite": "yapensmallbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yapensmallbbob_ackley_50d": {
+    "suite": "yapensmallbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yapensmallbbob_lunacek_2d": {
+    "suite": "yapensmallbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yapensmallbbob_lunacek_10d": {
+    "suite": "yapensmallbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yapensmallbbob_lunacek_50d": {
+    "suite": "yapensmallbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yapensmallbbob_deceptivemultimodal_2d": {
+    "suite": "yapensmallbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yapensmallbbob_deceptivemultimodal_10d": {
+    "suite": "yapensmallbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yapensmallbbob_deceptivemultimodal_50d": {
+    "suite": "yapensmallbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yapensmallbbob_bucherastrigin_2d": {
+    "suite": "yapensmallbbob",
+    "name": "bucherastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yapensmallbbob_bucherastrigin_10d": {
+    "suite": "yapensmallbbob",
+    "name": "bucherastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yapensmallbbob_bucherastrigin_50d": {
+    "suite": "yapensmallbbob",
+    "name": "bucherastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yapensmallbbob_multipeak_2d": {
+    "suite": "yapensmallbbob",
+    "name": "multipeak",
+    "dimension": 2
+  },
+  "nevergrad_yapensmallbbob_multipeak_10d": {
+    "suite": "yapensmallbbob",
+    "name": "multipeak",
+    "dimension": 10
+  },
+  "nevergrad_yapensmallbbob_multipeak_50d": {
+    "suite": "yapensmallbbob",
+    "name": "multipeak",
+    "dimension": 50
+  },
+  "nevergrad_yapensmallbbob_sphere_2d": {
+    "suite": "yapensmallbbob",
+    "name": "sphere",
+    "dimension": 2
+  },
+  "nevergrad_yapensmallbbob_sphere_10d": {
+    "suite": "yapensmallbbob",
+    "name": "sphere",
+    "dimension": 10
+  },
+  "nevergrad_yapensmallbbob_sphere_50d": {
+    "suite": "yapensmallbbob",
+    "name": "sphere",
+    "dimension": 50
+  },
+  "nevergrad_yapensmallbbob_doublelinearslope_2d": {
+    "suite": "yapensmallbbob",
+    "name": "doublelinearslope",
+    "dimension": 2
+  },
+  "nevergrad_yapensmallbbob_doublelinearslope_10d": {
+    "suite": "yapensmallbbob",
+    "name": "doublelinearslope",
+    "dimension": 10
+  },
+  "nevergrad_yapensmallbbob_doublelinearslope_50d": {
+    "suite": "yapensmallbbob",
+    "name": "doublelinearslope",
+    "dimension": 50
+  },
+  "nevergrad_yapensmallbbob_stepdoublelinearslope_2d": {
+    "suite": "yapensmallbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 2
+  },
+  "nevergrad_yapensmallbbob_stepdoublelinearslope_10d": {
+    "suite": "yapensmallbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 10
+  },
+  "nevergrad_yapenboundedbbob_hm_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "hm",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_rastrigin_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "rastrigin",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_griewank_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "griewank",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_rosenbrock_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "rosenbrock",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_ackley_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "ackley",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_lunacek_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "lunacek",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_deceptivemultimodal_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_bucherastrigin_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "bucherastrigin",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_multipeak_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "multipeak",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_sphere_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "sphere",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_doublelinearslope_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "doublelinearslope",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_stepdoublelinearslope_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_cigar_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "cigar",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_altcigar_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "altcigar",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_ellipsoid_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "ellipsoid",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_altellipsoid_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "altellipsoid",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_stepellipsoid_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "stepellipsoid",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_discus_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "discus",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_bentcigar_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "bentcigar",
+    "dimension": 40
+  },
+  "nevergrad_yapenboundedbbob_deceptiveillcond_40d": {
+    "suite": "yapenboundedbbob",
+    "name": "deceptiveillcond",
+    "dimension": 40
+  },
+  "nevergrad_yapennoisybbob_hm_2d": {
+    "suite": "yapennoisybbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yapennoisybbob_hm_3d": {
+    "suite": "yapennoisybbob",
+    "name": "hm",
+    "dimension": 3
+  },
+  "nevergrad_yapennoisybbob_hm_5d": {
+    "suite": "yapennoisybbob",
+    "name": "hm",
+    "dimension": 5
+  },
+  "nevergrad_yapennoisybbob_hm_10d": {
+    "suite": "yapennoisybbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yapennoisybbob_hm_15d": {
+    "suite": "yapennoisybbob",
+    "name": "hm",
+    "dimension": 15
+  },
+  "nevergrad_yapennoisybbob_hm_20d": {
+    "suite": "yapennoisybbob",
+    "name": "hm",
+    "dimension": 20
+  },
+  "nevergrad_yapennoisybbob_hm_50d": {
+    "suite": "yapennoisybbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yapennoisybbob_rastrigin_2d": {
+    "suite": "yapennoisybbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yapennoisybbob_rastrigin_3d": {
+    "suite": "yapennoisybbob",
+    "name": "rastrigin",
+    "dimension": 3
+  },
+  "nevergrad_yapennoisybbob_rastrigin_5d": {
+    "suite": "yapennoisybbob",
+    "name": "rastrigin",
+    "dimension": 5
+  },
+  "nevergrad_yapennoisybbob_rastrigin_10d": {
+    "suite": "yapennoisybbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yapennoisybbob_rastrigin_15d": {
+    "suite": "yapennoisybbob",
+    "name": "rastrigin",
+    "dimension": 15
+  },
+  "nevergrad_yapennoisybbob_rastrigin_20d": {
+    "suite": "yapennoisybbob",
+    "name": "rastrigin",
+    "dimension": 20
+  },
+  "nevergrad_yapennoisybbob_rastrigin_50d": {
+    "suite": "yapennoisybbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yapennoisybbob_griewank_2d": {
+    "suite": "yapennoisybbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yapennoisybbob_griewank_3d": {
+    "suite": "yapennoisybbob",
+    "name": "griewank",
+    "dimension": 3
+  },
+  "nevergrad_yapennoisybbob_griewank_5d": {
+    "suite": "yapennoisybbob",
+    "name": "griewank",
+    "dimension": 5
+  },
+  "nevergrad_yapennoisybbob_griewank_10d": {
+    "suite": "yapennoisybbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yapennoisybbob_griewank_15d": {
+    "suite": "yapennoisybbob",
+    "name": "griewank",
+    "dimension": 15
+  },
+  "nevergrad_yapennoisybbob_griewank_20d": {
+    "suite": "yapennoisybbob",
+    "name": "griewank",
+    "dimension": 20
+  },
+  "nevergrad_yapennoisybbob_griewank_50d": {
+    "suite": "yapennoisybbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yapennoisybbob_rosenbrock_2d": {
+    "suite": "yapennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yapennoisybbob_rosenbrock_3d": {
+    "suite": "yapennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 3
+  },
+  "nevergrad_yapennoisybbob_rosenbrock_5d": {
+    "suite": "yapennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 5
+  },
+  "nevergrad_yapennoisybbob_rosenbrock_10d": {
+    "suite": "yapennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yapennoisybbob_rosenbrock_15d": {
+    "suite": "yapennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 15
+  },
+  "nevergrad_yapennoisybbob_rosenbrock_20d": {
+    "suite": "yapennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 20
+  },
+  "nevergrad_yapennoisybbob_rosenbrock_50d": {
+    "suite": "yapennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yapenparabbob_hm_2d": {
+    "suite": "yapenparabbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yapenparabbob_hm_10d": {
+    "suite": "yapenparabbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yapenparabbob_hm_50d": {
+    "suite": "yapenparabbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yapenparabbob_rastrigin_2d": {
+    "suite": "yapenparabbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yapenparabbob_rastrigin_10d": {
+    "suite": "yapenparabbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yapenparabbob_rastrigin_50d": {
+    "suite": "yapenparabbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yapenparabbob_griewank_2d": {
+    "suite": "yapenparabbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yapenparabbob_griewank_10d": {
+    "suite": "yapenparabbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yapenparabbob_griewank_50d": {
+    "suite": "yapenparabbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yapenparabbob_rosenbrock_2d": {
+    "suite": "yapenparabbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yapenparabbob_rosenbrock_10d": {
+    "suite": "yapenparabbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yapenparabbob_rosenbrock_50d": {
+    "suite": "yapenparabbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yapenparabbob_ackley_2d": {
+    "suite": "yapenparabbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yapenparabbob_ackley_10d": {
+    "suite": "yapenparabbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yapenparabbob_ackley_50d": {
+    "suite": "yapenparabbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yapenparabbob_lunacek_2d": {
+    "suite": "yapenparabbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yapenparabbob_lunacek_10d": {
+    "suite": "yapenparabbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yapenparabbob_lunacek_50d": {
+    "suite": "yapenparabbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yapenparabbob_deceptivemultimodal_2d": {
+    "suite": "yapenparabbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yapenparabbob_deceptivemultimodal_10d": {
+    "suite": "yapenparabbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yapenparabbob_deceptivemultimodal_50d": {
+    "suite": "yapenparabbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yapenboxbbob_hm_2d": {
+    "suite": "yapenboxbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yapenboxbbob_hm_10d": {
+    "suite": "yapenboxbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yapenboxbbob_hm_50d": {
+    "suite": "yapenboxbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yapenboxbbob_rastrigin_2d": {
+    "suite": "yapenboxbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yapenboxbbob_rastrigin_10d": {
+    "suite": "yapenboxbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yapenboxbbob_rastrigin_50d": {
+    "suite": "yapenboxbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yapenboxbbob_griewank_2d": {
+    "suite": "yapenboxbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yapenboxbbob_griewank_10d": {
+    "suite": "yapenboxbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yapenboxbbob_griewank_50d": {
+    "suite": "yapenboxbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yapenboxbbob_rosenbrock_2d": {
+    "suite": "yapenboxbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yapenboxbbob_rosenbrock_10d": {
+    "suite": "yapenboxbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yapenboxbbob_rosenbrock_50d": {
+    "suite": "yapenboxbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yapenboxbbob_ackley_2d": {
+    "suite": "yapenboxbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yapenboxbbob_ackley_10d": {
+    "suite": "yapenboxbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yapenboxbbob_ackley_50d": {
+    "suite": "yapenboxbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yapenboxbbob_lunacek_2d": {
+    "suite": "yapenboxbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yapenboxbbob_lunacek_10d": {
+    "suite": "yapenboxbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yapenboxbbob_lunacek_50d": {
+    "suite": "yapenboxbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yapenboxbbob_deceptivemultimodal_2d": {
+    "suite": "yapenboxbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yapenboxbbob_deceptivemultimodal_10d": {
+    "suite": "yapenboxbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yapenboxbbob_deceptivemultimodal_50d": {
+    "suite": "yapenboxbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbbob_hm_2d": {
+    "suite": "yaonepenbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbbob_hm_10d": {
+    "suite": "yaonepenbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbbob_hm_50d": {
+    "suite": "yaonepenbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbbob_rastrigin_2d": {
+    "suite": "yaonepenbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbbob_rastrigin_10d": {
+    "suite": "yaonepenbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbbob_rastrigin_50d": {
+    "suite": "yaonepenbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbbob_griewank_2d": {
+    "suite": "yaonepenbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbbob_griewank_10d": {
+    "suite": "yaonepenbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbbob_griewank_50d": {
+    "suite": "yaonepenbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbbob_rosenbrock_2d": {
+    "suite": "yaonepenbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbbob_rosenbrock_10d": {
+    "suite": "yaonepenbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbbob_rosenbrock_50d": {
+    "suite": "yaonepenbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbbob_ackley_2d": {
+    "suite": "yaonepenbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbbob_ackley_10d": {
+    "suite": "yaonepenbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbbob_ackley_50d": {
+    "suite": "yaonepenbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbbob_lunacek_2d": {
+    "suite": "yaonepenbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbbob_lunacek_10d": {
+    "suite": "yaonepenbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbbob_lunacek_50d": {
+    "suite": "yaonepenbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenbbob_deceptivemultimodal_2d": {
+    "suite": "yaonepenbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenbbob_deceptivemultimodal_10d": {
+    "suite": "yaonepenbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenbbob_deceptivemultimodal_50d": {
+    "suite": "yaonepenbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yaonepensmallbbob_hm_2d": {
+    "suite": "yaonepensmallbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yaonepensmallbbob_hm_10d": {
+    "suite": "yaonepensmallbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yaonepensmallbbob_hm_50d": {
+    "suite": "yaonepensmallbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yaonepensmallbbob_rastrigin_2d": {
+    "suite": "yaonepensmallbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yaonepensmallbbob_rastrigin_10d": {
+    "suite": "yaonepensmallbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yaonepensmallbbob_rastrigin_50d": {
+    "suite": "yaonepensmallbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yaonepensmallbbob_griewank_2d": {
+    "suite": "yaonepensmallbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yaonepensmallbbob_griewank_10d": {
+    "suite": "yaonepensmallbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yaonepensmallbbob_griewank_50d": {
+    "suite": "yaonepensmallbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yaonepensmallbbob_rosenbrock_2d": {
+    "suite": "yaonepensmallbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yaonepensmallbbob_rosenbrock_10d": {
+    "suite": "yaonepensmallbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yaonepensmallbbob_rosenbrock_50d": {
+    "suite": "yaonepensmallbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yaonepensmallbbob_ackley_2d": {
+    "suite": "yaonepensmallbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yaonepensmallbbob_ackley_10d": {
+    "suite": "yaonepensmallbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yaonepensmallbbob_ackley_50d": {
+    "suite": "yaonepensmallbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yaonepensmallbbob_lunacek_2d": {
+    "suite": "yaonepensmallbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yaonepensmallbbob_lunacek_10d": {
+    "suite": "yaonepensmallbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yaonepensmallbbob_lunacek_50d": {
+    "suite": "yaonepensmallbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yaonepensmallbbob_deceptivemultimodal_2d": {
+    "suite": "yaonepensmallbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yaonepensmallbbob_deceptivemultimodal_10d": {
+    "suite": "yaonepensmallbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yaonepensmallbbob_deceptivemultimodal_50d": {
+    "suite": "yaonepensmallbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yaonepensmallbbob_bucherastrigin_2d": {
+    "suite": "yaonepensmallbbob",
+    "name": "bucherastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yaonepensmallbbob_bucherastrigin_10d": {
+    "suite": "yaonepensmallbbob",
+    "name": "bucherastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yaonepensmallbbob_bucherastrigin_50d": {
+    "suite": "yaonepensmallbbob",
+    "name": "bucherastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yaonepensmallbbob_multipeak_2d": {
+    "suite": "yaonepensmallbbob",
+    "name": "multipeak",
+    "dimension": 2
+  },
+  "nevergrad_yaonepensmallbbob_multipeak_10d": {
+    "suite": "yaonepensmallbbob",
+    "name": "multipeak",
+    "dimension": 10
+  },
+  "nevergrad_yaonepensmallbbob_multipeak_50d": {
+    "suite": "yaonepensmallbbob",
+    "name": "multipeak",
+    "dimension": 50
+  },
+  "nevergrad_yaonepensmallbbob_sphere_2d": {
+    "suite": "yaonepensmallbbob",
+    "name": "sphere",
+    "dimension": 2
+  },
+  "nevergrad_yaonepensmallbbob_sphere_10d": {
+    "suite": "yaonepensmallbbob",
+    "name": "sphere",
+    "dimension": 10
+  },
+  "nevergrad_yaonepensmallbbob_sphere_50d": {
+    "suite": "yaonepensmallbbob",
+    "name": "sphere",
+    "dimension": 50
+  },
+  "nevergrad_yaonepensmallbbob_doublelinearslope_2d": {
+    "suite": "yaonepensmallbbob",
+    "name": "doublelinearslope",
+    "dimension": 2
+  },
+  "nevergrad_yaonepensmallbbob_doublelinearslope_10d": {
+    "suite": "yaonepensmallbbob",
+    "name": "doublelinearslope",
+    "dimension": 10
+  },
+  "nevergrad_yaonepensmallbbob_doublelinearslope_50d": {
+    "suite": "yaonepensmallbbob",
+    "name": "doublelinearslope",
+    "dimension": 50
+  },
+  "nevergrad_yaonepensmallbbob_stepdoublelinearslope_2d": {
+    "suite": "yaonepensmallbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 2
+  },
+  "nevergrad_yaonepensmallbbob_stepdoublelinearslope_10d": {
+    "suite": "yaonepensmallbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenboundedbbob_hm_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "hm",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_rastrigin_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "rastrigin",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_griewank_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "griewank",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_rosenbrock_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "rosenbrock",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_ackley_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "ackley",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_lunacek_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "lunacek",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_deceptivemultimodal_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_bucherastrigin_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "bucherastrigin",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_multipeak_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "multipeak",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_sphere_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "sphere",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_doublelinearslope_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "doublelinearslope",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_stepdoublelinearslope_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_cigar_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "cigar",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_altcigar_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "altcigar",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_ellipsoid_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "ellipsoid",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_altellipsoid_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "altellipsoid",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_stepellipsoid_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "stepellipsoid",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_discus_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "discus",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_bentcigar_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "bentcigar",
+    "dimension": 40
+  },
+  "nevergrad_yaonepenboundedbbob_deceptiveillcond_40d": {
+    "suite": "yaonepenboundedbbob",
+    "name": "deceptiveillcond",
+    "dimension": 40
+  },
+  "nevergrad_yaonepennoisybbob_hm_2d": {
+    "suite": "yaonepennoisybbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yaonepennoisybbob_hm_3d": {
+    "suite": "yaonepennoisybbob",
+    "name": "hm",
+    "dimension": 3
+  },
+  "nevergrad_yaonepennoisybbob_hm_5d": {
+    "suite": "yaonepennoisybbob",
+    "name": "hm",
+    "dimension": 5
+  },
+  "nevergrad_yaonepennoisybbob_hm_10d": {
+    "suite": "yaonepennoisybbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yaonepennoisybbob_hm_15d": {
+    "suite": "yaonepennoisybbob",
+    "name": "hm",
+    "dimension": 15
+  },
+  "nevergrad_yaonepennoisybbob_hm_20d": {
+    "suite": "yaonepennoisybbob",
+    "name": "hm",
+    "dimension": 20
+  },
+  "nevergrad_yaonepennoisybbob_hm_50d": {
+    "suite": "yaonepennoisybbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yaonepennoisybbob_rastrigin_2d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yaonepennoisybbob_rastrigin_3d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rastrigin",
+    "dimension": 3
+  },
+  "nevergrad_yaonepennoisybbob_rastrigin_5d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rastrigin",
+    "dimension": 5
+  },
+  "nevergrad_yaonepennoisybbob_rastrigin_10d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yaonepennoisybbob_rastrigin_15d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rastrigin",
+    "dimension": 15
+  },
+  "nevergrad_yaonepennoisybbob_rastrigin_20d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rastrigin",
+    "dimension": 20
+  },
+  "nevergrad_yaonepennoisybbob_rastrigin_50d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yaonepennoisybbob_griewank_2d": {
+    "suite": "yaonepennoisybbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yaonepennoisybbob_griewank_3d": {
+    "suite": "yaonepennoisybbob",
+    "name": "griewank",
+    "dimension": 3
+  },
+  "nevergrad_yaonepennoisybbob_griewank_5d": {
+    "suite": "yaonepennoisybbob",
+    "name": "griewank",
+    "dimension": 5
+  },
+  "nevergrad_yaonepennoisybbob_griewank_10d": {
+    "suite": "yaonepennoisybbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yaonepennoisybbob_griewank_15d": {
+    "suite": "yaonepennoisybbob",
+    "name": "griewank",
+    "dimension": 15
+  },
+  "nevergrad_yaonepennoisybbob_griewank_20d": {
+    "suite": "yaonepennoisybbob",
+    "name": "griewank",
+    "dimension": 20
+  },
+  "nevergrad_yaonepennoisybbob_griewank_50d": {
+    "suite": "yaonepennoisybbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yaonepennoisybbob_rosenbrock_2d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yaonepennoisybbob_rosenbrock_3d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 3
+  },
+  "nevergrad_yaonepennoisybbob_rosenbrock_5d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 5
+  },
+  "nevergrad_yaonepennoisybbob_rosenbrock_10d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yaonepennoisybbob_rosenbrock_15d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 15
+  },
+  "nevergrad_yaonepennoisybbob_rosenbrock_20d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 20
+  },
+  "nevergrad_yaonepennoisybbob_rosenbrock_50d": {
+    "suite": "yaonepennoisybbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenparabbob_hm_2d": {
+    "suite": "yaonepenparabbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenparabbob_hm_10d": {
+    "suite": "yaonepenparabbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenparabbob_hm_50d": {
+    "suite": "yaonepenparabbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenparabbob_rastrigin_2d": {
+    "suite": "yaonepenparabbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenparabbob_rastrigin_10d": {
+    "suite": "yaonepenparabbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenparabbob_rastrigin_50d": {
+    "suite": "yaonepenparabbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenparabbob_griewank_2d": {
+    "suite": "yaonepenparabbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenparabbob_griewank_10d": {
+    "suite": "yaonepenparabbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenparabbob_griewank_50d": {
+    "suite": "yaonepenparabbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenparabbob_rosenbrock_2d": {
+    "suite": "yaonepenparabbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenparabbob_rosenbrock_10d": {
+    "suite": "yaonepenparabbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenparabbob_rosenbrock_50d": {
+    "suite": "yaonepenparabbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenparabbob_ackley_2d": {
+    "suite": "yaonepenparabbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenparabbob_ackley_10d": {
+    "suite": "yaonepenparabbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenparabbob_ackley_50d": {
+    "suite": "yaonepenparabbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenparabbob_lunacek_2d": {
+    "suite": "yaonepenparabbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenparabbob_lunacek_10d": {
+    "suite": "yaonepenparabbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenparabbob_lunacek_50d": {
+    "suite": "yaonepenparabbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenparabbob_deceptivemultimodal_2d": {
+    "suite": "yaonepenparabbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenparabbob_deceptivemultimodal_10d": {
+    "suite": "yaonepenparabbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenparabbob_deceptivemultimodal_50d": {
+    "suite": "yaonepenparabbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenboxbbob_hm_2d": {
+    "suite": "yaonepenboxbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenboxbbob_hm_10d": {
+    "suite": "yaonepenboxbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenboxbbob_hm_50d": {
+    "suite": "yaonepenboxbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenboxbbob_rastrigin_2d": {
+    "suite": "yaonepenboxbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenboxbbob_rastrigin_10d": {
+    "suite": "yaonepenboxbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenboxbbob_rastrigin_50d": {
+    "suite": "yaonepenboxbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenboxbbob_griewank_2d": {
+    "suite": "yaonepenboxbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenboxbbob_griewank_10d": {
+    "suite": "yaonepenboxbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenboxbbob_griewank_50d": {
+    "suite": "yaonepenboxbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenboxbbob_rosenbrock_2d": {
+    "suite": "yaonepenboxbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenboxbbob_rosenbrock_10d": {
+    "suite": "yaonepenboxbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenboxbbob_rosenbrock_50d": {
+    "suite": "yaonepenboxbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenboxbbob_ackley_2d": {
+    "suite": "yaonepenboxbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenboxbbob_ackley_10d": {
+    "suite": "yaonepenboxbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenboxbbob_ackley_50d": {
+    "suite": "yaonepenboxbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenboxbbob_lunacek_2d": {
+    "suite": "yaonepenboxbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenboxbbob_lunacek_10d": {
+    "suite": "yaonepenboxbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenboxbbob_lunacek_50d": {
+    "suite": "yaonepenboxbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yaonepenboxbbob_deceptivemultimodal_2d": {
+    "suite": "yaonepenboxbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yaonepenboxbbob_deceptivemultimodal_10d": {
+    "suite": "yaonepenboxbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yaonepenboxbbob_deceptivemultimodal_50d": {
+    "suite": "yaonepenboxbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yahdnoisybbob_hm_100d": {
+    "suite": "yahdnoisybbob",
+    "name": "hm",
+    "dimension": 100
+  },
+  "nevergrad_yahdnoisybbob_hm_1000d": {
+    "suite": "yahdnoisybbob",
+    "name": "hm",
+    "dimension": 1000
+  },
+  "nevergrad_yahdnoisybbob_hm_3000d": {
+    "suite": "yahdnoisybbob",
+    "name": "hm",
+    "dimension": 3000
+  },
+  "nevergrad_yahdnoisybbob_rastrigin_100d": {
+    "suite": "yahdnoisybbob",
+    "name": "rastrigin",
+    "dimension": 100
+  },
+  "nevergrad_yahdnoisybbob_rastrigin_1000d": {
+    "suite": "yahdnoisybbob",
+    "name": "rastrigin",
+    "dimension": 1000
+  },
+  "nevergrad_yahdnoisybbob_rastrigin_3000d": {
+    "suite": "yahdnoisybbob",
+    "name": "rastrigin",
+    "dimension": 3000
+  },
+  "nevergrad_yahdnoisybbob_griewank_100d": {
+    "suite": "yahdnoisybbob",
+    "name": "griewank",
+    "dimension": 100
+  },
+  "nevergrad_yahdnoisybbob_griewank_1000d": {
+    "suite": "yahdnoisybbob",
+    "name": "griewank",
+    "dimension": 1000
+  },
+  "nevergrad_yahdnoisybbob_griewank_3000d": {
+    "suite": "yahdnoisybbob",
+    "name": "griewank",
+    "dimension": 3000
+  },
+  "nevergrad_yahdnoisybbob_rosenbrock_100d": {
+    "suite": "yahdnoisybbob",
+    "name": "rosenbrock",
+    "dimension": 100
+  },
+  "nevergrad_yahdnoisybbob_rosenbrock_1000d": {
+    "suite": "yahdnoisybbob",
+    "name": "rosenbrock",
+    "dimension": 1000
+  },
+  "nevergrad_yahdnoisybbob_rosenbrock_3000d": {
+    "suite": "yahdnoisybbob",
+    "name": "rosenbrock",
+    "dimension": 3000
+  },
+  "nevergrad_yahdnoisybbob_ackley_100d": {
+    "suite": "yahdnoisybbob",
+    "name": "ackley",
+    "dimension": 100
+  },
+  "nevergrad_yahdnoisybbob_ackley_1000d": {
+    "suite": "yahdnoisybbob",
+    "name": "ackley",
+    "dimension": 1000
+  },
+  "nevergrad_yahdnoisybbob_ackley_3000d": {
+    "suite": "yahdnoisybbob",
+    "name": "ackley",
+    "dimension": 3000
+  },
+  "nevergrad_yahdnoisybbob_lunacek_100d": {
+    "suite": "yahdnoisybbob",
+    "name": "lunacek",
+    "dimension": 100
+  },
+  "nevergrad_yahdnoisybbob_lunacek_1000d": {
+    "suite": "yahdnoisybbob",
+    "name": "lunacek",
+    "dimension": 1000
+  },
+  "nevergrad_yahdnoisybbob_lunacek_3000d": {
+    "suite": "yahdnoisybbob",
+    "name": "lunacek",
+    "dimension": 3000
+  },
+  "nevergrad_yahdnoisybbob_deceptivemultimodal_100d": {
+    "suite": "yahdnoisybbob",
+    "name": "deceptivemultimodal",
+    "dimension": 100
+  },
+  "nevergrad_yahdnoisybbob_deceptivemultimodal_1000d": {
+    "suite": "yahdnoisybbob",
+    "name": "deceptivemultimodal",
+    "dimension": 1000
+  },
+  "nevergrad_yahdnoisybbob_deceptivemultimodal_3000d": {
+    "suite": "yahdnoisybbob",
+    "name": "deceptivemultimodal",
+    "dimension": 3000
+  },
+  "nevergrad_yahdnoisybbob_bucherastrigin_100d": {
+    "suite": "yahdnoisybbob",
+    "name": "bucherastrigin",
+    "dimension": 100
+  },
+  "nevergrad_yahdnoisybbob_bucherastrigin_1000d": {
+    "suite": "yahdnoisybbob",
+    "name": "bucherastrigin",
+    "dimension": 1000
+  },
+  "nevergrad_yahdnoisybbob_bucherastrigin_3000d": {
+    "suite": "yahdnoisybbob",
+    "name": "bucherastrigin",
+    "dimension": 3000
+  },
+  "nevergrad_yahdnoisybbob_multipeak_100d": {
+    "suite": "yahdnoisybbob",
+    "name": "multipeak",
+    "dimension": 100
+  },
+  "nevergrad_yahdnoisybbob_multipeak_1000d": {
+    "suite": "yahdnoisybbob",
+    "name": "multipeak",
+    "dimension": 1000
+  },
+  "nevergrad_yahdnoisybbob_multipeak_3000d": {
+    "suite": "yahdnoisybbob",
+    "name": "multipeak",
+    "dimension": 3000
+  },
+  "nevergrad_yabigbbob_hm_2d": {
+    "suite": "yabigbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yabigbbob_hm_10d": {
+    "suite": "yabigbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yabigbbob_hm_50d": {
+    "suite": "yabigbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yabigbbob_rastrigin_2d": {
+    "suite": "yabigbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yabigbbob_rastrigin_10d": {
+    "suite": "yabigbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yabigbbob_rastrigin_50d": {
+    "suite": "yabigbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yabigbbob_griewank_2d": {
+    "suite": "yabigbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yabigbbob_griewank_10d": {
+    "suite": "yabigbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yabigbbob_griewank_50d": {
+    "suite": "yabigbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yabigbbob_rosenbrock_2d": {
+    "suite": "yabigbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yabigbbob_rosenbrock_10d": {
+    "suite": "yabigbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yabigbbob_rosenbrock_50d": {
+    "suite": "yabigbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yabigbbob_ackley_2d": {
+    "suite": "yabigbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yabigbbob_ackley_10d": {
+    "suite": "yabigbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yabigbbob_ackley_50d": {
+    "suite": "yabigbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yabigbbob_lunacek_2d": {
+    "suite": "yabigbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yabigbbob_lunacek_10d": {
+    "suite": "yabigbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yabigbbob_lunacek_50d": {
+    "suite": "yabigbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yabigbbob_deceptivemultimodal_2d": {
+    "suite": "yabigbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yabigbbob_deceptivemultimodal_10d": {
+    "suite": "yabigbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yabigbbob_deceptivemultimodal_50d": {
+    "suite": "yabigbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yabigbbob_bucherastrigin_2d": {
+    "suite": "yabigbbob",
+    "name": "bucherastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yabigbbob_bucherastrigin_10d": {
+    "suite": "yabigbbob",
+    "name": "bucherastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yabigbbob_bucherastrigin_50d": {
+    "suite": "yabigbbob",
+    "name": "bucherastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yabigbbob_multipeak_2d": {
+    "suite": "yabigbbob",
+    "name": "multipeak",
+    "dimension": 2
+  },
+  "nevergrad_yabigbbob_multipeak_10d": {
+    "suite": "yabigbbob",
+    "name": "multipeak",
+    "dimension": 10
+  },
+  "nevergrad_yabigbbob_multipeak_50d": {
+    "suite": "yabigbbob",
+    "name": "multipeak",
+    "dimension": 50
+  },
+  "nevergrad_yasplitbbob_hm_14d": {
+    "suite": "yasplitbbob",
+    "name": "hm",
+    "dimension": 14
+  },
+  "nevergrad_yasplitbbob_hm_70d": {
+    "suite": "yasplitbbob",
+    "name": "hm",
+    "dimension": 70
+  },
+  "nevergrad_yasplitbbob_hm_350d": {
+    "suite": "yasplitbbob",
+    "name": "hm",
+    "dimension": 350
+  },
+  "nevergrad_yasplitbbob_hm_24d": {
+    "suite": "yasplitbbob",
+    "name": "hm",
+    "dimension": 24
+  },
+  "nevergrad_yasplitbbob_hm_120d": {
+    "suite": "yasplitbbob",
+    "name": "hm",
+    "dimension": 120
+  },
+  "nevergrad_yasplitbbob_hm_600d": {
+    "suite": "yasplitbbob",
+    "name": "hm",
+    "dimension": 600
+  },
+  "nevergrad_yasplitbbob_rastrigin_14d": {
+    "suite": "yasplitbbob",
+    "name": "rastrigin",
+    "dimension": 14
+  },
+  "nevergrad_yasplitbbob_rastrigin_70d": {
+    "suite": "yasplitbbob",
+    "name": "rastrigin",
+    "dimension": 70
+  },
+  "nevergrad_yasplitbbob_rastrigin_350d": {
+    "suite": "yasplitbbob",
+    "name": "rastrigin",
+    "dimension": 350
+  },
+  "nevergrad_yasplitbbob_rastrigin_24d": {
+    "suite": "yasplitbbob",
+    "name": "rastrigin",
+    "dimension": 24
+  },
+  "nevergrad_yasplitbbob_rastrigin_120d": {
+    "suite": "yasplitbbob",
+    "name": "rastrigin",
+    "dimension": 120
+  },
+  "nevergrad_yasplitbbob_rastrigin_600d": {
+    "suite": "yasplitbbob",
+    "name": "rastrigin",
+    "dimension": 600
+  },
+  "nevergrad_yasplitbbob_griewank_14d": {
+    "suite": "yasplitbbob",
+    "name": "griewank",
+    "dimension": 14
+  },
+  "nevergrad_yasplitbbob_griewank_70d": {
+    "suite": "yasplitbbob",
+    "name": "griewank",
+    "dimension": 70
+  },
+  "nevergrad_yasplitbbob_griewank_350d": {
+    "suite": "yasplitbbob",
+    "name": "griewank",
+    "dimension": 350
+  },
+  "nevergrad_yasplitbbob_griewank_24d": {
+    "suite": "yasplitbbob",
+    "name": "griewank",
+    "dimension": 24
+  },
+  "nevergrad_yasplitbbob_griewank_120d": {
+    "suite": "yasplitbbob",
+    "name": "griewank",
+    "dimension": 120
+  },
+  "nevergrad_yasplitbbob_griewank_600d": {
+    "suite": "yasplitbbob",
+    "name": "griewank",
+    "dimension": 600
+  },
+  "nevergrad_yasplitbbob_rosenbrock_14d": {
+    "suite": "yasplitbbob",
+    "name": "rosenbrock",
+    "dimension": 14
+  },
+  "nevergrad_yasplitbbob_rosenbrock_70d": {
+    "suite": "yasplitbbob",
+    "name": "rosenbrock",
+    "dimension": 70
+  },
+  "nevergrad_yasplitbbob_rosenbrock_350d": {
+    "suite": "yasplitbbob",
+    "name": "rosenbrock",
+    "dimension": 350
+  },
+  "nevergrad_yasplitbbob_rosenbrock_24d": {
+    "suite": "yasplitbbob",
+    "name": "rosenbrock",
+    "dimension": 24
+  },
+  "nevergrad_yasplitbbob_rosenbrock_120d": {
+    "suite": "yasplitbbob",
+    "name": "rosenbrock",
+    "dimension": 120
+  },
+  "nevergrad_yahdsplitbbob_hm_700d": {
+    "suite": "yahdsplitbbob",
+    "name": "hm",
+    "dimension": 700
+  },
+  "nevergrad_yahdsplitbbob_hm_7000d": {
+    "suite": "yahdsplitbbob",
+    "name": "hm",
+    "dimension": 7000
+  },
+  "nevergrad_yahdsplitbbob_hm_21000d": {
+    "suite": "yahdsplitbbob",
+    "name": "hm",
+    "dimension": 21000
+  },
+  "nevergrad_yahdsplitbbob_hm_1200d": {
+    "suite": "yahdsplitbbob",
+    "name": "hm",
+    "dimension": 1200
+  },
+  "nevergrad_yahdsplitbbob_hm_12000d": {
+    "suite": "yahdsplitbbob",
+    "name": "hm",
+    "dimension": 12000
+  },
+  "nevergrad_yahdsplitbbob_hm_36000d": {
+    "suite": "yahdsplitbbob",
+    "name": "hm",
+    "dimension": 36000
+  },
+  "nevergrad_yahdsplitbbob_rastrigin_700d": {
+    "suite": "yahdsplitbbob",
+    "name": "rastrigin",
+    "dimension": 700
+  },
+  "nevergrad_yahdsplitbbob_rastrigin_7000d": {
+    "suite": "yahdsplitbbob",
+    "name": "rastrigin",
+    "dimension": 7000
+  },
+  "nevergrad_yahdsplitbbob_rastrigin_21000d": {
+    "suite": "yahdsplitbbob",
+    "name": "rastrigin",
+    "dimension": 21000
+  },
+  "nevergrad_yahdsplitbbob_rastrigin_1200d": {
+    "suite": "yahdsplitbbob",
+    "name": "rastrigin",
+    "dimension": 1200
+  },
+  "nevergrad_yahdsplitbbob_rastrigin_12000d": {
+    "suite": "yahdsplitbbob",
+    "name": "rastrigin",
+    "dimension": 12000
+  },
+  "nevergrad_yahdsplitbbob_rastrigin_36000d": {
+    "suite": "yahdsplitbbob",
+    "name": "rastrigin",
+    "dimension": 36000
+  },
+  "nevergrad_yahdsplitbbob_griewank_700d": {
+    "suite": "yahdsplitbbob",
+    "name": "griewank",
+    "dimension": 700
+  },
+  "nevergrad_yahdsplitbbob_griewank_7000d": {
+    "suite": "yahdsplitbbob",
+    "name": "griewank",
+    "dimension": 7000
+  },
+  "nevergrad_yahdsplitbbob_griewank_21000d": {
+    "suite": "yahdsplitbbob",
+    "name": "griewank",
+    "dimension": 21000
+  },
+  "nevergrad_yahdsplitbbob_griewank_1200d": {
+    "suite": "yahdsplitbbob",
+    "name": "griewank",
+    "dimension": 1200
+  },
+  "nevergrad_yahdsplitbbob_griewank_12000d": {
+    "suite": "yahdsplitbbob",
+    "name": "griewank",
+    "dimension": 12000
+  },
+  "nevergrad_yahdsplitbbob_griewank_36000d": {
+    "suite": "yahdsplitbbob",
+    "name": "griewank",
+    "dimension": 36000
+  },
+  "nevergrad_yahdsplitbbob_rosenbrock_700d": {
+    "suite": "yahdsplitbbob",
+    "name": "rosenbrock",
+    "dimension": 700
+  },
+  "nevergrad_yahdsplitbbob_rosenbrock_7000d": {
+    "suite": "yahdsplitbbob",
+    "name": "rosenbrock",
+    "dimension": 7000
+  },
+  "nevergrad_yahdsplitbbob_rosenbrock_21000d": {
+    "suite": "yahdsplitbbob",
+    "name": "rosenbrock",
+    "dimension": 21000
+  },
+  "nevergrad_yahdsplitbbob_rosenbrock_1200d": {
+    "suite": "yahdsplitbbob",
+    "name": "rosenbrock",
+    "dimension": 1200
+  },
+  "nevergrad_yahdsplitbbob_rosenbrock_12000d": {
+    "suite": "yahdsplitbbob",
+    "name": "rosenbrock",
+    "dimension": 12000
+  },
+  "nevergrad_yatuningbbob_hm_2d": {
+    "suite": "yatuningbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yatuningbbob_rastrigin_5d": {
+    "suite": "yatuningbbob",
+    "name": "rastrigin",
+    "dimension": 5
+  },
+  "nevergrad_yatuningbbob_rosenbrock_10d": {
+    "suite": "yatuningbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yatuningbbob_ackley_15d": {
+    "suite": "yatuningbbob",
+    "name": "ackley",
+    "dimension": 15
+  },
+  "nevergrad_yatuningbbob_deceptivemultimodal_2d": {
+    "suite": "yatuningbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yatuningbbob_multipeak_5d": {
+    "suite": "yatuningbbob",
+    "name": "multipeak",
+    "dimension": 5
+  },
+  "nevergrad_yatuningbbob_sphere_10d": {
+    "suite": "yatuningbbob",
+    "name": "sphere",
+    "dimension": 10
+  },
+  "nevergrad_yatuningbbob_stepdoublelinearslope_15d": {
+    "suite": "yatuningbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 15
+  },
+  "nevergrad_yatuningbbob_altcigar_2d": {
+    "suite": "yatuningbbob",
+    "name": "altcigar",
+    "dimension": 2
+  },
+  "nevergrad_yatuningbbob_ellipsoid_5d": {
+    "suite": "yatuningbbob",
+    "name": "ellipsoid",
+    "dimension": 5
+  },
+  "nevergrad_yatuningbbob_stepellipsoid_10d": {
+    "suite": "yatuningbbob",
+    "name": "stepellipsoid",
+    "dimension": 10
+  },
+  "nevergrad_yatuningbbob_discus_15d": {
+    "suite": "yatuningbbob",
+    "name": "discus",
+    "dimension": 15
+  },
+  "nevergrad_yatuningbbob_deceptiveillcond_2d": {
+    "suite": "yatuningbbob",
+    "name": "deceptiveillcond",
+    "dimension": 2
+  },
+  "nevergrad_yatuningbbob_deceptivepath_5d": {
+    "suite": "yatuningbbob",
+    "name": "deceptivepath",
+    "dimension": 5
+  },
+  "nevergrad_yatinybbob_hm_2d": {
+    "suite": "yatinybbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yatinybbob_griewank_10d": {
+    "suite": "yatinybbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yatinybbob_ackley_50d": {
+    "suite": "yatinybbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yatinybbob_deceptivemultimodal_2d": {
+    "suite": "yatinybbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yatinybbob_multipeak_10d": {
+    "suite": "yatinybbob",
+    "name": "multipeak",
+    "dimension": 10
+  },
+  "nevergrad_yatinybbob_doublelinearslope_50d": {
+    "suite": "yatinybbob",
+    "name": "doublelinearslope",
+    "dimension": 50
+  },
+  "nevergrad_yatinybbob_altcigar_2d": {
+    "suite": "yatinybbob",
+    "name": "altcigar",
+    "dimension": 2
+  },
+  "nevergrad_yatinybbob_altellipsoid_10d": {
+    "suite": "yatinybbob",
+    "name": "altellipsoid",
+    "dimension": 10
+  },
+  "nevergrad_yatinybbob_discus_50d": {
+    "suite": "yatinybbob",
+    "name": "discus",
+    "dimension": 50
+  },
+  "nevergrad_yatinybbob_deceptiveillcond_2d": {
+    "suite": "yatinybbob",
+    "name": "deceptiveillcond",
+    "dimension": 2
+  },
+  "nevergrad_yatinybbob_deceptivepath_10d": {
+    "suite": "yatinybbob",
+    "name": "deceptivepath",
+    "dimension": 10
+  },
+  "nevergrad_yasmallbbob_hm_2d": {
+    "suite": "yasmallbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yasmallbbob_hm_10d": {
+    "suite": "yasmallbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yasmallbbob_hm_50d": {
+    "suite": "yasmallbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yasmallbbob_rastrigin_2d": {
+    "suite": "yasmallbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yasmallbbob_rastrigin_10d": {
+    "suite": "yasmallbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yasmallbbob_rastrigin_50d": {
+    "suite": "yasmallbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yasmallbbob_griewank_2d": {
+    "suite": "yasmallbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yasmallbbob_griewank_10d": {
+    "suite": "yasmallbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yasmallbbob_griewank_50d": {
+    "suite": "yasmallbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yasmallbbob_rosenbrock_2d": {
+    "suite": "yasmallbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yasmallbbob_rosenbrock_10d": {
+    "suite": "yasmallbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yasmallbbob_rosenbrock_50d": {
+    "suite": "yasmallbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yasmallbbob_ackley_2d": {
+    "suite": "yasmallbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yasmallbbob_ackley_10d": {
+    "suite": "yasmallbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yasmallbbob_ackley_50d": {
+    "suite": "yasmallbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yasmallbbob_lunacek_2d": {
+    "suite": "yasmallbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yasmallbbob_lunacek_10d": {
+    "suite": "yasmallbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yasmallbbob_lunacek_50d": {
+    "suite": "yasmallbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yasmallbbob_deceptivemultimodal_2d": {
+    "suite": "yasmallbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yasmallbbob_deceptivemultimodal_10d": {
+    "suite": "yasmallbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yasmallbbob_deceptivemultimodal_50d": {
+    "suite": "yasmallbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yasmallbbob_bucherastrigin_2d": {
+    "suite": "yasmallbbob",
+    "name": "bucherastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yasmallbbob_bucherastrigin_10d": {
+    "suite": "yasmallbbob",
+    "name": "bucherastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yasmallbbob_bucherastrigin_50d": {
+    "suite": "yasmallbbob",
+    "name": "bucherastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yasmallbbob_multipeak_2d": {
+    "suite": "yasmallbbob",
+    "name": "multipeak",
+    "dimension": 2
+  },
+  "nevergrad_yasmallbbob_multipeak_10d": {
+    "suite": "yasmallbbob",
+    "name": "multipeak",
+    "dimension": 10
+  },
+  "nevergrad_yasmallbbob_multipeak_50d": {
+    "suite": "yasmallbbob",
+    "name": "multipeak",
+    "dimension": 50
+  },
+  "nevergrad_yasmallbbob_sphere_2d": {
+    "suite": "yasmallbbob",
+    "name": "sphere",
+    "dimension": 2
+  },
+  "nevergrad_yasmallbbob_sphere_10d": {
+    "suite": "yasmallbbob",
+    "name": "sphere",
+    "dimension": 10
+  },
+  "nevergrad_yasmallbbob_sphere_50d": {
+    "suite": "yasmallbbob",
+    "name": "sphere",
+    "dimension": 50
+  },
+  "nevergrad_yasmallbbob_doublelinearslope_2d": {
+    "suite": "yasmallbbob",
+    "name": "doublelinearslope",
+    "dimension": 2
+  },
+  "nevergrad_yasmallbbob_doublelinearslope_10d": {
+    "suite": "yasmallbbob",
+    "name": "doublelinearslope",
+    "dimension": 10
+  },
+  "nevergrad_yasmallbbob_doublelinearslope_50d": {
+    "suite": "yasmallbbob",
+    "name": "doublelinearslope",
+    "dimension": 50
+  },
+  "nevergrad_yasmallbbob_stepdoublelinearslope_2d": {
+    "suite": "yasmallbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 2
+  },
+  "nevergrad_yasmallbbob_stepdoublelinearslope_10d": {
+    "suite": "yasmallbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 10
+  },
+  "nevergrad_yahdbbob_hm_100d": {
+    "suite": "yahdbbob",
+    "name": "hm",
+    "dimension": 100
+  },
+  "nevergrad_yahdbbob_hm_1000d": {
+    "suite": "yahdbbob",
+    "name": "hm",
+    "dimension": 1000
+  },
+  "nevergrad_yahdbbob_hm_3000d": {
+    "suite": "yahdbbob",
+    "name": "hm",
+    "dimension": 3000
+  },
+  "nevergrad_yahdbbob_rastrigin_100d": {
+    "suite": "yahdbbob",
+    "name": "rastrigin",
+    "dimension": 100
+  },
+  "nevergrad_yahdbbob_rastrigin_1000d": {
+    "suite": "yahdbbob",
+    "name": "rastrigin",
+    "dimension": 1000
+  },
+  "nevergrad_yahdbbob_rastrigin_3000d": {
+    "suite": "yahdbbob",
+    "name": "rastrigin",
+    "dimension": 3000
+  },
+  "nevergrad_yahdbbob_griewank_100d": {
+    "suite": "yahdbbob",
+    "name": "griewank",
+    "dimension": 100
+  },
+  "nevergrad_yahdbbob_griewank_1000d": {
+    "suite": "yahdbbob",
+    "name": "griewank",
+    "dimension": 1000
+  },
+  "nevergrad_yahdbbob_griewank_3000d": {
+    "suite": "yahdbbob",
+    "name": "griewank",
+    "dimension": 3000
+  },
+  "nevergrad_yahdbbob_rosenbrock_100d": {
+    "suite": "yahdbbob",
+    "name": "rosenbrock",
+    "dimension": 100
+  },
+  "nevergrad_yahdbbob_rosenbrock_1000d": {
+    "suite": "yahdbbob",
+    "name": "rosenbrock",
+    "dimension": 1000
+  },
+  "nevergrad_yahdbbob_rosenbrock_3000d": {
+    "suite": "yahdbbob",
+    "name": "rosenbrock",
+    "dimension": 3000
+  },
+  "nevergrad_yahdbbob_ackley_100d": {
+    "suite": "yahdbbob",
+    "name": "ackley",
+    "dimension": 100
+  },
+  "nevergrad_yahdbbob_ackley_1000d": {
+    "suite": "yahdbbob",
+    "name": "ackley",
+    "dimension": 1000
+  },
+  "nevergrad_yahdbbob_ackley_3000d": {
+    "suite": "yahdbbob",
+    "name": "ackley",
+    "dimension": 3000
+  },
+  "nevergrad_yahdbbob_lunacek_100d": {
+    "suite": "yahdbbob",
+    "name": "lunacek",
+    "dimension": 100
+  },
+  "nevergrad_yahdbbob_lunacek_1000d": {
+    "suite": "yahdbbob",
+    "name": "lunacek",
+    "dimension": 1000
+  },
+  "nevergrad_yahdbbob_lunacek_3000d": {
+    "suite": "yahdbbob",
+    "name": "lunacek",
+    "dimension": 3000
+  },
+  "nevergrad_yahdbbob_deceptivemultimodal_100d": {
+    "suite": "yahdbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 100
+  },
+  "nevergrad_yahdbbob_deceptivemultimodal_1000d": {
+    "suite": "yahdbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 1000
+  },
+  "nevergrad_yahdbbob_deceptivemultimodal_3000d": {
+    "suite": "yahdbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 3000
+  },
+  "nevergrad_yaparabbob_hm_2d": {
+    "suite": "yaparabbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yaparabbob_hm_10d": {
+    "suite": "yaparabbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yaparabbob_hm_50d": {
+    "suite": "yaparabbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yaparabbob_rastrigin_2d": {
+    "suite": "yaparabbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yaparabbob_rastrigin_10d": {
+    "suite": "yaparabbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yaparabbob_rastrigin_50d": {
+    "suite": "yaparabbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yaparabbob_griewank_2d": {
+    "suite": "yaparabbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yaparabbob_griewank_10d": {
+    "suite": "yaparabbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yaparabbob_griewank_50d": {
+    "suite": "yaparabbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yaparabbob_rosenbrock_2d": {
+    "suite": "yaparabbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yaparabbob_rosenbrock_10d": {
+    "suite": "yaparabbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yaparabbob_rosenbrock_50d": {
+    "suite": "yaparabbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yaparabbob_ackley_2d": {
+    "suite": "yaparabbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yaparabbob_ackley_10d": {
+    "suite": "yaparabbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yaparabbob_ackley_50d": {
+    "suite": "yaparabbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yaparabbob_lunacek_2d": {
+    "suite": "yaparabbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yaparabbob_lunacek_10d": {
+    "suite": "yaparabbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yaparabbob_lunacek_50d": {
+    "suite": "yaparabbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yaparabbob_deceptivemultimodal_2d": {
+    "suite": "yaparabbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yaparabbob_deceptivemultimodal_10d": {
+    "suite": "yaparabbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yaparabbob_deceptivemultimodal_50d": {
+    "suite": "yaparabbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_yanoisybbob_hm_2d": {
+    "suite": "yanoisybbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yanoisybbob_hm_3d": {
+    "suite": "yanoisybbob",
+    "name": "hm",
+    "dimension": 3
+  },
+  "nevergrad_yanoisybbob_hm_5d": {
+    "suite": "yanoisybbob",
+    "name": "hm",
+    "dimension": 5
+  },
+  "nevergrad_yanoisybbob_hm_10d": {
+    "suite": "yanoisybbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yanoisybbob_hm_15d": {
+    "suite": "yanoisybbob",
+    "name": "hm",
+    "dimension": 15
+  },
+  "nevergrad_yanoisybbob_hm_20d": {
+    "suite": "yanoisybbob",
+    "name": "hm",
+    "dimension": 20
+  },
+  "nevergrad_yanoisybbob_hm_50d": {
+    "suite": "yanoisybbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yanoisybbob_rastrigin_2d": {
+    "suite": "yanoisybbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yanoisybbob_rastrigin_3d": {
+    "suite": "yanoisybbob",
+    "name": "rastrigin",
+    "dimension": 3
+  },
+  "nevergrad_yanoisybbob_rastrigin_5d": {
+    "suite": "yanoisybbob",
+    "name": "rastrigin",
+    "dimension": 5
+  },
+  "nevergrad_yanoisybbob_rastrigin_10d": {
+    "suite": "yanoisybbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yanoisybbob_rastrigin_15d": {
+    "suite": "yanoisybbob",
+    "name": "rastrigin",
+    "dimension": 15
+  },
+  "nevergrad_yanoisybbob_rastrigin_20d": {
+    "suite": "yanoisybbob",
+    "name": "rastrigin",
+    "dimension": 20
+  },
+  "nevergrad_yanoisybbob_rastrigin_50d": {
+    "suite": "yanoisybbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yanoisybbob_griewank_2d": {
+    "suite": "yanoisybbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yanoisybbob_griewank_3d": {
+    "suite": "yanoisybbob",
+    "name": "griewank",
+    "dimension": 3
+  },
+  "nevergrad_yanoisybbob_griewank_5d": {
+    "suite": "yanoisybbob",
+    "name": "griewank",
+    "dimension": 5
+  },
+  "nevergrad_yanoisybbob_griewank_10d": {
+    "suite": "yanoisybbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yanoisybbob_griewank_15d": {
+    "suite": "yanoisybbob",
+    "name": "griewank",
+    "dimension": 15
+  },
+  "nevergrad_yanoisybbob_griewank_20d": {
+    "suite": "yanoisybbob",
+    "name": "griewank",
+    "dimension": 20
+  },
+  "nevergrad_yanoisybbob_griewank_50d": {
+    "suite": "yanoisybbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yanoisybbob_rosenbrock_2d": {
+    "suite": "yanoisybbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yanoisybbob_rosenbrock_3d": {
+    "suite": "yanoisybbob",
+    "name": "rosenbrock",
+    "dimension": 3
+  },
+  "nevergrad_yanoisybbob_rosenbrock_5d": {
+    "suite": "yanoisybbob",
+    "name": "rosenbrock",
+    "dimension": 5
+  },
+  "nevergrad_yanoisybbob_rosenbrock_10d": {
+    "suite": "yanoisybbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yanoisybbob_rosenbrock_15d": {
+    "suite": "yanoisybbob",
+    "name": "rosenbrock",
+    "dimension": 15
+  },
+  "nevergrad_yanoisybbob_rosenbrock_20d": {
+    "suite": "yanoisybbob",
+    "name": "rosenbrock",
+    "dimension": 20
+  },
+  "nevergrad_yanoisybbob_rosenbrock_50d": {
+    "suite": "yanoisybbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yaboundedbbob_hm_40d": {
+    "suite": "yaboundedbbob",
+    "name": "hm",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_rastrigin_40d": {
+    "suite": "yaboundedbbob",
+    "name": "rastrigin",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_griewank_40d": {
+    "suite": "yaboundedbbob",
+    "name": "griewank",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_rosenbrock_40d": {
+    "suite": "yaboundedbbob",
+    "name": "rosenbrock",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_ackley_40d": {
+    "suite": "yaboundedbbob",
+    "name": "ackley",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_lunacek_40d": {
+    "suite": "yaboundedbbob",
+    "name": "lunacek",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_deceptivemultimodal_40d": {
+    "suite": "yaboundedbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_bucherastrigin_40d": {
+    "suite": "yaboundedbbob",
+    "name": "bucherastrigin",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_multipeak_40d": {
+    "suite": "yaboundedbbob",
+    "name": "multipeak",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_sphere_40d": {
+    "suite": "yaboundedbbob",
+    "name": "sphere",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_doublelinearslope_40d": {
+    "suite": "yaboundedbbob",
+    "name": "doublelinearslope",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_stepdoublelinearslope_40d": {
+    "suite": "yaboundedbbob",
+    "name": "stepdoublelinearslope",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_cigar_40d": {
+    "suite": "yaboundedbbob",
+    "name": "cigar",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_altcigar_40d": {
+    "suite": "yaboundedbbob",
+    "name": "altcigar",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_ellipsoid_40d": {
+    "suite": "yaboundedbbob",
+    "name": "ellipsoid",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_altellipsoid_40d": {
+    "suite": "yaboundedbbob",
+    "name": "altellipsoid",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_stepellipsoid_40d": {
+    "suite": "yaboundedbbob",
+    "name": "stepellipsoid",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_discus_40d": {
+    "suite": "yaboundedbbob",
+    "name": "discus",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_bentcigar_40d": {
+    "suite": "yaboundedbbob",
+    "name": "bentcigar",
+    "dimension": 40
+  },
+  "nevergrad_yaboundedbbob_deceptiveillcond_40d": {
+    "suite": "yaboundedbbob",
+    "name": "deceptiveillcond",
+    "dimension": 40
+  },
+  "nevergrad_yaboxbbob_hm_2d": {
+    "suite": "yaboxbbob",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_yaboxbbob_hm_10d": {
+    "suite": "yaboxbbob",
+    "name": "hm",
+    "dimension": 10
+  },
+  "nevergrad_yaboxbbob_hm_50d": {
+    "suite": "yaboxbbob",
+    "name": "hm",
+    "dimension": 50
+  },
+  "nevergrad_yaboxbbob_rastrigin_2d": {
+    "suite": "yaboxbbob",
+    "name": "rastrigin",
+    "dimension": 2
+  },
+  "nevergrad_yaboxbbob_rastrigin_10d": {
+    "suite": "yaboxbbob",
+    "name": "rastrigin",
+    "dimension": 10
+  },
+  "nevergrad_yaboxbbob_rastrigin_50d": {
+    "suite": "yaboxbbob",
+    "name": "rastrigin",
+    "dimension": 50
+  },
+  "nevergrad_yaboxbbob_griewank_2d": {
+    "suite": "yaboxbbob",
+    "name": "griewank",
+    "dimension": 2
+  },
+  "nevergrad_yaboxbbob_griewank_10d": {
+    "suite": "yaboxbbob",
+    "name": "griewank",
+    "dimension": 10
+  },
+  "nevergrad_yaboxbbob_griewank_50d": {
+    "suite": "yaboxbbob",
+    "name": "griewank",
+    "dimension": 50
+  },
+  "nevergrad_yaboxbbob_rosenbrock_2d": {
+    "suite": "yaboxbbob",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_yaboxbbob_rosenbrock_10d": {
+    "suite": "yaboxbbob",
+    "name": "rosenbrock",
+    "dimension": 10
+  },
+  "nevergrad_yaboxbbob_rosenbrock_50d": {
+    "suite": "yaboxbbob",
+    "name": "rosenbrock",
+    "dimension": 50
+  },
+  "nevergrad_yaboxbbob_ackley_2d": {
+    "suite": "yaboxbbob",
+    "name": "ackley",
+    "dimension": 2
+  },
+  "nevergrad_yaboxbbob_ackley_10d": {
+    "suite": "yaboxbbob",
+    "name": "ackley",
+    "dimension": 10
+  },
+  "nevergrad_yaboxbbob_ackley_50d": {
+    "suite": "yaboxbbob",
+    "name": "ackley",
+    "dimension": 50
+  },
+  "nevergrad_yaboxbbob_lunacek_2d": {
+    "suite": "yaboxbbob",
+    "name": "lunacek",
+    "dimension": 2
+  },
+  "nevergrad_yaboxbbob_lunacek_10d": {
+    "suite": "yaboxbbob",
+    "name": "lunacek",
+    "dimension": 10
+  },
+  "nevergrad_yaboxbbob_lunacek_50d": {
+    "suite": "yaboxbbob",
+    "name": "lunacek",
+    "dimension": 50
+  },
+  "nevergrad_yaboxbbob_deceptivemultimodal_2d": {
+    "suite": "yaboxbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 2
+  },
+  "nevergrad_yaboxbbob_deceptivemultimodal_10d": {
+    "suite": "yaboxbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 10
+  },
+  "nevergrad_yaboxbbob_deceptivemultimodal_50d": {
+    "suite": "yaboxbbob",
+    "name": "deceptivemultimodal",
+    "dimension": 50
+  },
+  "nevergrad_ms_bbob_cigar_2d": {
+    "suite": "ms_bbob",
+    "name": "cigar",
+    "dimension": 2
+  },
+  "nevergrad_ms_bbob_cigar_3d": {
+    "suite": "ms_bbob",
+    "name": "cigar",
+    "dimension": 3
+  },
+  "nevergrad_ms_bbob_cigar_5d": {
+    "suite": "ms_bbob",
+    "name": "cigar",
+    "dimension": 5
+  },
+  "nevergrad_ms_bbob_cigar_10d": {
+    "suite": "ms_bbob",
+    "name": "cigar",
+    "dimension": 10
+  },
+  "nevergrad_ms_bbob_cigar_20d": {
+    "suite": "ms_bbob",
+    "name": "cigar",
+    "dimension": 20
+  },
+  "nevergrad_zp_ms_bbob_cigar_2d": {
+    "suite": "zp_ms_bbob",
+    "name": "cigar",
+    "dimension": 2
+  },
+  "nevergrad_zp_ms_bbob_cigar_3d": {
+    "suite": "zp_ms_bbob",
+    "name": "cigar",
+    "dimension": 3
+  },
+  "nevergrad_zp_ms_bbob_cigar_5d": {
+    "suite": "zp_ms_bbob",
+    "name": "cigar",
+    "dimension": 5
+  },
+  "nevergrad_zp_ms_bbob_cigar_10d": {
+    "suite": "zp_ms_bbob",
+    "name": "cigar",
+    "dimension": 10
+  },
+  "nevergrad_zp_ms_bbob_cigar_20d": {
+    "suite": "zp_ms_bbob",
+    "name": "cigar",
+    "dimension": 20
+  },
+  "nevergrad_pbbob_cigar_40d": {
+    "suite": "pbbob",
+    "name": "cigar",
+    "dimension": 40
+  },
+  "nevergrad_pbbob_cigar_20d": {
+    "suite": "pbbob",
+    "name": "cigar",
+    "dimension": 20
+  },
+  "nevergrad_zp_pbbob_cigar_40d": {
+    "suite": "zp_pbbob",
+    "name": "cigar",
+    "dimension": 40
+  },
+  "nevergrad_zp_pbbob_cigar_20d": {
+    "suite": "zp_pbbob",
+    "name": "cigar",
+    "dimension": 20
+  },
+  "nevergrad_illcondi_cigar_50d": {
+    "suite": "illcondi",
+    "name": "cigar",
+    "dimension": 50
+  },
+  "nevergrad_illcondi_ellipsoid_50d": {
+    "suite": "illcondi",
+    "name": "ellipsoid",
+    "dimension": 50
+  },
+  "nevergrad_illcondipara_cigar_50d": {
+    "suite": "illcondipara",
+    "name": "cigar",
+    "dimension": 50
+  },
+  "nevergrad_illcondipara_ellipsoid_50d": {
+    "suite": "illcondipara",
+    "name": "ellipsoid",
+    "dimension": 50
+  },
+  "nevergrad_constrained_illconditioned_parallel_cigar_50d": {
+    "suite": "constrained_illconditioned_parallel",
+    "name": "cigar",
+    "dimension": 50
+  },
+  "nevergrad_constrained_illconditioned_parallel_ellipsoid_50d": {
+    "suite": "constrained_illconditioned_parallel",
+    "name": "ellipsoid",
+    "dimension": 50
+  },
+  "nevergrad_ranknoisy_cigar_20000d": {
+    "suite": "ranknoisy",
+    "name": "cigar",
+    "dimension": 20000
+  },
+  "nevergrad_ranknoisy_altcigar_20000d": {
+    "suite": "ranknoisy",
+    "name": "altcigar",
+    "dimension": 20000
+  },
+  "nevergrad_ranknoisy_ellipsoid_20000d": {
+    "suite": "ranknoisy",
+    "name": "ellipsoid",
+    "dimension": 20000
+  },
+  "nevergrad_ranknoisy_altellipsoid_20000d": {
+    "suite": "ranknoisy",
+    "name": "altellipsoid",
+    "dimension": 20000
+  },
+  "nevergrad_ranknoisy_cigar_200d": {
+    "suite": "ranknoisy",
+    "name": "cigar",
+    "dimension": 200
+  },
+  "nevergrad_ranknoisy_altcigar_200d": {
+    "suite": "ranknoisy",
+    "name": "altcigar",
+    "dimension": 200
+  },
+  "nevergrad_ranknoisy_ellipsoid_200d": {
+    "suite": "ranknoisy",
+    "name": "ellipsoid",
+    "dimension": 200
+  },
+  "nevergrad_ranknoisy_altellipsoid_200d": {
+    "suite": "ranknoisy",
+    "name": "altellipsoid",
+    "dimension": 200
+  },
+  "nevergrad_ranknoisy_cigar_2000d": {
+    "suite": "ranknoisy",
+    "name": "cigar",
+    "dimension": 2000
+  },
+  "nevergrad_ranknoisy_altcigar_2000d": {
+    "suite": "ranknoisy",
+    "name": "altcigar",
+    "dimension": 2000
+  },
+  "nevergrad_ranknoisy_ellipsoid_2000d": {
+    "suite": "ranknoisy",
+    "name": "ellipsoid",
+    "dimension": 2000
+  },
+  "nevergrad_ranknoisy_altellipsoid_2000d": {
+    "suite": "ranknoisy",
+    "name": "altellipsoid",
+    "dimension": 2000
+  },
+  "nevergrad_noisy_sphere_2d": {
+    "suite": "noisy",
+    "name": "sphere",
+    "dimension": 2
+  },
+  "nevergrad_noisy_rosenbrock_2d": {
+    "suite": "noisy",
+    "name": "rosenbrock",
+    "dimension": 2
+  },
+  "nevergrad_noisy_cigar_2d": {
+    "suite": "noisy",
+    "name": "cigar",
+    "dimension": 2
+  },
+  "nevergrad_noisy_hm_2d": {
+    "suite": "noisy",
+    "name": "hm",
+    "dimension": 2
+  },
+  "nevergrad_noisy_sphere_20d": {
+    "suite": "noisy",
+    "name": "sphere",
+    "dimension": 20
+  },
+  "nevergrad_noisy_rosenbrock_20d": {
+    "suite": "noisy",
+    "name": "rosenbrock",
+    "dimension": 20
+  },
+  "nevergrad_noisy_cigar_20d": {
+    "suite": "noisy",
+    "name": "cigar",
+    "dimension": 20
+  },
+  "nevergrad_noisy_hm_20d": {
+    "suite": "noisy",
+    "name": "hm",
+    "dimension": 20
+  },
+  "nevergrad_noisy_sphere_200d": {
+    "suite": "noisy",
+    "name": "sphere",
+    "dimension": 200
+  },
+  "nevergrad_noisy_rosenbrock_200d": {
+    "suite": "noisy",
+    "name": "rosenbrock",
+    "dimension": 200
+  },
+  "nevergrad_noisy_cigar_200d": {
+    "suite": "noisy",
+    "name": "cigar",
+    "dimension": 200
+  },
+  "nevergrad_noisy_hm_200d": {
+    "suite": "noisy",
+    "name": "hm",
+    "dimension": 200
+  },
+  "nevergrad_noisy_sphere_2000d": {
+    "suite": "noisy",
+    "name": "sphere",
+    "dimension": 2000
+  },
+  "nevergrad_noisy_rosenbrock_2000d": {
+    "suite": "noisy",
+    "name": "rosenbrock",
+    "dimension": 2000
+  },
+  "nevergrad_noisy_cigar_2000d": {
+    "suite": "noisy",
+    "name": "cigar",
+    "dimension": 2000
+  },
+  "nevergrad_noisy_hm_2000d": {
+    "suite": "noisy",
+    "name": "hm",
+    "dimension": 2000
+  },
+  "nevergrad_paraalldes_sphere_5d": {
+    "suite": "paraalldes",
+    "name": "sphere",
+    "dimension": 5
+  },
+  "nevergrad_paraalldes_cigar_5d": {
+    "suite": "paraalldes",
+    "name": "cigar",
+    "dimension": 5
+  },
+  "nevergrad_paraalldes_hm_5d": {
+    "suite": "paraalldes",
+    "name": "hm",
+    "dimension": 5
+  },
+  "nevergrad_paraalldes_ellipsoid_5d": {
+    "suite": "paraalldes",
+    "name": "ellipsoid",
+    "dimension": 5
+  },
+  "nevergrad_paraalldes_sphere_20d": {
+    "suite": "paraalldes",
+    "name": "sphere",
+    "dimension": 20
+  },
+  "nevergrad_paraalldes_cigar_20d": {
+    "suite": "paraalldes",
+    "name": "cigar",
+    "dimension": 20
+  },
+  "nevergrad_paraalldes_hm_20d": {
+    "suite": "paraalldes",
+    "name": "hm",
+    "dimension": 20
+  },
+  "nevergrad_paraalldes_ellipsoid_20d": {
+    "suite": "paraalldes",
+    "name": "ellipsoid",
+    "dimension": 20
+  },
+  "nevergrad_paraalldes_sphere_100d": {
+    "suite": "paraalldes",
+    "name": "sphere",
+    "dimension": 100
+  },
+  "nevergrad_paraalldes_cigar_100d": {
+    "suite": "paraalldes",
+    "name": "cigar",
+    "dimension": 100
+  },
+  "nevergrad_paraalldes_hm_100d": {
+    "suite": "paraalldes",
+    "name": "hm",
+    "dimension": 100
+  },
+  "nevergrad_paraalldes_ellipsoid_100d": {
+    "suite": "paraalldes",
+    "name": "ellipsoid",
+    "dimension": 100
+  },
+  "nevergrad_paraalldes_sphere_500d": {
+    "suite": "paraalldes",
+    "name": "sphere",
+    "dimension": 500
+  },
+  "nevergrad_paraalldes_cigar_500d": {
+    "suite": "paraalldes",
+    "name": "cigar",
+    "dimension": 500
+  },
+  "nevergrad_paraalldes_hm_500d": {
+    "suite": "paraalldes",
+    "name": "hm",
+    "dimension": 500
+  },
+  "nevergrad_paraalldes_ellipsoid_500d": {
+    "suite": "paraalldes",
+    "name": "ellipsoid",
+    "dimension": 500
+  },
+  "nevergrad_paraalldes_sphere_2500d": {
+    "suite": "paraalldes",
+    "name": "sphere",
+    "dimension": 2500
+  },
+  "nevergrad_paraalldes_cigar_2500d": {
+    "suite": "paraalldes",
+    "name": "cigar",
+    "dimension": 2500
+  },
+  "nevergrad_paraalldes_hm_2500d": {
+    "suite": "paraalldes",
+    "name": "hm",
+    "dimension": 2500
+  },
+  "nevergrad_paraalldes_ellipsoid_2500d": {
+    "suite": "paraalldes",
+    "name": "ellipsoid",
+    "dimension": 2500
+  },
+  "nevergrad_parahdbo4d_sphere_20d": {
+    "suite": "parahdbo4d",
+    "name": "sphere",
+    "dimension": 20
+  },
+  "nevergrad_parahdbo4d_cigar_20d": {
+    "suite": "parahdbo4d",
+    "name": "cigar",
+    "dimension": 20
+  },
+  "nevergrad_parahdbo4d_hm_20d": {
+    "suite": "parahdbo4d",
+    "name": "hm",
+    "dimension": 20
+  },
+  "nevergrad_parahdbo4d_ellipsoid_20d": {
+    "suite": "parahdbo4d",
+    "name": "ellipsoid",
+    "dimension": 20
+  },
+  "nevergrad_parahdbo4d_sphere_2000d": {
+    "suite": "parahdbo4d",
+    "name": "sphere",
+    "dimension": 2000
+  },
+  "nevergrad_parahdbo4d_cigar_2000d": {
+    "suite": "parahdbo4d",
+    "name": "cigar",
+    "dimension": 2000
+  },
+  "nevergrad_parahdbo4d_hm_2000d": {
+    "suite": "parahdbo4d",
+    "name": "hm",
+    "dimension": 2000
+  },
+  "nevergrad_parahdbo4d_ellipsoid_2000d": {
+    "suite": "parahdbo4d",
+    "name": "ellipsoid",
+    "dimension": 2000
+  },
+  "nevergrad_alldes_sphere_5d": {
+    "suite": "alldes",
+    "name": "sphere",
+    "dimension": 5
+  },
+  "nevergrad_alldes_cigar_5d": {
+    "suite": "alldes",
+    "name": "cigar",
+    "dimension": 5
+  },
+  "nevergrad_alldes_hm_5d": {
+    "suite": "alldes",
+    "name": "hm",
+    "dimension": 5
+  },
+  "nevergrad_alldes_ellipsoid_5d": {
+    "suite": "alldes",
+    "name": "ellipsoid",
+    "dimension": 5
+  },
+  "nevergrad_alldes_sphere_20d": {
+    "suite": "alldes",
+    "name": "sphere",
+    "dimension": 20
+  },
+  "nevergrad_alldes_cigar_20d": {
+    "suite": "alldes",
+    "name": "cigar",
+    "dimension": 20
+  },
+  "nevergrad_alldes_hm_20d": {
+    "suite": "alldes",
+    "name": "hm",
+    "dimension": 20
+  },
+  "nevergrad_alldes_ellipsoid_20d": {
+    "suite": "alldes",
+    "name": "ellipsoid",
+    "dimension": 20
+  },
+  "nevergrad_alldes_sphere_100d": {
+    "suite": "alldes",
+    "name": "sphere",
+    "dimension": 100
+  },
+  "nevergrad_alldes_cigar_100d": {
+    "suite": "alldes",
+    "name": "cigar",
+    "dimension": 100
+  },
+  "nevergrad_alldes_hm_100d": {
+    "suite": "alldes",
+    "name": "hm",
+    "dimension": 100
+  },
+  "nevergrad_alldes_ellipsoid_100d": {
+    "suite": "alldes",
+    "name": "ellipsoid",
+    "dimension": 100
+  },
+  "nevergrad_hdbo4d_sphere_20d": {
+    "suite": "hdbo4d",
+    "name": "sphere",
+    "dimension": 20
+  },
+  "nevergrad_hdbo4d_cigar_20d": {
+    "suite": "hdbo4d",
+    "name": "cigar",
+    "dimension": 20
+  },
+  "nevergrad_hdbo4d_hm_20d": {
+    "suite": "hdbo4d",
+    "name": "hm",
+    "dimension": 20
+  },
+  "nevergrad_hdbo4d_ellipsoid_20d": {
+    "suite": "hdbo4d",
+    "name": "ellipsoid",
+    "dimension": 20
+  },
+  "nevergrad_spsa_benchmark_sphere_20d": {
+    "suite": "spsa_benchmark",
+    "name": "sphere",
+    "dimension": 20
+  },
+  "nevergrad_spsa_benchmark_sphere4_20d": {
+    "suite": "spsa_benchmark",
+    "name": "sphere4",
+    "dimension": 20
+  },
+  "nevergrad_spsa_benchmark_cigar_20d": {
+    "suite": "spsa_benchmark",
+    "name": "cigar",
+    "dimension": 20
+  },
+  "nevergrad_photonics_bragg_80d": {
+    "suite": "photonics",
+    "name": "bragg",
+    "dimension": 80
+  },
+  "nevergrad_photonics_chirped_80d": {
+    "suite": "photonics",
+    "name": "chirped",
+    "dimension": 80
+  },
+  "nevergrad_photonics_morpho_60d": {
+    "suite": "photonics",
+    "name": "morpho",
+    "dimension": 60
+  },
+  "nevergrad_photonics_cf_photosic_realistic_80d": {
+    "suite": "photonics",
+    "name": "cf_photosic_realistic",
+    "dimension": 80
+  },
+  "nevergrad_photonics_cf_photosic_reference_80d": {
+    "suite": "photonics",
+    "name": "cf_photosic_reference",
+    "dimension": 80
+  },
+  "nevergrad_photonics2_bragg_as_tuple_80d": {
+    "suite": "photonics2",
+    "name": "bragg_as_tuple",
+    "dimension": 80
+  },
+  "nevergrad_photonics2_chirped_as_tuple_80d": {
+    "suite": "photonics2",
+    "name": "chirped_as_tuple",
+    "dimension": 80
+  },
+  "nevergrad_photonics2_morpho_as_tuple_60d": {
+    "suite": "photonics2",
+    "name": "morpho_as_tuple",
+    "dimension": 60
+  },
+  "nevergrad_photonics2_cf_photosic_realistic_as_tuple_80d": {
+    "suite": "photonics2",
+    "name": "cf_photosic_realistic_as_tuple",
+    "dimension": 80
+  },
+  "nevergrad_photonics2_cf_photosic_reference_as_tuple_80d": {
+    "suite": "photonics2",
+    "name": "cf_photosic_reference_as_tuple",
+    "dimension": 80
+  },
+  "nevergrad_ultrasmall_photonics_bragg_20d": {
+    "suite": "ultrasmall_photonics",
+    "name": "bragg",
+    "dimension": 20
+  },
+  "nevergrad_ultrasmall_photonics2_bragg_as_tuple_20d": {
+    "suite": "ultrasmall_photonics2",
+    "name": "bragg_as_tuple",
+    "dimension": 20
+  },
+  "nevergrad_verysmall_photonics_cf_photosic_reference_20d": {
+    "suite": "verysmall_photonics",
+    "name": "cf_photosic_reference",
+    "dimension": 20
+  },
+  "nevergrad_verysmall_photonics_cf_photosic_realistic_20d": {
+    "suite": "verysmall_photonics",
+    "name": "cf_photosic_realistic",
+    "dimension": 20
+  },
+  "nevergrad_verysmall_photonics2_cf_photosic_reference_as_tuple_20d": {
+    "suite": "verysmall_photonics2",
+    "name": "cf_photosic_reference_as_tuple",
+    "dimension": 20
+  },
+  "nevergrad_verysmall_photonics2_cf_photosic_realistic_as_tuple_20d": {
+    "suite": "verysmall_photonics2",
+    "name": "cf_photosic_realistic_as_tuple",
+    "dimension": 20
+  },
+  "nevergrad_small_photonics_bragg_40d": {
+    "suite": "small_photonics",
+    "name": "bragg",
+    "dimension": 40
+  },
+  "nevergrad_small_photonics_chirped_40d": {
+    "suite": "small_photonics",
+    "name": "chirped",
+    "dimension": 40
+  },
+  "nevergrad_small_photonics_morpho_28d": {
+    "suite": "small_photonics",
+    "name": "morpho",
+    "dimension": 28
+  },
+  "nevergrad_small_photonics_cf_photosic_realistic_40d": {
+    "suite": "small_photonics",
+    "name": "cf_photosic_realistic",
+    "dimension": 40
+  },
+  "nevergrad_small_photonics_cf_photosic_reference_40d": {
+    "suite": "small_photonics",
+    "name": "cf_photosic_reference",
+    "dimension": 40
+  },
+  "nevergrad_small_photonics2_bragg_as_tuple_40d": {
+    "suite": "small_photonics2",
+    "name": "bragg_as_tuple",
+    "dimension": 40
+  },
+  "nevergrad_small_photonics2_chirped_as_tuple_40d": {
+    "suite": "small_photonics2",
+    "name": "chirped_as_tuple",
+    "dimension": 40
+  },
+  "nevergrad_small_photonics2_morpho_as_tuple_28d": {
+    "suite": "small_photonics2",
+    "name": "morpho_as_tuple",
+    "dimension": 28
+  },
+  "nevergrad_small_photonics2_cf_photosic_realistic_as_tuple_40d": {
+    "suite": "small_photonics2",
+    "name": "cf_photosic_realistic_as_tuple",
+    "dimension": 40
+  },
+  "nevergrad_small_photonics2_cf_photosic_reference_as_tuple_40d": {
+    "suite": "small_photonics2",
+    "name": "cf_photosic_reference_as_tuple",
+    "dimension": 40
+  }
+}
