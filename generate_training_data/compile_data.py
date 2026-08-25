@@ -110,6 +110,153 @@ def find_best_algorithms(metadatas: dict, path: Path, use_auc: bool = False,
     return results
 
 
+def compute_trial_running_best(args_tuple):
+    """Per-experiment running-best-so-far metric value at each trial index,
+    in the same min-convention and the same per-trial ordering (groupby
+    'trial_id', last row per trial, ascending trial_id) as
+    `History.from_syne_tune_experiment` uses when building `hist.trials` --
+    so the returned list stays index-aligned with a `History`'s trials for
+    the same experiment.
+
+    This is additive, advantage-reweighted-SFT-only machinery: it does not
+    modify or get called by `process_best_trajectory`/`find_best_algorithms`
+    or the `--only_best`/`--rename_best` selection pipeline above, even
+    though it shares the same "how good is this trajectory" spirit.
+    """
+    name, metadata, path = args_tuple
+    from load_data import load_result, get_config_space_from_metadata
+    benchmark_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+    metric_name = metadata["metric_names"][0]
+    metric_mode = metadata.get('metric_mode', 'min')
+
+    try:
+        config_space = get_config_space_from_metadata(metadata)
+        res = load_result(name, metric_name, config_space, path)
+    except Exception:
+        res = None
+
+    if res is None or metric_name not in res.columns:
+        return benchmark_name, name, None
+
+    per_trial_vals = []
+    for _, trial in res.groupby('trial_id'):
+        row = trial.iloc[-1]
+        val = row[metric_name]
+        if metric_mode == 'max':
+            val = -val
+        per_trial_vals.append(val)
+
+    if len(per_trial_vals) == 0:
+        return benchmark_name, name, None
+
+    running_best = np.minimum.accumulate(per_trial_vals).tolist()
+    return benchmark_name, name, running_best
+
+
+def compute_peer_baseline_per_benchmark(metadatas: dict, path: Path, num_cores: int = None) -> dict:
+    """For each benchmark, the mean running-best-so-far curve across ALL
+    optimizers/seeds/experiments recorded for that benchmark in `metadatas`
+    (short trajectories are forward-filled to the longest trajectory's
+    length before averaging). This is the peer baseline that per-trial
+    advantages are computed against.
+    """
+    tasks = [(name, metadata, path) for name, metadata in metadatas.items()]
+
+    if num_cores is None:
+        try:
+            num_cores = len(os.sched_getaffinity(0))
+        except AttributeError:
+            num_cores = multiprocessing.cpu_count()
+
+    logger.info(f"Computing peer baselines using {num_cores} cores for {len(tasks)} tasks...")
+
+    per_benchmark_curves = {}
+    with multiprocessing.Pool(processes=num_cores) as pool:
+        for benchmark_name, _, running_best in tqdm.tqdm(
+                pool.imap_unordered(compute_trial_running_best, tasks),
+                total=len(tasks),
+                desc="Computing per-trial running-best curves",
+                mininterval=5.0):
+            if not running_best:
+                continue
+            per_benchmark_curves.setdefault(benchmark_name, []).append(running_best)
+
+    peer_baseline = {}
+    for benchmark_name, curves in per_benchmark_curves.items():
+        max_len = max(len(c) for c in curves)
+        padded = np.empty((len(curves), max_len))
+        for i, c in enumerate(curves):
+            arr = np.array(c, dtype=float)
+            if len(arr) < max_len:
+                arr = np.concatenate([arr, np.full(max_len - len(arr), arr[-1])])
+            padded[i] = arr
+        peer_baseline[benchmark_name] = padded.mean(axis=0)
+    return peer_baseline
+
+
+def compute_advantages_for_experiment(name, metadata, path, peer_baseline_by_benchmark, temperature=None):
+    """Per-trial advantage = peer_baseline[benchmark][t] - running_best_this_experiment[t]
+    (min-convention, so a trajectory doing better than its peers at trial t
+    gets a positive advantage). If `temperature` is given, returns
+    `exp(advantage / temperature)` instead of the raw difference.
+    """
+    benchmark_name, _, running_best = compute_trial_running_best((name, metadata, path))
+    if running_best is None or benchmark_name not in peer_baseline_by_benchmark:
+        return None
+
+    baseline = peer_baseline_by_benchmark[benchmark_name]
+    n = len(running_best)
+    if len(baseline) < n:
+        baseline = np.concatenate([baseline, np.full(n - len(baseline), baseline[-1])])
+    advantages = baseline[:n] - np.array(running_best)
+
+    if temperature is not None:
+        advantages = np.exp(advantages / temperature)
+
+    return advantages.tolist()
+
+
+def process_metadata_with_advantage(args_tuple):
+    """Builds one advantage-weighted training example for a single experiment:
+    a `History.get_prompt_with_weights` segments list, where each trial's
+    span is weighted by that trial's advantage relative to its benchmark's
+    peer baseline. Additive/parallel to `process_metadata` above -- does not
+    call or modify it.
+    """
+    name, metadata, path, peer_baseline_by_benchmark, temperature, is_valid = args_tuple
+    from load_data import load_result, get_config_space_from_metadata
+    from open_optformer.history import History
+    from syne_tune.experiments import ExperimentResult
+
+    try:
+        advantages = compute_advantages_for_experiment(
+            name, metadata, path, peer_baseline_by_benchmark, temperature=temperature
+        )
+        if advantages is None:
+            return is_valid, None
+
+        config_space = get_config_space_from_metadata(metadata)
+        metric_name = metadata["metric_names"][0]
+        res = load_result(name, metric_name, config_space, path)
+        hist = History.from_syne_tune_experiment(
+            ExperimentResult(name=name, metadata=metadata, results=res, path=path, tuner=None)
+        )
+        advantages = advantages[:len(hist.trials)]
+        _, segments = hist.get_prompt_with_weights(advantages=advantages)
+
+        benchmark_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+        example = {
+            "segments": segments,
+            "experiment_name": name,
+            "benchmark": benchmark_name,
+            "algorithm": metadata.get("algorithm"),
+        }
+        return is_valid, example
+    except Exception as e:
+        logger.error(f"Error computing advantage-weighted example for {name}: {e}")
+        return is_valid, None
+
+
 def process_metadata(args_tuple):
     name, metadata, path, max_num_trials, remove_names, num_permutation, sample_shorter_trajectories, is_valid = args_tuple
     from load_data import create_history_from_results
@@ -204,6 +351,23 @@ if __name__ == "__main__":
         action='store_true',
         help="when using --only_best, select the best trajectory based on Area Under the Curve (AUC) of the cumulative best instead of the final best value",
     )
+    parser.add_argument(
+        "--emit_advantage_weighted",
+        action='store_true',
+        help="additionally write advantage_train.jsonl/advantage_valid.jsonl for advantage-reweighted SFT. "
+             "Runs over the full metadata pool BEFORE --only_best/--rename_best filtering (if those are also "
+             "passed), independent of that selection pipeline: this is a separate selection philosophy that "
+             "reweights every trajectory's trials by advantage relative to its benchmark's peers, rather than "
+             "keeping/renaming a single best trajectory.",
+    )
+    parser.add_argument(
+        "--advantage_temperature",
+        type=float,
+        required=False,
+        default=None,
+        help="if set, per-trial advantage weights are exp(advantage / temperature) instead of the raw "
+             "difference against the peer baseline",
+    )
 
     methods = [
         "REA",
@@ -249,6 +413,10 @@ if __name__ == "__main__":
             metadatas = {k: v for k, v in metadatas.items() if experiment_filter(v)}
         logger.info(f"Loaded {len(metadatas)} experiment metadata items matching criteria.")
         # metadatas = {k: v for k, v in metadatas.items() if "yahpo" not in v["benchmark"]}
+
+        # Snapshot taken before --only_best/--rename_best may reassign/filter `metadatas` below,
+        # so --emit_advantage_weighted always runs over the full pool independent of that pipeline.
+        all_metadatas_for_advantage = dict(metadatas)
 
         if args.only_best:
             with catchtime("Find best trajectories for each benchmark"):
@@ -365,3 +533,48 @@ if __name__ == "__main__":
                     hist_split = hist_valid
                 with open(str(output_path / file_name), 'w', encoding='utf-8') as f:
                     f.write('\n'.join(hist_split))
+
+        if args.emit_advantage_weighted:
+            with catchtime("Compute advantage-weighted training data"):
+                peer_baseline_by_benchmark = compute_peer_baseline_per_benchmark(
+                    all_metadatas_for_advantage, path
+                )
+
+                adv_tasks = []
+                for name, metadata in all_metadatas_for_advantage.items():
+                    benchmark_name = metadata.get('benchmark', '')
+                    is_valid = benchmark_name in validation_tasks
+                    adv_tasks.append(
+                        (name, metadata, path, peer_baseline_by_benchmark, args.advantage_temperature, is_valid)
+                    )
+
+                logger.info(
+                    f"Computing advantage-weighted examples using {num_cores} cores for {len(adv_tasks)} tasks..."
+                )
+
+                adv_train = []
+                adv_valid = []
+                with multiprocessing.Pool(processes=num_cores) as pool:
+                    for is_valid, example in tqdm.tqdm(
+                            pool.imap_unordered(process_metadata_with_advantage, adv_tasks),
+                            total=len(adv_tasks),
+                            desc="Computing advantage-weighted examples",
+                            mininterval=5.0):
+                        if example is None:
+                            continue
+                        if is_valid:
+                            adv_valid.append(example)
+                        else:
+                            adv_train.append(example)
+
+                random.shuffle(adv_train)
+                for split, examples in [('train', adv_train), ('valid', adv_valid)]:
+                    file_name = f"advantage_{split}.jsonl"
+                    with open(str(output_path / file_name), 'w', encoding='utf-8') as f:
+                        for example in examples:
+                            f.write(json.dumps(example) + '\n')
+
+                logger.info(
+                    f"Wrote {len(adv_train)} advantage-weighted train examples and "
+                    f"{len(adv_valid)} valid examples to {output_path}."
+                )

@@ -60,6 +60,7 @@ def encode(x, hp: Domain, q: int = 1000, hp_name: str = ""):
 class Trial:
     config: dict
     metric: int
+    advantage: float = None
 
 
 @dataclass
@@ -72,16 +73,12 @@ class History:
     trials: list = field(default_factory=list)
     remove_names: bool = False
 
-    def add_trial(self, config, result):
+    def add_trial(self, config, result, advantage=None):
 
-        trial = Trial(config, result)
+        trial = Trial(config, result, advantage)
         self.trials.append(trial)
 
-    def get_prompt(self, shuffle=False, hp_order: list = None):
-        string = ""
-        if not self.remove_names:
-            string += f"benchmark:{self.name},"
-        string += f"algorithm:{self.algorithm},"
+    def _resolve_hypers(self, shuffle=False, hp_order: list = None):
         if hp_order is not None:
             hypers = hp_order
         else:
@@ -99,6 +96,13 @@ class History:
                 else:
                     continues_hypers.append((hp_name, hp))
             hypers = continues_hypers + categorical_hypers
+        return hypers
+
+    def _build_header(self, hypers):
+        string = ""
+        if not self.remove_names:
+            string += f"benchmark:{self.name},"
+        string += f"algorithm:{self.algorithm},"
         string += f"search-space:"
         for hp_name, hp in hypers:
             string += "{"
@@ -132,6 +136,27 @@ class History:
             string += "}"
 
         string += ',history:'
+        return string
+
+    def _build_trial_span(self, trial, hypers, y_min, y_max):
+        string = ""
+        for i, (hp_name, hp) in enumerate(hypers):
+            if not isinstance(hp, Domain):
+                continue
+            if i > 0:
+                string += ","
+
+            hp_encoded = encode(trial.config[hp_name], hp, hp_name=hp_name, q=self.num_numeric_tokens)
+            string += str(hp_encoded)
+        string += f"*"
+
+        string += f"{quantize(trial.metric, y_min, y_max, q=self.num_numeric_tokens)}"
+        string += f"|"
+        return string
+
+    def get_prompt(self, shuffle=False, hp_order: list = None):
+        hypers = self._resolve_hypers(shuffle=shuffle, hp_order=hp_order)
+        string = self._build_header(hypers)
 
         if len(self.trials) > 0:
             y_min = min(trial.metric for trial in self.trials)
@@ -139,19 +164,38 @@ class History:
             if y_min == y_max:
                 y_max += 1  # Avoid division by zero in quantization
             for trial in self.trials:
-                for i, (hp_name, hp) in enumerate(hypers):
-                    if not isinstance(hp, Domain):
-                        continue
-                    if i > 0:
-                        string += ","
-
-                    hp_encoded = encode(trial.config[hp_name], hp, hp_name=hp_name, q=self.num_numeric_tokens)
-                    string += str(hp_encoded)
-                string += f"*"
-
-                string += f"{quantize(trial.metric, y_min, y_max, q=self.num_numeric_tokens)}"
-                string += f"|"
+                string += self._build_trial_span(trial, hypers, y_min, y_max)
         return string
+
+    def get_prompt_with_weights(self, advantages: list = None, shuffle=False,
+                                 hp_order: list = None, base_weight: float = 1.0):
+        """Same construction as get_prompt(), but also returns a list of
+        (text_chunk, weight) segments spanning the returned string: the
+        shared benchmark/algorithm/search-space header gets `base_weight`,
+        and each trial's `{config}*{y}|` span gets `advantages[i]` (falling
+        back to `trial.advantage`, then `base_weight`, if not provided).
+        """
+        hypers = self._resolve_hypers(shuffle=shuffle, hp_order=hp_order)
+        header = self._build_header(hypers)
+        segments = [(header, base_weight)]
+
+        if len(self.trials) > 0:
+            y_min = min(trial.metric for trial in self.trials)
+            y_max = max(trial.metric for trial in self.trials)
+            if y_min == y_max:
+                y_max += 1  # Avoid division by zero in quantization
+            for i, trial in enumerate(self.trials):
+                span = self._build_trial_span(trial, hypers, y_min, y_max)
+                if advantages is not None and i < len(advantages):
+                    weight = advantages[i]
+                elif trial.advantage is not None:
+                    weight = trial.advantage
+                else:
+                    weight = base_weight
+                segments.append((span, weight))
+
+        string = "".join(text for text, _ in segments)
+        return string, segments
 
     @classmethod
     def from_syne_tune_experiment(cls, experiment: ExperimentResult,

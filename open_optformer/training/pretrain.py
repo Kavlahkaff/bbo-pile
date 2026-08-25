@@ -355,13 +355,21 @@ def fit(
         state["iter_num"] += 1
         iter_t0 = time.perf_counter()
 
-        input_ids = train_data[:, 0 : model.max_seq_length].contiguous().long()
-        targets = train_data[:, 1 : (model.max_seq_length + 1)].contiguous().long()
+        if isinstance(train_data, dict):
+            # advantage-reweighted SFT path (AdvantageWeightedData): batches carry
+            # per-position sample_weights alongside input_ids/targets.
+            input_ids = train_data["input_ids"][:, : model.max_seq_length].contiguous().long()
+            targets = train_data["targets"][:, : model.max_seq_length].contiguous().long()
+            sample_weights = train_data["sample_weights"][:, : model.max_seq_length].contiguous().float()
+        else:
+            input_ids = train_data[:, 0 : model.max_seq_length].contiguous().long()
+            targets = train_data[:, 1 : (model.max_seq_length + 1)].contiguous().long()
+            sample_weights = None
 
         is_accumulating = state["iter_num"] % train.gradient_accumulation_iters(devices, num_nodes) != 0
         with fabric.no_backward_sync(model, enabled=is_accumulating):
             logits = model(input_ids)
-            loss = chunked_cross_entropy(logits, targets, weight=loss_weights)
+            loss = chunked_cross_entropy(logits, targets, weight=loss_weights, sample_weights=sample_weights)
             fabric.backward(loss / train.gradient_accumulation_iters(devices, num_nodes))
 
         running_loss.update(loss.detach())
@@ -450,10 +458,16 @@ def validate(
     for k, batch in enumerate(val_dataloader):
         if k >= max_iters:
             break
-        input_ids = batch[:, 0 : model.max_seq_length].contiguous().long()
-        targets = batch[:, 1 : (model.max_seq_length + 1)].contiguous().long()
+        if isinstance(batch, dict):
+            input_ids = batch["input_ids"][:, : model.max_seq_length].contiguous().long()
+            targets = batch["targets"][:, : model.max_seq_length].contiguous().long()
+            sample_weights = batch["sample_weights"][:, : model.max_seq_length].contiguous().float()
+        else:
+            input_ids = batch[:, 0 : model.max_seq_length].contiguous().long()
+            targets = batch[:, 1 : (model.max_seq_length + 1)].contiguous().long()
+            sample_weights = None
         logits = model(input_ids)
-        loss = chunked_cross_entropy(logits, targets, weight=loss_weights)
+        loss = chunked_cross_entropy(logits, targets, weight=loss_weights, sample_weights=sample_weights)
         losses.append(loss)
 
     val_loss = torch.stack(losses).mean()
