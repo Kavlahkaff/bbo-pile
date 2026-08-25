@@ -43,6 +43,73 @@ def process_best_trajectory(args_tuple):
                 val = res[metric_name].min()
     return benchmark_name, name, val
 
+def find_best_algorithms(metadatas: dict, path: Path, use_auc: bool = False,
+                          num_cores: int = None) -> dict:
+    """For each benchmark present in `metadatas`, determine:
+      - "best_experiment": (experiment_name, val), the single experiment
+        with the lowest `val` (see `process_best_trajectory`) across every
+        algorithm/seed for that benchmark.
+      - "algorithm"/"mean_val": the algorithm with the lowest MEAN `val`
+        across all of its recorded seeds for that benchmark (i.e. best
+        average final value -- or AUC if `use_auc` -- over all seeds).
+      - "seed_experiments": {seed: experiment_name}, every recorded seed of
+        that winning algorithm for that benchmark.
+
+    Reused by both `--keep_all_seeds_of_best` (via "algorithm") and the
+    single-best-experiment path (via "best_experiment") below, and by
+    `find_best_baselines.py`.
+    """
+    from collections import defaultdict
+
+    tasks = [(name, metadata, path, use_auc) for name, metadata in metadatas.items()]
+
+    if num_cores is None:
+        try:
+            num_cores = len(os.sched_getaffinity(0))
+        except AttributeError:
+            num_cores = multiprocessing.cpu_count()
+
+    logger.info(f"Detecting best trajectories using {num_cores} cores for {len(tasks)} tasks...")
+
+    best_experiments = {}
+    benchmark_algo_vals = defaultdict(lambda: defaultdict(list))
+    benchmark_algo_seed_experiments = defaultdict(lambda: defaultdict(dict))
+
+    with multiprocessing.Pool(processes=num_cores) as pool:
+        for benchmark_name, name, val in tqdm.tqdm(
+                pool.imap_unordered(process_best_trajectory, tasks),
+                total=len(tasks),
+                desc="Finding best trajectories",
+                mininterval=5.0):
+            if val is None:
+                continue
+
+            if benchmark_name not in best_experiments or val < best_experiments[benchmark_name][1]:
+                best_experiments[benchmark_name] = (name, val)
+
+            algo = metadatas[name]["algorithm"]
+            seed = metadatas[name].get("seed")
+            benchmark_algo_vals[benchmark_name][algo].append(val)
+            benchmark_algo_seed_experiments[benchmark_name][algo][seed] = name
+
+    results = {}
+    for bench, algos in benchmark_algo_vals.items():
+        best_algo = None
+        best_avg = float('inf')
+        for algo, vals in algos.items():
+            avg_val = np.mean(vals)
+            if avg_val < best_avg:
+                best_avg = avg_val
+                best_algo = algo
+        results[bench] = {
+            "algorithm": best_algo,
+            "mean_val": best_avg,
+            "seed_experiments": benchmark_algo_seed_experiments[bench][best_algo],
+            "best_experiment": best_experiments.get(bench),
+        }
+    return results
+
+
 def process_metadata(args_tuple):
     name, metadata, path, max_num_trials, remove_names, num_permutation, sample_shorter_trajectories, is_valid = args_tuple
     from load_data import create_history_from_results
@@ -185,46 +252,14 @@ if __name__ == "__main__":
 
         if args.only_best:
             with catchtime("Find best trajectories for each benchmark"):
-                best_experiments = {}
-                all_vals = []
-                tasks_best = [(name, metadata, path, args.best_by_auc) for name, metadata in metadatas.items()]
-                
-                try:
-                    num_cores = len(os.sched_getaffinity(0))
-                except AttributeError:
-                    num_cores = multiprocessing.cpu_count()
-                
-                logger.info(f"Detecting best trajectories using {num_cores} cores for {len(tasks_best)} tasks...")
-                
-                with multiprocessing.Pool(processes=num_cores) as pool:
-                    for benchmark_name, name, val in tqdm.tqdm(
-                            pool.imap_unordered(process_best_trajectory, tasks_best), 
-                            total=len(tasks_best), 
-                            desc="Finding best trajectories",
-                            mininterval=5.0):
-                        if val is not None:
-                            all_vals.append((benchmark_name, name, val))
-                            if benchmark_name not in best_experiments or val < best_experiments[benchmark_name][1]:
-                                best_experiments[benchmark_name] = (name, val)
+                best_by_benchmark = find_best_algorithms(
+                    metadatas, path, use_auc=args.best_by_auc,
+                )
 
                 if args.keep_all_seeds_of_best:
-                    from collections import defaultdict
-                    benchmark_algo_vals = defaultdict(lambda: defaultdict(list))
-                    for bench, name, val in all_vals:
-                        algo = metadatas[name]["algorithm"]
-                        benchmark_algo_vals[bench][algo].append(val)
-
-                    best_algorithms = {}
-                    for bench, algos in benchmark_algo_vals.items():
-                        best_algo = None
-                        best_avg = float('inf')
-                        for algo, vals in algos.items():
-                            avg_val = np.mean(vals)
-                            if avg_val < best_avg:
-                                best_avg = avg_val
-                                best_algo = algo
-                        best_algorithms[bench] = best_algo
-
+                    best_algorithms = {
+                        bench: r["algorithm"] for bench, r in best_by_benchmark.items()
+                    }
                     new_metadatas = {}
                     for k, v in metadatas.items():
                         bench = v.get('benchmark', v.get('entrypoint', 'unknown'))
@@ -232,7 +267,10 @@ if __name__ == "__main__":
                             new_metadatas[k] = v
                     metadatas = new_metadatas
                 else:
-                    best_names = {v[0] for v in best_experiments.values()}
+                    best_names = {
+                        r["best_experiment"][0] for r in best_by_benchmark.values()
+                        if r["best_experiment"] is not None
+                    }
                     metadatas = {k: v for k, v in metadatas.items() if k in best_names}
 
                 if args.rename_best:
