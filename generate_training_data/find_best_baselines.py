@@ -25,8 +25,8 @@ from load_data import get_metadata
 DEFAULT_METHODS = ["REA", "TPE", "BORE", "CQR", "RS", "HEBO"]
 
 
-def _default_benchmarks(validation_tasks_json: Path) -> list[str]:
-    with open(validation_tasks_json) as f:
+def _flatten_tasks_json(tasks_json: Path) -> list[str]:
+    with open(tasks_json) as f:
         families = json.load(f)
     return list(itertools.chain.from_iterable(families.values()))
 
@@ -40,9 +40,19 @@ if __name__ == "__main__":
     p.add_argument("--benchmark", type=str, nargs="+", default=None,
                     dest="benchmarks",
                     help="Benchmarks to compute a best-baseline entry for. "
-                         "Defaults to every benchmark in --validation_tasks_json.")
+                         "Defaults to every benchmark in --validation_tasks_json "
+                         "(or --all_training_tasks_json, if given).")
     p.add_argument("--validation_tasks_json", type=Path, default=default_validation_json,
-                    help="Used only when --benchmark is omitted.")
+                    help="Used only when --benchmark and --all_training_tasks_json "
+                         "are both omitted.")
+    p.add_argument("--all_training_tasks_json", type=Path, default=None,
+                    help="Use generate_training_data/all_training_tasks.json (or an "
+                         "equivalent file, same {family: [task, ...]} shape) as the "
+                         "benchmark source instead of --validation_tasks_json -- "
+                         "needed for Approach C (self-play), which scores rollouts "
+                         "generated on TRAINING tasks, not the held-out set this "
+                         "script defaults to. Takes precedence over "
+                         "--validation_tasks_json when --benchmark is omitted.")
     p.add_argument("--methods", type=str, nargs="+", default=DEFAULT_METHODS,
                     help="Reference algorithms eligible to be 'best' "
                          "(matches compile_data.py's whitelist).")
@@ -53,7 +63,8 @@ if __name__ == "__main__":
     p.add_argument("--out_json", type=Path, required=True)
     args = p.parse_args()
 
-    benchmarks = args.benchmarks or _default_benchmarks(args.validation_tasks_json)
+    tasks_json = args.all_training_tasks_json or args.validation_tasks_json
+    benchmarks = args.benchmarks or _flatten_tasks_json(tasks_json)
     print(f"Benchmarks ({len(benchmarks)}): {benchmarks}")
 
     print(f"Scanning metadata under {args.results_path} ...")
