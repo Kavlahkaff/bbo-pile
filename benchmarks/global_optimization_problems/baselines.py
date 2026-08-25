@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional, Any
 from syne_tune.optimizer.baselines import REA, RandomSearch, CQR, TPE, BORE
 from syne_tune.optimizer.schedulers.single_objective_scheduler import SingleObjectiveScheduler
-from open_optformer.hebo_searcher import HEBOSearcher
+#from open_optformer.hebo_searcher import HEBOSearcher
 from open_optformer.optformer_searcher import OptformerScheduler
 
 @dataclass
@@ -14,6 +15,9 @@ class MethodArguments:
     points_to_evaluate: list[dict]
     checkpoint_dir: str
     benchmark_name: str
+    model: Optional[Any] = None
+    tokenizer: Optional[Any] = None
+    gpu_memory_utilization: float = 0.2
 
 class Methods:
     BORE = "BORE"
@@ -29,6 +33,8 @@ class Methods:
     OPT_HEBO = 'OPT-HEBO'
     OPT_CQR_TS = 'OPT-CQR-TS'
     OPT_CQR_TS_5 = 'OPT-CQR-TS-5'
+    OPT_BEST = "OPT-best"
+
 
 methods = {
     Methods.RS: lambda method_arguments: RandomSearch(
@@ -66,18 +72,18 @@ methods = {
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate
     ),
-    Methods.HEBO: lambda method_arguments: SingleObjectiveScheduler(
-        config_space=method_arguments.config_space,
-        searcher=HEBOSearcher(
-            config_space=method_arguments.config_space,
-            do_minimize=method_arguments.mode == "min",
-            random_seed=method_arguments.random_seed,
-            points_to_evaluate=method_arguments.points_to_evaluate
-        ),
-        metric=method_arguments.metric,
-        do_minimize=method_arguments.mode == "min",
-        random_seed=method_arguments.random_seed,
-    ),
+ #   Methods.HEBO: lambda method_arguments: SingleObjectiveScheduler(
+ #       config_space=method_arguments.config_space,
+ #       searcher=HEBOSearcher(
+ #           config_space=method_arguments.config_space,
+ #           do_minimize=method_arguments.mode == "min",
+ #           random_seed=method_arguments.random_seed,
+ #           points_to_evaluate=method_arguments.points_to_evaluate
+ #       ),
+ #       metric=method_arguments.metric,
+ #       do_minimize=method_arguments.mode == "min",
+ #       random_seed=method_arguments.random_seed,
+ #   ),
     Methods.OPT_CQR: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
@@ -89,6 +95,9 @@ methods = {
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=1,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
     Methods.OPT_REA: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -101,6 +110,9 @@ methods = {
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=1,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
     Methods.OPT_BORE: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -113,6 +125,9 @@ methods = {
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=1,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
     Methods.OPT_TPE: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -125,19 +140,25 @@ methods = {
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=1,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
-    Methods.OPT_HEBO: lambda method_arguments: OptformerScheduler(
-        config_space=method_arguments.config_space,
-        metric=method_arguments.metric,
-        checkpoint_dir=Path(method_arguments.checkpoint_dir),
-        task_info={'name': method_arguments.benchmark_name,
-                   'algorithm': "HEBO",
-                   'metric_names': "feval"},
-        do_minimize=method_arguments.mode == "min",
-        random_seed=method_arguments.random_seed,
-        points_to_evaluate=method_arguments.points_to_evaluate,
-        n_sample_configurations=1,
-    ),
+  #  Methods.OPT_HEBO: lambda method_arguments: OptformerScheduler(
+  #      config_space=method_arguments.config_space,
+  #      metric=method_arguments.metric,
+  #      checkpoint_dir=Path(method_arguments.checkpoint_dir),
+  #      task_info={'name': method_arguments.benchmark_name,
+  #                 'algorithm': "HEBO",
+  #                 'metric_names': "feval"},
+  #      do_minimize=method_arguments.mode == "min",
+  #      random_seed=method_arguments.random_seed,
+  #      points_to_evaluate=method_arguments.points_to_evaluate,
+  #      n_sample_configurations=1,
+  #      model=method_arguments.model,
+  #      tokenizer=method_arguments.tokenizer,
+  #      gpu_memory_utilization=method_arguments.gpu_memory_utilization,
+  #  ),
     Methods.OPT_CQR_TS: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
@@ -149,6 +170,9 @@ methods = {
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=50,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
     Methods.OPT_CQR_TS_5: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -161,5 +185,26 @@ methods = {
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=5,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
+    Methods.OPT_BEST: lambda method_arguments: OptformerScheduler(
+        config_space=method_arguments.config_space,
+        metric=method_arguments.metric,
+        checkpoint_dir=Path(method_arguments.checkpoint_dir),
+        task_info={
+            "name": method_arguments.benchmark_name,
+            "algorithm": "best",
+            "metric_names": "feval",
+        },
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
+        points_to_evaluate=method_arguments.points_to_evaluate,
+        n_sample_configurations=1,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
+    ),
+
 }

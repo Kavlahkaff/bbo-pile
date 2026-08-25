@@ -77,25 +77,28 @@ class History:
         trial = Trial(config, result)
         self.trials.append(trial)
 
-    def get_prompt(self, shuffle=False):
+    def get_prompt(self, shuffle=False, hp_order: list = None):
         string = ""
         if not self.remove_names:
             string += f"benchmark:{self.name},"
         string += f"algorithm:{self.algorithm},"
-        hypers = list(self.config_space.items())
-        if shuffle:
-            random.shuffle(hypers)
-        # sort hyperparameters: continuous first, categorical last
-        continues_hypers = []
-        categorical_hypers = []
-        for hp_name, hp in hypers:
-            if not isinstance(hp, Domain):
-                continue
-            if isinstance(hp, Categorical):
-                categorical_hypers.append((hp_name, hp))
-            else:
-                continues_hypers.append((hp_name, hp))
-        hypers = continues_hypers + categorical_hypers
+        if hp_order is not None:
+            hypers = hp_order
+        else:
+            hypers = list(self.config_space.items())
+            if shuffle:
+                random.shuffle(hypers)
+            # sort hyperparameters: continuous first, categorical last
+            continues_hypers = []
+            categorical_hypers = []
+            for hp_name, hp in hypers:
+                if not isinstance(hp, Domain):
+                    continue
+                if isinstance(hp, Categorical):
+                    categorical_hypers.append((hp_name, hp))
+                else:
+                    continues_hypers.append((hp_name, hp))
+            hypers = continues_hypers + categorical_hypers
         string += f"search-space:"
         for hp_name, hp in hypers:
             string += "{"

@@ -6,7 +6,7 @@ from pathlib import Path
 
 BASE_PATH_CLUSTER = os.environ['BASE_PATH']
 DATASET_NAME = 'all'
-VERSION = 'v0.8'
+VERSION = 'v0.9'
 SEED = 0
 WANDB_PROJECT = f'open_optformer_qwen3_hp_sweep_{VERSION}'
 
@@ -87,9 +87,9 @@ def generate_configs():
                     elif VERSION == 'v0.4':
                         new_config['model_config']['vocab_size'] = 1072
                         new_config['model_config']['padded_vocab_size'] = 1072
-                    elif VERSION in ['v0.5', 'v0.6', 'v0.7', 'v0.8']:
-                        new_config['model_config']['vocab_size'] = 1069
-                        new_config['model_config']['padded_vocab_size'] = 1069
+                    elif VERSION in ['v0.5', 'v0.6', 'v0.7', 'v0.8', 'v0.9']:
+                        new_config['model_config']['vocab_size'] = 1061
+                        new_config['model_config']['padded_vocab_size'] = 1061
                     new_filename = f"{run_name}.yaml"
                     new_filepath = base_config_path.parent / new_filename
 

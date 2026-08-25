@@ -1,0 +1,93 @@
+data:
+  class_path: open_optformer.training.syne_tune_data.SyneTuneData
+  init_args:
+    data_path: /data/horse/ws/luth474h-master_thesis/experiments/tokenized_dataset/v0.9/all
+    split_names:
+    - train
+    - valid
+devices: auto
+eval:
+  final_validation: true
+  initial_validation: true
+  interval: 2442
+  max_iters: 100000
+  max_new_tokens: null
+initial_checkpoint_dir: null
+logger_name: wandb
+model_config:
+  attention_logit_softcapping: null
+  attention_scores_scalar: null
+  attn_bias: false
+  bias: false
+  block_size: 4096
+  final_logit_softcapping: null
+  gelu_approximate: none
+  hf_config:
+    name: Qwen3-2M
+    org: Qwen
+  latent_attention: null
+  lm_head_bias: false
+  mlp_class_name: LLaMAMLP
+  moe_intermediate_size: null
+  n_embd: 128
+  head_size: 64
+  intermediate_size: 384
+  n_expert: 0
+  n_expert_per_token: 0
+  n_head: 8
+  n_layer: 7
+  n_query_groups: 4
+  name: Qwen3-0.2B
+  norm_1: true
+  norm_2: true
+  norm_class_name: RMSNorm
+  norm_eps: 1.0e-06
+  norm_qk: true
+  norm_qk_type: default
+  padded_vocab_size: 1061
+  padding_multiple: 512
+  parallel_residual: false
+  post_attention_norm: false
+  post_mlp_norm: false
+  rope_adjustments: null
+  rope_base: 1000000
+  rope_condense_ratio: 1
+  rope_indices: null
+  rope_local_base_freq: null
+  rotary_percentage: 1.0
+  scale_embeddings: false
+  shared_attention_norm: false
+  sliding_window_indices: null
+  sliding_window_size: null
+  vocab_size: 1061
+num_nodes: 1
+optimizer:
+  class_path: torch.optim.AdamW
+  init_args:
+    betas:
+    - 0.9
+    - 0.95
+    lr: 0.005
+    weight_decay: 0.1
+out_dir: /data/horse/ws/luth474h-master_thesis/experiments/checkpoints/v0.9/qwen3_2M_token_2B_lr_5e-3_bsz_4_ws_12207_seed_0
+precision: bf16-mixed
+resume: false
+seed: 0
+tokenizer_dir: /data/horse/ws/luth474h-master_thesis/experiments/tokenizer/v0.9
+train:
+  epochs: null
+  global_batch_size: 4
+  log_interval: 611
+  lr_warmup_steps: 12207
+  max_norm: 1.0
+  max_seq_length: 4096
+  max_steps: null
+  max_tokens: 2000000000
+  micro_batch_size: 4
+  min_lr: 1e-5
+  save_interval: 12207
+  tie_embeddings: true
+log:
+  project: open_optformer_qwen3_hp_sweep_v0.9
+  run: qwen3_2M_token_2B_lr_5e-3_bsz_4_ws_12207_seed_0
+  group: qwen3_2M

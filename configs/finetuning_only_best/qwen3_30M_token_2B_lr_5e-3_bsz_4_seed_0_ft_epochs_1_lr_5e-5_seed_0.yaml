@@ -1,0 +1,93 @@
+data:
+  class_path: open_optformer.training.syne_tune_data.SyneTuneData
+  init_args:
+    data_path: /data/horse/ws/luth474h-master_thesis/experiments/data/tokenized_data/only-best
+    split_names:
+    - train
+    - valid
+devices: auto
+eval:
+  final_validation: true
+  initial_validation: true
+  interval: 585
+  max_iters: 100000
+  max_new_tokens: null
+initial_checkpoint_dir: /projects/p_neurasearch/bbo-pile_experiments/checkpoints/v0.8/qwen3_30M_token_2B_lr_5e-3_bsz_4_seed_0/final
+log:
+  group: qwen3_30M
+  project: open_optformer_qwen3_finetune_only_best_v0.9
+  run: qwen3_30M_token_2B_lr_5e-3_bsz_4_seed_0_ft_epochs_1_lr_5e-5_seed_0
+logger_name: wandb
+model_config:
+  attention_logit_softcapping: null
+  attention_scores_scalar: null
+  attn_bias: false
+  bias: false
+  block_size: 4096
+  final_logit_softcapping: null
+  gelu_approximate: none
+  head_size: 128
+  hf_config:
+    name: Qwen3-30M
+    org: Qwen
+  intermediate_size: 768
+  latent_attention: null
+  lm_head_bias: false
+  mlp_class_name: LLaMAMLP
+  moe_intermediate_size: null
+  n_embd: 256
+  n_expert: 0
+  n_expert_per_token: 0
+  n_head: 16
+  n_layer: 14
+  n_query_groups: 8
+  name: Qwen3-30M
+  norm_1: true
+  norm_2: true
+  norm_class_name: RMSNorm
+  norm_eps: 1.0e-06
+  norm_qk: true
+  norm_qk_type: default
+  padded_vocab_size: 1069
+  padding_multiple: 512
+  parallel_residual: false
+  post_attention_norm: false
+  post_mlp_norm: false
+  rope_adjustments: null
+  rope_base: 1000000
+  rope_condense_ratio: 1
+  rope_indices: null
+  rope_local_base_freq: null
+  rotary_percentage: 1.0
+  scale_embeddings: false
+  shared_attention_norm: false
+  sliding_window_indices: null
+  sliding_window_size: null
+  vocab_size: 1061
+num_nodes: 1
+optimizer:
+  class_path: torch.optim.AdamW
+  init_args:
+    betas:
+    - 0.9
+    - 0.95
+    lr: 5.0e-05
+    weight_decay: 0.1
+out_dir: /data/horse/ws/luth474h-master_thesis/experiments/finetuned/only-best/qwen3_30M_token_2B_lr_5e-3_bsz_4_seed_0_ft_epochs_1_lr_5e-5_seed_0
+precision: bf16-mixed
+resume: false
+seed: 0
+tokenizer_dir: /projects/p_neurasearch/bbo-pile_experiments/tokenizer/v0.8
+train:
+  epochs: null
+  global_batch_size: 4
+  log_interval: 147
+  lr_warmup_steps: 2921
+  max_norm: 1.0
+  max_seq_length: 4096
+  max_steps: null
+  max_tokens: 478658560
+  micro_batch_size: 4
+  min_lr: 1.0000000000000001e-07
+  save_interval: 2922
+  tie_embeddings: true

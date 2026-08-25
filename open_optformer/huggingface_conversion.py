@@ -54,10 +54,9 @@ def convert_to_huggingface(path: Union[str, Path], output_dir: Union[str, Path] 
     )
     if 'model' in state_dict:
         state_dict = state_dict['model']
-
-    # Create HuggingFace config
+    vocab_size = litgpt_config.get('padded_vocab_size', state_dict['transformer.wte.weight'].shape[0])
     hf_config = Qwen3Config(
-        vocab_size=litgpt_config['vocab_size'],
+        vocab_size=vocab_size,
         hidden_size=litgpt_config['n_embd'],
         intermediate_size=litgpt_config['intermediate_size'],
         num_hidden_layers=litgpt_config['n_layer'],

@@ -1,16 +1,22 @@
 data:
   class_path: open_optformer.training.syne_tune_data.SyneTuneData
   init_args:
-    data_path: /syne-tune-benchmarks/data/tokenized_data/concat
-    split_names: ['train', 'valid']
+    data_path: /data/horse/ws/luth474h-master_thesis/experiments/data/tokenized_data/only-best
+    split_names:
+    - train
+    - valid
 devices: auto
 eval:
   final_validation: true
   initial_validation: true
-  interval: 50
-  max_iters: 100000 # loop over entire validation dataset
+  interval: 293
+  max_iters: 100000
   max_new_tokens: null
-initial_checkpoint_dir: null
+initial_checkpoint_dir: /projects/p_neurasearch/bbo-pile_experiments/checkpoints/v0.8/qwen3_80M_token_2B_lr_5e-3_bsz_16_seed_0/final
+log:
+  group: qwen3_80M
+  project: open_optformer_qwen3_finetune_only_best_v0.9
+  run: qwen3_80M_token_2B_lr_5e-3_bsz_16_seed_0_ft_epochs_2_lr_5e-5_seed_0
 logger_name: wandb
 model_config:
   attention_logit_softcapping: null
@@ -20,29 +26,29 @@ model_config:
   block_size: 4096
   final_logit_softcapping: null
   gelu_approximate: none
+  head_size: 128
   hf_config:
-    name: Qwen3-2M
+    name: Qwen3-80M
     org: Qwen
+  intermediate_size: 1536
   latent_attention: null
   lm_head_bias: false
   mlp_class_name: LLaMAMLP
   moe_intermediate_size: null
-  n_embd: 128
-  head_size: 64
-  intermediate_size: 384
+  n_embd: 512
   n_expert: 0
   n_expert_per_token: 0
-  n_head: 8
+  n_head: 16
   n_layer: 14
-  n_query_groups: 4
-  name: Qwen3-5M
+  n_query_groups: 8
+  name: Qwen3-80M
   norm_1: true
   norm_2: true
   norm_class_name: RMSNorm
   norm_eps: 1.0e-06
   norm_qk: true
   norm_qk_type: default
-  padded_vocab_size: 1185
+  padded_vocab_size: 1069
   padding_multiple: 512
   parallel_residual: false
   post_attention_norm: false
@@ -57,7 +63,7 @@ model_config:
   shared_attention_norm: false
   sliding_window_indices: null
   sliding_window_size: null
-  vocab_size: 1185
+  vocab_size: 1061
 num_nodes: 1
 optimizer:
   class_path: torch.optim.AdamW
@@ -65,27 +71,23 @@ optimizer:
     betas:
     - 0.9
     - 0.95
-    lr: 1e-4
+    lr: 5.0e-05
     weight_decay: 0.1
-out_dir: /syne-tune-benchmarks/test_qwen3_160M_token_8B_bs_128_all_tokens_lr_1e-4_warump_5p
+out_dir: /data/horse/ws/luth474h-master_thesis/experiments/finetuned/only-best/qwen3_80M_token_2B_lr_5e-3_bsz_16_seed_0_ft_epochs_2_lr_5e-5_seed_0
 precision: bf16-mixed
 resume: false
-seed: 42
-tokenizer_dir: /syne-tune-benchmarks/tokenizer
+seed: 0
+tokenizer_dir: /projects/p_neurasearch/bbo-pile_experiments/tokenizer/v0.8
 train:
   epochs: null
-  global_batch_size: 512
-  log_interval: 10
-  lr_warmup_steps: 200
+  global_batch_size: 16
+  log_interval: 74
+  lr_warmup_steps: 1460
   max_norm: 1.0
   max_seq_length: 4096
   max_steps: null
-  max_tokens: 8_000_000_000 
-  micro_batch_size: 32
-  min_lr: 1e-5
-  save_interval: 2000
+  max_tokens: 957284352
+  micro_batch_size: 16
+  min_lr: 1.0000000000000001e-07
+  save_interval: 1461
   tie_embeddings: true
-log:
-  project: "open-optformer"
-  run: "qwen3-2M_token_8B_bs_128_all_tokens_lr_1e-4_warumup_5p"
-  group: 'concat'

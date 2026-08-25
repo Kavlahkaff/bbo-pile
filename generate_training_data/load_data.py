@@ -55,7 +55,8 @@ def create_history_from_results(name, metadata, path: Path,
                                 max_num_trials: int,
                                 num_numeric_tokens: int = 1000,
                                 remove_names: bool = False,
-                                n_permutation: int = 0) -> list[str]:
+                                n_permutation: int = 0,
+                                include_original: bool = True) -> list[str]:
     config_space = get_config_space_from_metadata(metadata)
     metric_name = metadata["metric_names"][0]
     res = load_result(name, metric_name, config_space, path)
@@ -69,20 +70,81 @@ def create_history_from_results(name, metadata, path: Path,
                                              remove_names=remove_names,
                                              max_num_trials=max_num_trials)
     traj = list()
-    traj.append(hist.get_prompt())
-    for i in range(n_permutation):
-        traj.append(hist.get_prompt(shuffle=True))
+    if include_original:
+        traj.append(hist.get_prompt())
+    
+    if n_permutation > 0:
+        import math
+        import itertools
+        import random
+        from syne_tune.config_space import Categorical, Domain
+        
+        base_hypers = list(hist.config_space.items())
+        cont_hypers = []
+        cat_hypers = []
+        for hp_name, hp in base_hypers:
+            if not isinstance(hp, Domain): continue
+            if isinstance(hp, Categorical):
+                cat_hypers.append((hp_name, hp))
+            else:
+                cont_hypers.append((hp_name, hp))
+                
+        max_cont_perms = math.factorial(len(cont_hypers)) if len(cont_hypers) <= 10 else float('inf')
+        max_cat_perms = math.factorial(len(cat_hypers)) if len(cat_hypers) <= 10 else float('inf')
+        max_total_perms = max_cont_perms * max_cat_perms
+        
+        original_order = tuple(hp_name for hp_name, _ in cont_hypers + cat_hypers)
+        seen_orders = {original_order} if include_original else set()
+        
+        # We need actual_perms new unique permutations
+        if include_original:
+            actual_perms = min(n_permutation, int(max_total_perms) - 1) if max_total_perms != float('inf') else n_permutation
+        else:
+            actual_perms = min(n_permutation, int(max_total_perms)) if max_total_perms != float('inf') else n_permutation
+        
+        if actual_perms > 0:
+            if max_total_perms <= 10000:
+                all_cont_perms = list(itertools.permutations(cont_hypers))
+                all_cat_perms = list(itertools.permutations(cat_hypers))
+                all_orders = []
+                for cp in all_cont_perms:
+                    for cap in all_cat_perms:
+                        all_orders.append(list(cp) + list(cap))
+                
+                # Remove original order from choices if include_original is True
+                if include_original:
+                    all_orders = [order for order in all_orders if tuple(name for name, _ in order) != original_order]
+                
+                sampled_orders = random.sample(all_orders, actual_perms)
+                for order in sampled_orders:
+                    traj.append(hist.get_prompt(hp_order=order))
+            else:
+                target_seen = (actual_perms + 1) if include_original else actual_perms
+                while len(seen_orders) < target_seen:
+                    cp = cont_hypers[:]
+                    cap = cat_hypers[:]
+                    random.shuffle(cp)
+                    random.shuffle(cap)
+                    order = cp + cap
+                    order_key = tuple(name for name, _ in order)
+                    if order_key not in seen_orders:
+                        seen_orders.add(order_key)
+                        traj.append(hist.get_prompt(hp_order=order))
+                        
     return traj
 
 def read_single_metadata(args):
     metadata_path, root_path = args
     try:
-        with open(metadata_path, "r") as f:
+        with open(metadata_path, "r", encoding="utf-8", errors="replace") as f:
             rel_path = str(Path(metadata_path).parent.relative_to(root_path))
             return rel_path, json.load(f)
     except JSONDecodeError as e:
         logger.error(f"JSONDecodeError at {metadata_path}")
-        raise e
+        return None, None
+    except Exception as e:
+        logger.error(f"Error reading {metadata_path}: {e}")
+        return None, None
 
 def get_metadata(root: Path):
     metadatas = {}
@@ -105,6 +167,7 @@ def get_metadata(root: Path):
         ))
         
     for rel_path, data in results:
-        metadatas[rel_path] = data
+        if rel_path is not None:
+            metadatas[rel_path] = data
 
     return metadatas

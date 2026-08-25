@@ -1,9 +1,6 @@
 import itertools
 import logging
-import gc
-import os
 from argparse import ArgumentParser
-from pathlib import Path
 
 import numpy as np
 from tqdm import tqdm
@@ -19,6 +16,7 @@ from baselines import (
     MethodArguments,
     methods,
 )
+from open_optformer.optformer_searcher import load_optformer_model  # NEW
 
 
 def run(
@@ -28,7 +26,7 @@ def run(
     checkpoint_dir,
     max_num_evaluations=None,
     n_workers: int = 1,
-    gpu_memory_utilization: float = 0.2,
+    gpu_memory_utilization: float = 0.2,  # NEW
 ):
     logging.getLogger("syne_tune.optimizer.schedulers").setLevel(logging.WARNING)
     logging.getLogger("syne_tune.backend").setLevel(logging.WARNING)
@@ -38,14 +36,14 @@ def run(
 
     combinations = list(itertools.product(method_names, seeds, benchmark_names))
 
-    optformer_model, optformer_tokenizer = None, None
-    if checkpoint_dir and any(m.upper().startswith("OPT") for m in method_names):
-        from open_optformer.optformer_searcher import load_optformer_model
-
-        optformer_model, optformer_tokenizer, _ = load_optformer_model(
-            Path(checkpoint_dir),
-            gpu_memory_utilization=gpu_memory_utilization,
-            use_vllm=True,
+    # Build the model ONCE and reuse it across every (method, seed, benchmark)
+    # combination that needs it — avoids paying vLLM init/compile cost per seed.
+    # Only meaningful for OPT-best-style methods using OptformerScheduler; harmless
+    # (returns None, None) for methods that don't need an LLM checkpoint at all.
+    shared_model, shared_tokenizer = None, None
+    if checkpoint_dir:
+        shared_model, shared_tokenizer, _ = load_optformer_model(
+            checkpoint_dir, gpu_memory_utilization=gpu_memory_utilization
         )
 
     print(f"Going to evaluate: {combinations}")
@@ -75,18 +73,16 @@ def run(
             benchmark = lcbench_benchmark_definitions[benchmark_name]
         else:
             raise NotImplementedError(f"Unknown benchmark name: {benchmark_name}")
-            
         print(f"Starting experiment ({method}/{benchmark_name}/{seed})")
 
         backend = BlackboxRepositoryBackend(
             elapsed_time_attr=benchmark.elapsed_time_attr,
             blackbox_name=benchmark.blackbox_name,
             dataset=benchmark.dataset_name,
-            surrogate=getattr(benchmark, "surrogate", None),
-            surrogate_kwargs=getattr(benchmark, "surrogate_kwargs", None),
+            surrogate=benchmark.surrogate,
+            surrogate_kwargs=benchmark.surrogate_kwargs,
         )
 
-        # 5 candidates initially to be evaluated
         num_random_candidates = 5
         random_state = np.random.RandomState(seed)
         points_to_evaluate = [
@@ -96,21 +92,19 @@ def run(
             }
             for _ in range(num_random_candidates)
         ]
-        
         scheduler = methods[method](
             MethodArguments(
-                benchmark_name=benchmark.blackbox_name + "_" + benchmark.dataset_name,
+                benchmark_name=benchmark.blackbox_name + '_' + benchmark.dataset_name,
                 config_space=backend.blackbox.configuration_space,
                 metric=benchmark.metric,
                 mode=benchmark.mode,
                 random_seed=seed,
                 num_brackets=1,
-                checkpoint_dir=checkpoint_dir if checkpoint_dir else None,
-                use_surrogates=getattr(benchmark, "use_surrogate", False),
+                checkpoint_dir=checkpoint_dir,
+                use_surrogates=benchmark.use_surrogate,
                 points_to_evaluate=points_to_evaluate,
-                model=optformer_model,
-                tokenizer=optformer_tokenizer,
-                gpu_memory_utilization=gpu_memory_utilization,
+                model=shared_model,          # NEW
+                tokenizer=shared_tokenizer,  # NEW
             )
         )
 
@@ -119,29 +113,19 @@ def run(
             if max_num_evaluations
             else benchmark.max_num_evaluations,
         )
-
-        # Safely derive output directory paths
-        if checkpoint_dir:
-            ckpt_path = Path(checkpoint_dir).resolve()
-            model_name = ckpt_path.name
-            variant_name = ckpt_path.parent.name
-        else:
-            model_name = "default_model"
-            variant_name = "default_variant"
-
+        model_name = checkpoint_dir.split('/')[-2]
+        variant_name = checkpoint_dir.split('/')[-3]
         suffix = f"{method}-{seed}-{benchmark_name}".replace("_", "-")
-        tuner_dir = f"/data/horse/ws/luth474h-master_thesis/results/{model_name}/{variant_name}/{suffix}"
-
         tuner = Tuner(
             trial_backend=backend,
             scheduler=scheduler,
             stop_criterion=stop_criterion,
-            n_workers=n_workers,  # Passed n_workers properly
+            n_workers=1,
             sleep_time=0,
             callbacks=[SimulatorCallback()],
             results_update_interval=600,
             print_update_interval=30,
-            tuner_name=tuner_dir,
+            tuner_name=f"/data/horse/ws/luth474h-master_thesis/results/{model_name}/{variant_name}/{suffix}",
             save_tuner=False,
             suffix_tuner_name=False,
             metadata={
@@ -152,16 +136,7 @@ def run(
         )
         tuner.run()
         exp_names.append(tuner.name)
-
-        # Cleanup references directly in caller frame
-        del tuner
-        del scheduler
-        del backend
-        del points_to_evaluate
-        gc.collect()
-
     return exp_names
-
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -204,25 +179,16 @@ if __name__ == "__main__":
         default="",
         help="directory for optformer model checkpoints",
     )
-    parser.add_argument(
-        "--gpu_utilization",
-        type=float,
-        required=False,
-        default=0.2,
-        help="GPU memory utilization for vLLM",
-    )
     args, _ = parser.parse_known_args()
-
     if args.run_all_seeds:
-        seeds = list(range(args.seed + 1))
+        seeds = list(range(args.seed))
     else:
         seeds = [args.seed]
-
-    if args.method is None or args.method.upper().startswith("OptFormer"):
-#        # avoid importing google vizier dependencies if not needed
+        
+    if args.method is None or args.method.startswith("OptFormer"):
+        # avoid importing nasty google vizier dependencies if we don't need them
         from original_optformer_methods import original_optformer_methods
-        methods = original_optformer_methods | methods
-
+        methods  = original_optformer_methods | methods
     method_names = [args.method] if args.method is not None else list(methods.keys())
 
     run(
@@ -230,8 +196,7 @@ if __name__ == "__main__":
         checkpoint_dir=args.checkpoint_dir,
         benchmark_names=[args.benchmark],
         seeds=seeds,
-        n_workers=args.n_workers,
-        gpu_memory_utilization=args.gpu_utilization,
+        n_workers=1,
     )
-
+    import os
     os._exit(0)

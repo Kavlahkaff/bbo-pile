@@ -101,6 +101,12 @@ if __name__ == "__main__":
         default=5,
     )
     parser.add_argument(
+        "--permutation_config",
+        type=str,
+        required=False,
+        help="Path to JSON file mapping benchmark categories to permutation counts",
+    )
+    parser.add_argument(
         "--output_path",
         type=str,
         required=True,
@@ -180,6 +186,7 @@ if __name__ == "__main__":
         if args.only_best:
             with catchtime("Find best trajectories for each benchmark"):
                 best_experiments = {}
+                all_vals = []
                 tasks_best = [(name, metadata, path, args.best_by_auc) for name, metadata in metadatas.items()]
                 
                 try:
@@ -196,14 +203,28 @@ if __name__ == "__main__":
                             desc="Finding best trajectories",
                             mininterval=5.0):
                         if val is not None:
+                            all_vals.append((benchmark_name, name, val))
                             if benchmark_name not in best_experiments or val < best_experiments[benchmark_name][1]:
                                 best_experiments[benchmark_name] = (name, val)
 
                 if args.keep_all_seeds_of_best:
-                    best_algorithms = {
-                        bench: metadatas[name]["algorithm"] 
-                        for bench, (name, _) in best_experiments.items()
-                    }
+                    from collections import defaultdict
+                    benchmark_algo_vals = defaultdict(lambda: defaultdict(list))
+                    for bench, name, val in all_vals:
+                        algo = metadatas[name]["algorithm"]
+                        benchmark_algo_vals[bench][algo].append(val)
+
+                    best_algorithms = {}
+                    for bench, algos in benchmark_algo_vals.items():
+                        best_algo = None
+                        best_avg = float('inf')
+                        for algo, vals in algos.items():
+                            avg_val = np.mean(vals)
+                            if avg_val < best_avg:
+                                best_avg = avg_val
+                                best_algo = algo
+                        best_algorithms[bench] = best_algo
+
                     new_metadatas = {}
                     for k, v in metadatas.items():
                         bench = v.get('benchmark', v.get('entrypoint', 'unknown'))
@@ -239,11 +260,44 @@ if __name__ == "__main__":
             hist_train = list()
             hist_valid = list()
             
+            perm_config = {}
+            if args.permutation_config and os.path.exists(args.permutation_config):
+                with open(args.permutation_config, 'r') as f:
+                    perm_config = json.load(f)
+
+            def get_dataset_category(metadata):
+                b_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+                masked = len(metadata.get('masked_params', [])) > 0
+                
+                if b_name.startswith('fcnet'):
+                    return 'Masked FC-Net' if masked else 'FC-Net'
+                elif b_name.startswith('nas201'):
+                    return 'Masked NAS-Bench-201' if masked else 'NAS-Bench-201'
+                elif b_name.startswith('lcbench'):
+                    return 'LC-Bench'
+                elif b_name.startswith('pd1'):
+                    return 'PD1'
+                elif b_name.startswith('hpob'):
+                    return 'HPO-B'
+                elif b_name.startswith('tabrepo'):
+                    return 'TabRepo'
+                elif b_name.startswith('global-optimization'):
+                    return 'Global Optimization'
+                else:
+                    return 'Unknown'
+            
             tasks_metadata = []
             for name, metadata in metadatas.items():
                 benchmark_name = metadata.get('benchmark', '')
                 is_valid = benchmark_name in validation_tasks
-                tasks_metadata.append((name, metadata, path, max_num_trials, args.remove_names, args.num_permutation, args.sample_shorter_trajectories, is_valid))
+                
+                if perm_config:
+                    category = get_dataset_category(metadata)
+                    num_perm = perm_config.get(category, args.num_permutation)
+                else:
+                    num_perm = args.num_permutation
+                
+                tasks_metadata.append((name, metadata, path, max_num_trials, args.remove_names, num_perm, args.sample_shorter_trajectories, is_valid))
             
             try:
                 num_cores = len(os.sched_getaffinity(0))

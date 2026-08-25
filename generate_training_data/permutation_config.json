@@ -1,0 +1,11 @@
+{
+  "FC-Net": 20,
+  "Masked FC-Net": 20,
+  "NAS-Bench-201": 20,
+  "Masked NAS-Bench-201": 4,
+  "LC-Bench": 20,
+  "PD1": 4,
+  "HPO-B": 0,
+  "TabRepo": 0,
+  "Global Optimization": 1
+}

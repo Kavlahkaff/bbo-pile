@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from syne_tune.blackbox_repository.simulated_tabular_backend import (
     BlackboxRepositoryBackend,
@@ -11,7 +11,8 @@ from syne_tune.optimizer.schedulers.single_objective_scheduler import (
 )
 
 from open_optformer.optformer_searcher import OptformerScheduler
-from open_optformer.hebo_searcher import HEBOSearcher
+# from open_optformer.hebo_searcher import HEBOSearcher
+
 
 @dataclass
 class MethodArguments:
@@ -20,11 +21,16 @@ class MethodArguments:
     mode: str
     random_seed: int
     points_to_evaluate: List[dict]
+    max_t: Optional[int] = None
+    resource_attr: Optional[str] = None
     use_surrogates: bool = False
     num_brackets: Optional[int] = 1
     verbose: Optional[bool] = False
     checkpoint_dir: Optional[str] = None
     benchmark_name: Optional[str] = None
+    model: Optional[Any] = None
+    tokenizer: Optional[Any] = None
+    gpu_memory_utilization: float = 0.2
 
 
 class Methods:
@@ -34,16 +40,22 @@ class Methods:
     TPE = "TPE"
     REA = "REA"
     CQR = "CQR"
-    HEBO = "HEBO"
+    # HEBO = "HEBO"
     OPT_RS = "OPT-RS"
     OPT_REA = "OPT-REA"
     OPT_BORE = "OPT-BORE"
     OPT_TPE = "OPT-TPE"
-    OPT_HEBO = "OPT-HEBO"
+    # OPT_HEBO = "OPT-HEBO"
     OPT_CQR = "OPT-CQR"
-    OPT_CQR_TS = 'OPT-CQR-TS'
-    OPT_CQR_TS_5 = 'OPT-CQR-TS-5'
-    OPT_BEST = 'OPT-best'
+    OPT_CQR_TS = "OPT-CQR-TS"
+    OPT_CQR_TS_5 = "OPT-CQR-TS-5"
+    OPT_BEST = "OPT-best"
+    OPT_BEST_AUC = "OPT-best-auc"
+
+
+def _to_path(path_str: Optional[str]) -> Optional[Path]:
+    return Path(path_str) if path_str is not None else None
+
 
 methods = {
     Methods.RS: lambda method_arguments: SingleObjectiveScheduler(
@@ -68,7 +80,10 @@ methods = {
         metric=method_arguments.metric,
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
-        searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate, 'min_bandwidth': 1e-1},
+        searcher_kwargs={
+            "points_to_evaluate": method_arguments.points_to_evaluate,
+            "min_bandwidth": 1e-1,
+        },
     ),
     Methods.CQR: lambda method_arguments: SingleObjectiveScheduler(
         config_space=method_arguments.config_space,
@@ -78,140 +93,201 @@ methods = {
         random_seed=method_arguments.random_seed,
         searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate},
     ),
-    Methods.HEBO: lambda method_arguments: SingleObjectiveScheduler(
-        config_space=method_arguments.config_space,
-        searcher=HEBOSearcher(
-            config_space=method_arguments.config_space,
-            do_minimize=method_arguments.mode == "min",
-            random_seed=method_arguments.random_seed,
-            points_to_evaluate=method_arguments.points_to_evaluate
-        ),
-        metric=method_arguments.metric,
-        do_minimize=method_arguments.mode == "min",
-        random_seed=method_arguments.random_seed,
-    ),
+    # Methods.HEBO: lambda method_arguments: SingleObjectiveScheduler(
+    #     config_space=method_arguments.config_space,
+    #     searcher=HEBOSearcher(
+    #         config_space=method_arguments.config_space,
+    #         do_minimize=method_arguments.mode == "min",
+    #         random_seed=method_arguments.random_seed,
+    #         points_to_evaluate=method_arguments.points_to_evaluate
+    #     ),
+    #     metric=method_arguments.metric,
+    #     do_minimize=method_arguments.mode == "min",
+    #     random_seed=method_arguments.random_seed,
+    # ),
     Methods.REA: lambda method_arguments: SingleObjectiveScheduler(
         config_space=method_arguments.config_space,
         searcher="regularized_evolution",
         metric=method_arguments.metric,
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
-        searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate, "population_size": 20, "sample_size": 10},
+        searcher_kwargs={
+            "points_to_evaluate": method_arguments.points_to_evaluate,
+            "population_size": 20,
+            "sample_size": 10,
+        },
     ),
     Methods.OPT_RS: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
-        checkpoint_dir=Path(method_arguments.checkpoint_dir),
-        task_info = {'name': method_arguments.benchmark_name,
-                    'algorithm': "RS",
-                    'metric_names': "feval"},
+        checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
+        task_info={
+            "name": method_arguments.benchmark_name,
+            "algorithm": "RS",
+            "metric_names": "feval",
+        },
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
     Methods.OPT_REA: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
-        checkpoint_dir=Path(method_arguments.checkpoint_dir),
-        task_info={'name': method_arguments.benchmark_name,
-                   'algorithm': "REA",
-                   'metric_names': "feval"},
+        checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
+        task_info={
+            "name": method_arguments.benchmark_name,
+            "algorithm": "REA",
+            "metric_names": "feval",
+        },
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
     Methods.OPT_CQR: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
-        checkpoint_dir=Path(method_arguments.checkpoint_dir),
-        task_info={'name': method_arguments.benchmark_name,
-                   'algorithm': "CQR",
-                   'metric_names': "feval"},
+        checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
+        task_info={
+            "name": method_arguments.benchmark_name,
+            "algorithm": "CQR",
+            "metric_names": "feval",
+        },
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=1,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
     Methods.OPT_BORE: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
-        checkpoint_dir=Path(method_arguments.checkpoint_dir),
-        task_info={'name': method_arguments.benchmark_name,
-                   'algorithm': "BORE",
-                   'metric_names': "feval"},
+        checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
+        task_info={
+            "name": method_arguments.benchmark_name,
+            "algorithm": "BORE",
+            "metric_names": "feval",
+        },
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=1,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
     Methods.OPT_TPE: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
-        checkpoint_dir=Path(method_arguments.checkpoint_dir),
-        task_info={'name': method_arguments.benchmark_name,
-                   'algorithm': "TPE",
-                   'metric_names': "feval"},
+        checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
+        task_info={
+            "name": method_arguments.benchmark_name,
+            "algorithm": "TPE",
+            "metric_names": "feval",
+        },
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=1,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
-    Methods.OPT_HEBO: lambda method_arguments: OptformerScheduler(
-        config_space=method_arguments.config_space,
-        metric=method_arguments.metric,
-        checkpoint_dir=Path(method_arguments.checkpoint_dir),
-        task_info={'name': method_arguments.benchmark_name,
-                   'algorithm': "HEBO",
-                   'metric_names': "feval"},
-        do_minimize=method_arguments.mode == "min",
-        random_seed=method_arguments.random_seed,
-        points_to_evaluate=method_arguments.points_to_evaluate,
-        n_sample_configurations=1,
-    ),
+    # Methods.OPT_HEBO: lambda method_arguments: OptformerScheduler(
+    #     config_space=method_arguments.config_space,
+    #     metric=method_arguments.metric,
+    #     checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
+    #     task_info={
+    #         "name": method_arguments.benchmark_name,
+    #         "algorithm": "HEBO",
+    #         "metric_names": "feval",
+    #     },
+    #     do_minimize=method_arguments.mode == "min",
+    #     random_seed=method_arguments.random_seed,
+    #     points_to_evaluate=method_arguments.points_to_evaluate,
+    #     n_sample_configurations=1,
+    # ),
     Methods.OPT_CQR_TS_5: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
-        checkpoint_dir=Path(method_arguments.checkpoint_dir),
-        task_info={'name': method_arguments.benchmark_name,
-                   'algorithm': "CQR",
-                   'metric_names': "feval"},
+        checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
+        task_info={
+            "name": method_arguments.benchmark_name,
+            "algorithm": "CQR",
+            "metric_names": "feval",
+        },
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=5,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
     Methods.OPT_CQR_TS: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
-        checkpoint_dir=Path(method_arguments.checkpoint_dir),
-        task_info={'name': method_arguments.benchmark_name,
-                   'algorithm': "CQR",
-                   'metric_names': "feval"},
+        checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
+        task_info={
+            "name": method_arguments.benchmark_name,
+            "algorithm": "CQR",
+            "metric_names": "feval",
+        },
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=50,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
     Methods.OPT_BEST: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
-        checkpoint_dir=Path(method_arguments.checkpoint_dir),
-        task_info={'name': method_arguments.benchmark_name,
-                   'algorithm': "best",
-                   'metric_names': "feval"},
+        checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
+        task_info={
+            "name": method_arguments.benchmark_name,
+            "algorithm": "best",
+            "metric_names": "feval",
+        },
         do_minimize=method_arguments.mode == "min",
         random_seed=method_arguments.random_seed,
         points_to_evaluate=method_arguments.points_to_evaluate,
         n_sample_configurations=1,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
+    ),
+    Methods.OPT_BEST_AUC: lambda method_arguments: OptformerScheduler(
+        config_space=method_arguments.config_space,
+        metric=method_arguments.metric,
+        checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
+        task_info={
+            "name": method_arguments.benchmark_name,
+            "algorithm": "best",
+            "metric_names": "feval",
+        },
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
+        points_to_evaluate=method_arguments.points_to_evaluate,
+        n_sample_configurations=1,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
 }
 
 
 if __name__ == "__main__":
-    # Run a loop that initializes all schedulers on all benchmark to see if they all work
-    from benchmarks import (
-        benchmark_definitions,
-    )
+    # Run a loop that initializes all schedulers on all benchmarks to see if they all work
+    from benchmarks import benchmark_definitions
 
     print(f"Checking initialization of {list(methods.keys())[::-1]}")
 
@@ -239,8 +315,6 @@ if __name__ == "__main__":
         print(f"Checking initialization of {list(methods.keys())[::-1]}")
         for method_name, method_fun in list(methods.items())[::-1]:
             print(f"checking initialization of: {method_name}, {benchmark_name}")
-            # if method_name != Methods.QHB_XGB:
-            #     continue
 
             scheduler = method_fun(
                 MethodArguments(
@@ -252,6 +326,7 @@ if __name__ == "__main__":
                     resource_attr=next(iter(backend.blackbox.fidelity_space.keys())),
                     use_surrogates=benchmark_name == "lcbench-Fashion-MNIST",
                     points_to_evaluate=points_to_evaluate,
+                    benchmark_name=benchmark_name,
                 )
             )
             if isinstance(scheduler, TrialScheduler):
