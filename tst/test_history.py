@@ -74,6 +74,71 @@ def test_history():
     assert "{name:z,type:CAT,categories:[0,1,2]}" in prompt
     assert '500,500,<0>*0|599,599,<1>*999|' in prompt
     
+def test_history_causal():
+    """Token for trial t must not depend on trials that come after it."""
+    config_space = {'x': uniform(0, 1)}
+    history_prefix = History(name='t', algorithm='t', config_space=config_space,
+                              num_numeric_tokens=1000, metric_percentile_lo=0.0,
+                              metric_percentile_hi=100.0)
+    history_prefix.add_trial({'x': 0.1}, 0.5)
+    history_prefix.add_trial({'x': 0.2}, 0.6)
+    prefix_prompt = history_prefix.get_prompt()
+
+    history_full = History(name='t', algorithm='t', config_space=config_space,
+                            num_numeric_tokens=1000, metric_percentile_lo=0.0,
+                            metric_percentile_hi=100.0)
+    history_full.add_trial({'x': 0.1}, 0.5)
+    history_full.add_trial({'x': 0.2}, 0.6)
+    history_full.add_trial({'x': 0.3}, 100.0)  # later, much worse trial
+    full_prompt = history_full.get_prompt()
+
+    # The tokens for the first two trials must be identical whether or not
+    # the later outlier trial is present.
+    prefix_history_part = prefix_prompt.split('history:')[1]
+    full_history_part = full_prompt.split('history:')[1]
+    assert full_history_part.startswith(prefix_history_part)
+
+
+def test_history_asymmetric_percentile_clip():
+    config_space = {'x': uniform(0, 1)}
+    history = History(name='t', algorithm='t', config_space=config_space,
+                       num_numeric_tokens=1000, metric_percentile_lo=0.0,
+                       metric_percentile_hi=50.0)
+    # Bad (high-metric) outlier should saturate to q-1 once it pushes past
+    # the hi percentile bound, while earlier good trials keep resolution.
+    history.add_trial({'x': 0.1}, 0.1)
+    history.add_trial({'x': 0.2}, 0.2)
+    history.add_trial({'x': 0.3}, 1000.0)
+    prompt = history.get_prompt()
+    tokens = [line.split('*')[1] for line in prompt.split('history:')[1].split('|') if line]
+    assert tokens[-1] == '999'
+
+
+def test_history_good_tail_not_clipped_by_default():
+    """metric_percentile_lo=0.0 (default) must use the true min, not a
+    clipped-up lower bound, unlike a non-default lo that clips the good tail.
+    """
+    config_space = {'x': uniform(0, 1)}
+
+    def middle_token(metric_percentile_lo):
+        history = History(name='t', algorithm='t', config_space=config_space,
+                           num_numeric_tokens=1000, metric_percentile_hi=100.0,
+                           metric_percentile_lo=metric_percentile_lo)
+        history.add_trial({'x': 0.1}, -1000.0)  # extreme good outlier, first
+        history.add_trial({'x': 0.2}, 0.5)
+        history.add_trial({'x': 0.3}, 0.4)  # not the running max/min
+        prompt = history.get_prompt()
+        tokens = [line.split('*')[1] for line in prompt.split('history:')[1].split('|') if line]
+        return int(tokens[2])  # token for the third (0.4) trial
+
+    default_token = middle_token(metric_percentile_lo=0.0)
+    clipped_token = middle_token(metric_percentile_lo=50.0)
+    # With lo=0 the range spans down to the true min (-1000), so 0.4 lands
+    # well above the bottom of the range. With lo=50 the good outlier is
+    # clipped away, narrowing the range and pushing 0.4's token down toward 0.
+    assert default_token > clipped_token
+
+
 def test_trial():
     trial = Trial(config={'x': 0.5}, metric=0.5)
     assert trial.config == {'x': 0.5}
