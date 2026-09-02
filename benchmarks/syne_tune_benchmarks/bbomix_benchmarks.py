@@ -1,4 +1,4 @@
-from benchmark_definitions import BenchmarkDefinition
+from benchmark_definitions import BenchmarkDefinition, n_full_evals
 
 
 def bbomix_benchmark(blackbox_name: str, dataset_name: str):
@@ -13,6 +13,7 @@ def bbomix_benchmark(blackbox_name: str, dataset_name: str):
         use_surrogate=True,
         surrogate="KNeighborsRegressor",
         surrogate_kwargs={"n_neighbors": 1},
+        max_num_evaluations=n_full_evals,
     )
 
 
