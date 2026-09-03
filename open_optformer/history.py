@@ -35,6 +35,20 @@ def dequantize(x, x_min, x_max, q=1000, log_scale=False):
     return x / (q - 1) * (x_max - x_min) + x_min
 
 
+def symlog(x):
+    """Signed log1p: sign(x) * log(1 + |x|). Monotonic and defined for any
+    real x (unlike `quantize`'s `log_scale`, which assumes x > 0 via
+    `log(x + 1e-10)`) -- used for `History.metric_log_scale`, since metric
+    values are frequently negative (e.g. a `max`-mode objective like accuracy
+    gets sign-flipped to always-minimize, see `from_syne_tune_experiment`) or
+    span zero. Compresses large magnitudes so that objectives whose scale
+    varies multiplicatively across configs/tasks (typical of regression
+    losses like MSE/RMSE, unlike a metric bounded in e.g. [0, 1]) don't have
+    their quantization resolution dominated by the largest few values.
+    """
+    return np.sign(x) * np.log1p(np.abs(x))
+
+
 def encode(x, hp: Domain, q: int = 1000, hp_name: str = ""):
     """
     Encode a value x based on the type of hyperparameter hp.
@@ -87,6 +101,15 @@ class History:
     # a gap to baselines. None (default) preserves the causal-robust
     # behavior. See _causal_metric_ranges().
     metric_range_override: tuple = None
+    # Quantize the metric on a signed-log scale (see `symlog`) instead of
+    # linearly. Off by default -- a metric already bounded on a fixed,
+    # roughly-additive scale (e.g. accuracy in [0, 1]) is well served by
+    # linear bins; turn this on for benchmark families whose metric can vary
+    # over orders of magnitude (e.g. regression losses like MSE/RMSE), where
+    # linear bins over/under-resolve depending on which tail dominates the
+    # observed range. Applies to both the causal and oracle
+    # (`metric_range_override`) ranges.
+    metric_log_scale: bool = False
 
     def add_trial(self, config, result, advantage=None):
 
@@ -165,7 +188,8 @@ class History:
             string += str(hp_encoded)
         string += f"*"
 
-        clipped_metric = min(max(trial.metric, y_min), y_max)
+        metric_val = symlog(trial.metric) if self.metric_log_scale else trial.metric
+        clipped_metric = min(max(metric_val, y_min), y_max)
         string += f"{quantize(clipped_metric, y_min, y_max, q=self.num_numeric_tokens)}"
         string += f"|"
         return string
@@ -180,9 +204,17 @@ class History:
         stop a single diverged trial from consuming the token resolution;
         the lower (better) tail is left uncapped by default since resolution
         among the best trials matters most for search.
+
+        If `metric_log_scale` is set, ranges are computed on the symlog'd
+        metric (see `symlog`) -- `_build_trial_span` symlogs each trial's
+        metric the same way before clipping/quantizing against these ranges,
+        so both stay in the same (transformed) space.
         """
+        transform = symlog if self.metric_log_scale else (lambda x: x)
+
         if self.metric_range_override is not None:
             y_min, y_max = self.metric_range_override
+            y_min, y_max = transform(y_min), transform(y_max)
             if y_min == y_max:
                 y_max += 1  # Avoid division by zero in quantization
             return [(y_min, y_max)] * len(self.trials)
@@ -190,7 +222,7 @@ class History:
         observed_metrics = []
         ranges = []
         for trial in self.trials:
-            observed_metrics.append(trial.metric)
+            observed_metrics.append(transform(trial.metric))
             y_min = np.percentile(observed_metrics, self.metric_percentile_lo)
             y_max = np.percentile(observed_metrics, self.metric_percentile_hi)
             if y_min == y_max:
@@ -238,13 +270,18 @@ class History:
                                   num_numeric_tokens: int = 1000,
                                   remove_names: bool = False,
                                   max_num_trials: int = None,
-                                  metric_range_override: tuple = None):
+                                  metric_range_override: tuple = None,
+                                  metric_log_scale: bool = False):
         """
         Create a History object from a Syne Tune ExperimentResult.
 
         `metric_range_override`: see `History.metric_range_override` --
         pass a benchmark's true (y_min, y_max) here to build a History that
         quantizes against that fixed range instead of the causal default.
+
+        `metric_log_scale`: see `History.metric_log_scale` -- set for
+        benchmark families whose metric varies over orders of magnitude
+        (e.g. regression losses), rather than a fixed bounded scale.
         """
         metadata = experiment.metadata
         config_space = config_space_from_json_dict(json.loads(metadata['config_space']))
@@ -259,7 +296,8 @@ class History:
                         metric_names=metric_name,
                    num_numeric_tokens=num_numeric_tokens,
                    remove_names=remove_names,
-                   metric_range_override=metric_range_override)
+                   metric_range_override=metric_range_override,
+                   metric_log_scale=metric_log_scale)
 
         for i, (trial_id, trial) in enumerate(results.groupby('trial_id')):
             row = trial.iloc[-1]

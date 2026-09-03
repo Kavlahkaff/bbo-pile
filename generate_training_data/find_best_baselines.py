@@ -56,10 +56,6 @@ if __name__ == "__main__":
     p.add_argument("--methods", type=str, nargs="+", default=DEFAULT_METHODS,
                     help="Reference algorithms eligible to be 'best' "
                          "(matches compile_data.py's whitelist).")
-    p.add_argument("--best_by_auc", action="store_true",
-                    help="Select by AUC of the running-best curve instead "
-                         "of final value. Default (omitted) is final value, "
-                         "per the intended use of this script.")
     p.add_argument("--out_json", type=Path, required=True)
     args = p.parse_args()
 
@@ -79,9 +75,7 @@ if __name__ == "__main__":
     print(f"{len(metadatas)} experiment metadata entries match the requested "
           f"benchmarks/methods.")
 
-    best_by_benchmark = find_best_algorithms(
-        metadatas, args.results_path, use_auc=args.best_by_auc,
-    )
+    best_by_benchmark = find_best_algorithms(metadatas, args.results_path)
 
     missing = benchmarks_set - best_by_benchmark.keys()
     if missing:

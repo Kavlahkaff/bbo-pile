@@ -17,12 +17,12 @@ from load_data import get_metadata, create_history_from_results
 logger = logging.getLogger(__name__)
 
 def process_best_trajectory(args_tuple):
-    name, metadata, path, use_auc = args_tuple
+    name, metadata, path = args_tuple
     from load_data import load_result, get_config_space_from_metadata
     benchmark_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
     metric_name = metadata["metric_names"][0]
     metric_mode = metadata.get('metric_mode', 'min')
-    
+
     try:
         config_space = get_config_space_from_metadata(metadata)
         res = load_result(name, metric_name, config_space, path)
@@ -31,19 +31,13 @@ def process_best_trajectory(args_tuple):
 
     val = None
     if res is not None and metric_name in res.columns:
-        if use_auc:
-            if metric_mode == 'max':
-                val = -np.maximum.accumulate(res[metric_name]).sum()
-            else:
-                val = np.minimum.accumulate(res[metric_name]).sum()
+        if metric_mode == 'max':
+            val = -res[metric_name].max()
         else:
-            if metric_mode == 'max':
-                val = -res[metric_name].max()
-            else:
-                val = res[metric_name].min()
+            val = res[metric_name].min()
     return benchmark_name, name, val
 
-def find_best_algorithms(metadatas: dict, path: Path, use_auc: bool = False,
+def find_best_algorithms(metadatas: dict, path: Path,
                           num_cores: int = None) -> dict:
     """For each benchmark present in `metadatas`, determine:
       - "best_experiment": (experiment_name, val), the single experiment
@@ -51,7 +45,7 @@ def find_best_algorithms(metadatas: dict, path: Path, use_auc: bool = False,
         algorithm/seed for that benchmark.
       - "algorithm"/"mean_val": the algorithm with the lowest MEAN `val`
         across all of its recorded seeds for that benchmark (i.e. best
-        average final value -- or AUC if `use_auc` -- over all seeds).
+        average final value over all seeds).
       - "seed_experiments": {seed: experiment_name}, every recorded seed of
         that winning algorithm for that benchmark.
 
@@ -61,7 +55,7 @@ def find_best_algorithms(metadatas: dict, path: Path, use_auc: bool = False,
     """
     from collections import defaultdict
 
-    tasks = [(name, metadata, path, use_auc) for name, metadata in metadatas.items()]
+    tasks = [(name, metadata, path) for name, metadata in metadatas.items()]
 
     if num_cores is None:
         try:
@@ -194,8 +188,8 @@ def compute_peer_baseline_per_benchmark(metadatas: dict, path: Path, num_cores: 
     return peer_baseline
 
 
-def compute_trial_metric_extent(args_tuple):
-    """Per-experiment (min, max) of the RAW per-trial metric values (not the
+def compute_trial_metric_values(args_tuple):
+    """Per-experiment list of RAW per-trial metric values (not the
     running-best curve -- that's monotone and understates the bad/worse
     tail's true max). Same min-convention/per-trial ordering as
     `compute_trial_running_best`. Debug/ablation-only: feeds
@@ -224,21 +218,30 @@ def compute_trial_metric_extent(args_tuple):
         val = row[metric_name]
         if metric_mode == 'max':
             val = -val
-        per_trial_vals.append(val)
+        per_trial_vals.append(float(val))
 
     if len(per_trial_vals) == 0:
         return benchmark_name, None
 
-    return benchmark_name, (float(min(per_trial_vals)), float(max(per_trial_vals)))
+    return benchmark_name, per_trial_vals
 
 
-def compute_true_metric_range_per_benchmark(metadatas: dict, path: Path, num_cores: int = None) -> dict:
-    """For each benchmark, the TRUE (min, max) metric value observed across
-    ALL optimizers/seeds/experiments recorded for that benchmark in
-    `metadatas` -- an oracle range, as opposed to the causal per-trial range
+def compute_true_metric_range_per_benchmark(metadatas: dict, path: Path, num_cores: int = None,
+                                             percentile_lo: float = 0.0, percentile_hi: float = 95.0) -> dict:
+    """For each benchmark, the TRUE (oracle) (min, max) metric quantization
+    range, percentile-clipped (same (0, 95) defaults as
+    `History.metric_percentile_lo/_hi`'s causal range) over the RAW per-trial
+    metric values pooled across ALL optimizers/seeds/experiments recorded for
+    that benchmark in `metadatas` -- as opposed to the causal per-trial range
     `History` uses by default. Debug/ablation only (`--metric_range_mode
     true`): lets you test whether a gap to baselines is a quantization
     artifact rather than a model-capability issue.
+
+    Percentile-clipped rather than raw min/max: a single diverged trial
+    anywhere in the pool would otherwise consume most of the oracle range's
+    quantization resolution, which would make an "oracle vs. causal"
+    comparison confound range *source* with range *robustness*. Pass
+    percentile_lo=0, percentile_hi=100 for the raw extent instead.
     """
     tasks = [(name, metadata, path) for name, metadata in metadatas.items()]
 
@@ -250,18 +253,25 @@ def compute_true_metric_range_per_benchmark(metadatas: dict, path: Path, num_cor
 
     logger.info(f"Computing true per-benchmark metric ranges using {num_cores} cores for {len(tasks)} tasks...")
 
-    true_range = {}
+    from collections import defaultdict
+    pooled_vals = defaultdict(list)
     with multiprocessing.Pool(processes=num_cores) as pool:
-        for benchmark_name, extent in tqdm.tqdm(
-                pool.imap_unordered(compute_trial_metric_extent, tasks),
+        for benchmark_name, vals in tqdm.tqdm(
+                pool.imap_unordered(compute_trial_metric_values, tasks),
                 total=len(tasks),
                 desc="Computing true per-benchmark metric ranges",
                 mininterval=5.0):
-            if extent is None:
+            if vals is None:
                 continue
-            lo, hi = extent
-            cur = true_range.get(benchmark_name)
-            true_range[benchmark_name] = (lo, hi) if cur is None else (min(cur[0], lo), max(cur[1], hi))
+            pooled_vals[benchmark_name].extend(vals)
+
+    true_range = {}
+    for benchmark_name, vals in pooled_vals.items():
+        y_min = float(np.percentile(vals, percentile_lo))
+        y_max = float(np.percentile(vals, percentile_hi))
+        if y_min == y_max:
+            y_max += 1  # avoid division by zero in quantization, matches History
+        true_range[benchmark_name] = (y_min, y_max)
     return true_range
 
 
@@ -431,11 +441,6 @@ if __name__ == "__main__":
         help="when using --only_best, keep all seeds of the best performing algorithm for each benchmark",
     )
     parser.add_argument(
-        "--best_by_auc",
-        action='store_true',
-        help="when using --only_best, select the best trajectory based on Area Under the Curve (AUC) of the cumulative best instead of the final best value",
-    )
-    parser.add_argument(
         "--emit_advantage_weighted",
         action='store_true',
         help="additionally write advantage_train.jsonl/advantage_valid.jsonl for advantage-reweighted SFT. "
@@ -523,9 +528,7 @@ if __name__ == "__main__":
 
         if args.only_best:
             with catchtime("Find best trajectories for each benchmark"):
-                best_by_benchmark = find_best_algorithms(
-                    metadatas, path, use_auc=args.best_by_auc,
-                )
+                best_by_benchmark = find_best_algorithms(metadatas, path)
 
                 if args.keep_all_seeds_of_best:
                     best_algorithms = {

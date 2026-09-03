@@ -40,8 +40,8 @@ logger = logging.getLogger(__name__)
 def _realized_regret(trials: list[dict]) -> float:
     """Final value of the rollout, min-convention (mode_sign already applied
     at generation time -- see generate_self_play_rollouts.py). Matches
-    find_best_baselines.py's default (non-AUC) scoring so the comparison
-    against mean_val is apples-to-apples."""
+    find_best_baselines.py's scoring so the comparison against mean_val is
+    apples-to-apples."""
     return trials[-1]["y"]
 
 

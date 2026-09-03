@@ -50,7 +50,6 @@ class Methods:
     OPT_CQR_TS = "OPT-CQR-TS"
     OPT_CQR_TS_5 = "OPT-CQR-TS-5"
     OPT_BEST = "OPT-best"
-    OPT_BEST_AUC = "OPT-best-auc"
 
 
 def _to_path(path_str: Optional[str]) -> Optional[Path]:
@@ -249,23 +248,6 @@ methods = {
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
     ),
     Methods.OPT_BEST: lambda method_arguments: OptformerScheduler(
-        config_space=method_arguments.config_space,
-        metric=method_arguments.metric,
-        checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
-        task_info={
-            "name": method_arguments.benchmark_name,
-            "algorithm": "best",
-            "metric_names": "feval",
-        },
-        do_minimize=method_arguments.mode == "min",
-        random_seed=method_arguments.random_seed,
-        points_to_evaluate=method_arguments.points_to_evaluate,
-        n_sample_configurations=1,
-        model=method_arguments.model,
-        tokenizer=method_arguments.tokenizer,
-        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
-    ),
-    Methods.OPT_BEST_AUC: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
         checkpoint_dir=_to_path(method_arguments.checkpoint_dir),

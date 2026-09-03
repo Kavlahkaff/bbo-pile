@@ -326,16 +326,30 @@ def sample_optformer_configs(
     return configs
 
 
-def true_metric_range_from_trials(trials) -> Tuple[float, float]:
+def true_metric_range_from_trials(
+    trials, percentile_lo: float = 0.0, percentile_hi: float = 95.0,
+) -> Tuple[float, float]:
     """The task's TRUE (oracle) (min, max) metric value, from a list of
     `Trial`s (already sign-flipped to always-minimize) covering the task's
     FULL recorded history -- pass `max_trials=None` to `load_real_trajectory`
     to get the untruncated trial list this expects, not one truncated to a
     context depth. Debug/ablation use: see `sample_optformer_configs`'s
     `metric_range` argument.
+
+    Percentile-clipped by default (same (0, 95) defaults as
+    `History.metric_percentile_lo/_hi`'s causal range), NOT the raw min/max:
+    a single diverged trial in the full trajectory would otherwise consume
+    most of the oracle range's quantization resolution, which would make an
+    "oracle vs. causal" comparison confound range *source* (true vs.
+    observed-so-far) with range *robustness* (percentile-clipped vs. not).
+    Pass percentile_lo=0, percentile_hi=100 for the raw extent instead.
     """
     metrics = [t.metric for t in trials]
-    return (min(metrics), max(metrics))
+    y_min = np.percentile(metrics, percentile_lo)
+    y_max = np.percentile(metrics, percentile_hi)
+    if y_min == y_max:
+        y_max += 1  # avoid division by zero in quantization, matches History
+    return (float(y_min), float(y_max))
 
 
 def _series_label(checkpoint_dir: Path, taken: set) -> str:

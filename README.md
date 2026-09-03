@@ -75,7 +75,7 @@ The `compile_data.py` script supports several arguments:
 - `--max_seed`: Maximum number of seeds to include (default: 30).
 - `--num_permutation`: Number of times the order of variables in the trajectories is permuted to augment the data (default: 5); per-benchmark-family counts can instead be set via `--permutation_config` (see `generate_training_data/permutation_config.json`).
 - `--sample_shorter_trajectories`: Flag to additionally include shorter trajectories (first 1, 5, 10, and 20 trials) in the training data.
-- `--only_best` / `--best_by_auc` / `--rename_best` / `--keep_all_seeds_of_best`: keep only the best-performing algorithm's trajectory per benchmark (by final value or cumulative AUC), optionally relabeled as a generic `"best"` algorithm token — see `generate_training_data/analyze_dataset.py` to QA the resulting filtering.
+- `--only_best` / `--rename_best` / `--keep_all_seeds_of_best`: keep only the best-performing algorithm's trajectory per benchmark (by final value), optionally relabeled as a generic `"best"` algorithm token — see `generate_training_data/analyze_dataset.py` to QA the resulting filtering.
 - `--emit_advantage_weighted [--advantage_temperature T]`: instead of (or in addition to) the litdata-packed dataset above, write `advantage_train.jsonl`/`advantage_valid.jsonl`, where every trajectory is kept and each trial is annotated with a per-trial advantage weight (how much it beats a per-benchmark peer baseline) for advantage-weighted SFT (see `open_optformer/training/advantage_sft_data.py`).
 
 Now we can train the tokenizer
