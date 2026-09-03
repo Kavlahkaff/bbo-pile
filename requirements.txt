@@ -1,5 +1,4 @@
   numpy>=2.0
-  ioh
   coolname
   pandas
   huggingface-hub
