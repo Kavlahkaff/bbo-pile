@@ -3,7 +3,7 @@ import logging
 from collections import defaultdict
 from json import JSONDecodeError
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -14,8 +14,8 @@ from syne_tune.constants import ST_TUNER_TIME
 from syne_tune.util import catchtime
 
 
-def load_result(name, metadata, path):
-    metric = metadata["metric_names"][0]
+def load_result(name, metadata, path, metric_override: Optional[str] = None):
+    metric = metric_override or metadata["metric_names"][0]
     usecols = [metric, "st_tuner_time", "trial_id", "st_decision"]
     subset = defaultdict(list)
     try:
@@ -78,18 +78,22 @@ def convert_to_numpy(benchmark_df, num_time_steps: int = 20, name: str = ""):
 #    return t_range, seed_results
 
 
-def compute_best(dfs, metadatas):
+def compute_best(dfs, metadatas, metric_override: Optional[str] = None):
     benchmark_dfs = defaultdict(list)
     for df_bench, metadata in tqdm(list(zip(dfs, metadatas.values()))):
         if df_bench is None:
             continue
         benchmark = metadata["benchmark"]
-        metric_name = metadata["metric_names"][0]
+        metric_name = metric_override or metadata["metric_names"][0]
         for key in ["algorithm", "seed"]:
             df_bench[key] = metadata[key]
         # TODO this avoids the need to rely on the mode stored in the metadata but hardcode the benchmark mode,
         #  we should pass it instead
-        if benchmark.startswith("lcbench") or benchmark.startswith("hpob"):
+        if (
+            benchmark.startswith("lcbench")
+            or benchmark.startswith("hpob")
+            or benchmark.startswith("bbomix")
+        ):
             mode = "max"
         else:
             mode = "min"
@@ -181,6 +185,7 @@ def load_benchmark_results(
     max_seed: int = None,
     experiment_filter=None,
     engine: str = "joblib",
+    metric_override: Optional[str] = None,
 ) -> Dict[str, Tuple[np.array, Dict[str, np.array]]]:
     """
     :param path: where results are stored
@@ -189,6 +194,7 @@ def load_benchmark_results(
     :param max_seed: maximum seed to load, default to None to load all seeds
     :param experiment_filter:
     :param engine: parallel engine to use, can be ["sequential", "ray", "joblib", "futures"]
+    :param metric_override: if set, use this metric column instead of metadata["metric_names"][0]
     :return:
     """
     path = Path(path)
@@ -213,7 +219,7 @@ def load_benchmark_results(
         # load results in parallel
         dfs = []
         for name, metadata in tqdm(metadatas.items()):
-            df = load_result(name, metadata, path)
+            df = load_result(name, metadata, path, metric_override=metric_override)
             dfs.append(df)
 
 
@@ -223,7 +229,7 @@ def load_benchmark_results(
 #            engine=engine,
 #        )
     with catchtime("Compute best result over time"):
-        benchmark_dfs = compute_best(dfs, metadatas)
+        benchmark_dfs = compute_best(dfs, metadatas, metric_override=metric_override)
 
     show_number_seeds(benchmark_dfs)
 

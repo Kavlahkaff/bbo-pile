@@ -67,6 +67,7 @@ benchmark_families = [
     "hpob_7607",
     "hpob_7609",
     "hpob_5889",
+    "bbomix",
 ]
 benchmark_names = {
     "fcnet": "\\FCNet{}",
@@ -84,6 +85,7 @@ def plot_result_benchmark(
     ax=None,
     methods_to_show: list = None,
     plot_regret: bool = True,
+    legend_outside: bool = False,
 ):
     agg_results = {}
 
@@ -130,7 +132,10 @@ def plot_result_benchmark(
             agg_results[algorithm] = mean
 
         ax.set_xlabel("trials")
-        ax.legend()
+        if legend_outside:
+            ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
+        else:
+            ax.legend()
         ax.set_title(title)
     return ax
 
@@ -143,6 +148,7 @@ def plot_task_performance_over_time(
     ax=None,
     methods_to_show: list = None,
     plot_regret: bool = False,
+    legend_outside: bool = False,
 ):
     print(f"plot rank through time on {result_folder}")
     for benchmark, (t_range, method_dict) in benchmark_results.items():
@@ -154,6 +160,7 @@ def plot_task_performance_over_time(
             methods_to_show=methods_to_show,
             rename_dict=rename_dict,
             plot_regret=plot_regret,
+            legend_outside=legend_outside,
         )
         ax.set_ylabel("objective")
         if title is not None:
@@ -170,7 +177,7 @@ def plot_task_performance_over_time(
         if ax is not None:
             plt.tight_layout()
             filepath = result_folder / f"{benchmark}.pdf"
-            plt.savefig(filepath)
+            plt.savefig(filepath, bbox_inches="tight")
         ax = None
 
 
@@ -211,6 +218,7 @@ def plot_ranks(
     rename_dict: dict,
     result_folder: Path,
     methods_to_show: List[str],
+    legend_outside: bool = False,
 ):
     plt.figure()
     # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
@@ -233,9 +241,12 @@ def plot_ranks(
     plt.xlim(0, 1)
     plt.grid()
     plt.title(title)
-    plt.legend(loc="upper left")
+    if legend_outside:
+        plt.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
+    else:
+        plt.legend(loc="upper left")
     plt.tight_layout()
-    plt.savefig(result_folder / f"{title}.pdf")
+    plt.savefig(result_folder / f"{title}.pdf", bbox_inches="tight")
 
 
 def stack_benchmark_results(
@@ -304,6 +315,7 @@ def stack_benchmark_results(
                 "hpob_7607",
                 "hpob_7609",
                 "hpob_5889",
+                "bbomix",
             ]:
                 # max instead of minimization, todo pass the mode somehow
                 benchmark_results *= -1
@@ -320,6 +332,7 @@ def generate_rank_results(
     methods_to_show: Optional[List[str]],
     rename_dict: dict,
     result_folder: Path,
+    legend_outside: bool = False,
 ):
     rows = []
     for benchmark_family in benchmark_families:
@@ -348,6 +361,7 @@ def generate_rank_results(
             rename_dict,
             result_folder,
             methods_to_show,
+            legend_outside=legend_outside,
         )
 
     # (num_methods, num_benchmarks, num_min_seeds, num_time_steps)
@@ -362,6 +376,7 @@ def generate_rank_results(
         rename_dict,
         result_folder,
         methods_to_show,
+        legend_outside=legend_outside,
     )
 
 
@@ -373,6 +388,7 @@ def plot_average_normalized_regret(
     show_ci: bool = False,
     ax=None,
     methods_to_show: list = None,
+    legend_outside: bool = False,
 ):
     normalized_regrets = []
     for benchmark_family in benchmark_families:
@@ -432,9 +448,12 @@ def plot_average_normalized_regret(
     plt.ylim(1e-3, None)
     plt.grid()
     plt.title(title)
-    plt.legend(loc="upper right")
+    if legend_outside:
+        plt.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
+    else:
+        plt.legend(loc="upper right")
     plt.tight_layout()
-    plt.savefig(result_folder / f"{title}.pdf")
+    plt.savefig(result_folder / f"{title}.pdf", bbox_inches="tight")
     # plt.show()
 
 

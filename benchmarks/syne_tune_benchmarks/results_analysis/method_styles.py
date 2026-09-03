@@ -14,6 +14,10 @@ smac_color = "tab:brown"
 fifo_style = "solid"
 multifidelity_style = "dashed"
 multifidelity_style2 = "dashdot"
+finetuned_style = "dotted"
+finetuned_2M_color = "tab:cyan"
+finetuned_13M_color = "tab:olive"
+finetuned_80M_color = "tab:pink"
 
 show_seeds = False
 marker_ours = "*"
@@ -32,6 +36,9 @@ method_styles = {
     'OPT-BORE': dict(color=bore_color, linestyle=multifidelity_style, marker="s"),
     'OPT-REA': dict(color=rea_color, linestyle=multifidelity_style, marker="D"),
     'OPT-CQR': dict(color=cqr_color, linestyle=multifidelity_style, marker="v"),
+    'Finetuned-2M': dict(color=finetuned_2M_color, linestyle=finetuned_style, marker="X"),
+    'Finetuned-13M': dict(color=finetuned_13M_color, linestyle=finetuned_style, marker="*"),
+    'Finetuned-80M': dict(color=finetuned_80M_color, linestyle=finetuned_style, marker="P"),
 }
 
 

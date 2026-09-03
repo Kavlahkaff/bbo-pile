@@ -534,6 +534,8 @@ if __name__ == "__main__":
                 with open(str(output_path / file_name), 'w', encoding='utf-8') as f:
                     f.write('\n'.join(hist_split))
 
+            del hist_train, hist_valid
+
         if args.emit_advantage_weighted:
             with catchtime("Compute advantage-weighted training data"):
                 peer_baseline_by_benchmark = compute_peer_baseline_per_benchmark(

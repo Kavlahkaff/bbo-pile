@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+.venv/
+.barnard_venv/
+
+# generated analysis outputs (plots/caches), not source
+figures/

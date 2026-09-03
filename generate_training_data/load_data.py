@@ -47,7 +47,8 @@ def load_result(name, metric_name, config_space, path):
     usecols.extend(['config_{}'.format(k) for k in config_space.keys()])
     try:
         return pd.read_csv(path / name / "results.csv.zip", usecols=usecols)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Failed to load results for '{name}': {e}")
         return None
 
 
@@ -60,6 +61,10 @@ def create_history_from_results(name, metadata, path: Path,
     config_space = get_config_space_from_metadata(metadata)
     metric_name = metadata["metric_names"][0]
     res = load_result(name, metric_name, config_space, path)
+
+    if res is None or metric_name not in res.columns:
+        logger.warning(f"Skipping '{name}': failed to load results.csv.zip or missing metric '{metric_name}'")
+        return list()
 
     hist = History.from_syne_tune_experiment(ExperimentResult(name=name,
                                                               metadata=metadata,
