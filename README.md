@@ -60,7 +60,23 @@ Then, switch to the directory:
 Compile the results of all benchmark families directly into a combined dataset (the script recursively discovers all benchmarks, splits the validation sets, and automatically shuffles the training data):
 
     mkdir -p $BASE_PATH/dataset/$VERSION/all/
-    python compile_data.py --path $RESULTS_PATH --output_path $BASE_PATH/dataset/$VERSION/all/ --remove_names
+    python compile_data.py \
+      --path $RESULTS_PATH \
+      --output_path $BASE_PATH/dataset/$VERSION/all/ \
+      --remove_names \
+      --max_seed 30 \
+      --num_permutation 5 \
+      --sample_shorter_trajectories
+
+The `compile_data.py` script supports several arguments:
+- `--path`: The input path where the benchmark results are stored.
+- `--output_path`: The directory where the compiled dataset will be saved.
+- `--remove_names`: Flag to remove names of benchmarks and hyperparameters, avoiding overfitting.
+- `--max_seed`: Maximum number of seeds to include (default: 30).
+- `--num_permutation`: Number of times the order of variables in the trajectories is permuted to augment the data (default: 5); per-benchmark-family counts can instead be set via `--permutation_config` (see `generate_training_data/permutation_config.json`).
+- `--sample_shorter_trajectories`: Flag to additionally include shorter trajectories (first 1, 5, 10, and 20 trials) in the training data.
+- `--only_best` / `--best_by_auc` / `--rename_best` / `--keep_all_seeds_of_best`: keep only the best-performing algorithm's trajectory per benchmark (by final value or cumulative AUC), optionally relabeled as a generic `"best"` algorithm token — see `generate_training_data/analyze_dataset.py` to QA the resulting filtering.
+- `--emit_advantage_weighted [--advantage_temperature T]`: instead of (or in addition to) the litdata-packed dataset above, write `advantage_train.jsonl`/`advantage_valid.jsonl`, where every trajectory is kept and each trial is annotated with a per-trial advantage weight (how much it beats a per-benchmark peer baseline) for advantage-weighted SFT (see `open_optformer/training/advantage_sft_data.py`).
 
 Now we can train the tokenizer
 
