@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from litgpt.config import Config
 from litgpt.generate.base import generate
@@ -176,6 +176,7 @@ class OptformerScheduler(SingleObjectiveScheduler):
         gpu_memory_utilization: float = 0.2,
         model=None,
         tokenizer=None,
+        metric_range: Optional[Tuple[float, float]] = None,
     ):
         super(OptformerScheduler, self).__init__(
             config_space=config_space,
@@ -192,6 +193,7 @@ class OptformerScheduler(SingleObjectiveScheduler):
                 gpu_memory_utilization=gpu_memory_utilization,
                 model=model,
                 tokenizer=tokenizer,
+                metric_range=metric_range,
             ),
             random_seed=random_seed,
         )
@@ -214,6 +216,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         gpu_memory_utilization: float = 0.2,
         model=None,
         tokenizer=None,
+        metric_range: Optional[Tuple[float, float]] = None,
     ):
         super().__init__(config_space, points_to_evaluate, random_seed)
         if random_seed is not None:
@@ -287,6 +290,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
             metric_names=[self.task_info['metric_names']],
             num_numeric_tokens=self.num_numeric_tokens,
             remove_names=remove_names,
+            metric_range_override=metric_range,
         )
 
         self.hp_cont_names = [

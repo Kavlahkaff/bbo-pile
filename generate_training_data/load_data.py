@@ -57,7 +57,8 @@ def create_history_from_results(name, metadata, path: Path,
                                 num_numeric_tokens: int = 1000,
                                 remove_names: bool = False,
                                 n_permutation: int = 0,
-                                include_original: bool = True) -> list[str]:
+                                include_original: bool = True,
+                                metric_range_override: tuple = None) -> list[str]:
     config_space = get_config_space_from_metadata(metadata)
     metric_name = metadata["metric_names"][0]
     res = load_result(name, metric_name, config_space, path)
@@ -73,7 +74,8 @@ def create_history_from_results(name, metadata, path: Path,
                                                               tuner=None),
                                              num_numeric_tokens=num_numeric_tokens,
                                              remove_names=remove_names,
-                                             max_num_trials=max_num_trials)
+                                             max_num_trials=max_num_trials,
+                                             metric_range_override=metric_range_override)
     traj = list()
     if include_original:
         traj.append(hist.get_prompt())

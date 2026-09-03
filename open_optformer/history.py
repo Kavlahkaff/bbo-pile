@@ -80,6 +80,13 @@ class History:
     # Percentile used to clip the "good" tail. Defaults to 0 (true min, no
     # clipping) since resolution among the best trials matters most for search.
     metric_percentile_lo: float = 0.0
+    # Debug/ablation knob: when set to (y_min, y_max), every trial is
+    # quantized against this FIXED range instead of the causal per-trial
+    # percentile range above -- e.g. the task's true (oracle) metric range,
+    # to test whether quantization mismatch (not model capability) explains
+    # a gap to baselines. None (default) preserves the causal-robust
+    # behavior. See _causal_metric_ranges().
+    metric_range_override: tuple = None
 
     def add_trial(self, config, result, advantage=None):
 
@@ -165,13 +172,21 @@ class History:
 
     def _causal_metric_ranges(self):
         """For each trial t (in order), the (y_min, y_max) quantization range
-        computed only from trials observed up to and including t (never from
-        later trials), matching what is available at inference time. The
-        upper (worse) tail is percentile-clipped by default to stop a single
-        diverged trial from consuming the token resolution; the lower
-        (better) tail is left uncapped by default since resolution among the
-        best trials matters most for search.
+        to use. If `metric_range_override` is set, every trial uses that
+        fixed range (a debug/ablation mode -- see its docstring). Otherwise,
+        the range is computed only from trials observed up to and including
+        t (never from later trials), matching what is available at inference
+        time. The upper (worse) tail is percentile-clipped by default to
+        stop a single diverged trial from consuming the token resolution;
+        the lower (better) tail is left uncapped by default since resolution
+        among the best trials matters most for search.
         """
+        if self.metric_range_override is not None:
+            y_min, y_max = self.metric_range_override
+            if y_min == y_max:
+                y_max += 1  # Avoid division by zero in quantization
+            return [(y_min, y_max)] * len(self.trials)
+
         observed_metrics = []
         ranges = []
         for trial in self.trials:
@@ -222,9 +237,14 @@ class History:
     def from_syne_tune_experiment(cls, experiment: ExperimentResult,
                                   num_numeric_tokens: int = 1000,
                                   remove_names: bool = False,
-                                  max_num_trials: int = None):
+                                  max_num_trials: int = None,
+                                  metric_range_override: tuple = None):
         """
         Create a History object from a Syne Tune ExperimentResult.
+
+        `metric_range_override`: see `History.metric_range_override` --
+        pass a benchmark's true (y_min, y_max) here to build a History that
+        quantizes against that fixed range instead of the causal default.
         """
         metadata = experiment.metadata
         config_space = config_space_from_json_dict(json.loads(metadata['config_space']))
@@ -238,7 +258,8 @@ class History:
                         algorithm=algorithm_name,
                         metric_names=metric_name,
                    num_numeric_tokens=num_numeric_tokens,
-                   remove_names=remove_names)
+                   remove_names=remove_names,
+                   metric_range_override=metric_range_override)
 
         for i, (trial_id, trial) in enumerate(results.groupby('trial_id')):
             row = trial.iloc[-1]

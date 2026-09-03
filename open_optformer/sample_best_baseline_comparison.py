@@ -48,6 +48,7 @@ from open_optformer.sample_distribution import (
     load_real_trajectory,
     sample_optformer_configs,
     sample_reference_configs,
+    true_metric_range_from_trials,
 )
 
 
@@ -89,6 +90,16 @@ if __name__ == "__main__":
     p.add_argument("--skip_ref", action="store_true",
                     help="Skip REF sampling (use when it was already "
                          "computed in a prior, checkpoint-free run).")
+    p.add_argument("--oracle_metric_range", action="store_true",
+                    help="Debug/ablation: quantize the pretrained/finetuned "
+                         "series' proposals against the TRUE (min, max) "
+                         "metric value of the held-out task's full recorded "
+                         "trajectory, instead of the causal default -- tests "
+                         "whether a gap to REF is a quantization artifact "
+                         "rather than a model-capability issue (see "
+                         "History.metric_range_override). Appends "
+                         "'-oracle-range' to --pretrained_label/"
+                         "--finetuned_label so runs stay distinguishable.")
     p.add_argument("--gpu_memory_utilization", type=float, default=0.2)
     p.add_argument("--out_dir", type=Path, required=True)
     p.add_argument("--no_skip_existing", dest="skip_existing", action="store_false",
@@ -97,6 +108,10 @@ if __name__ == "__main__":
                          "already exists (default: skip existing, for "
                          "resumability after a job timeout).")
     args = p.parse_args()
+
+    if args.oracle_metric_range:
+        args.pretrained_label = f"{args.pretrained_label}-oracle-range"
+        args.finetuned_label = f"{args.finetuned_label}-oracle-range"
 
     with open(args.best_baselines_json) as f:
         best_baselines = json.load(f)
@@ -151,6 +166,15 @@ if __name__ == "__main__":
                     experiment_name, args.results_path, max_depth,
                 )
 
+                metric_range = None
+                if args.oracle_metric_range:
+                    # Full (untruncated) trajectory, so the oracle range
+                    # isn't itself capped to max_depth.
+                    _, _, full_trials = load_real_trajectory(
+                        experiment_name, args.results_path, None,
+                    )
+                    metric_range = true_metric_range_from_trials(full_trials)
+
                 for depth in args.context_depths:
                     eff_depth = min(depth, len(trials))
                     designs = [t.config for t in trials[:eff_depth]]
@@ -183,6 +207,7 @@ if __name__ == "__main__":
                             cs, metric, designs, obs, seed, args.num_samples,
                             model=pretrained_model, tokenizer=pretrained_tokenizer,
                             gpu_memory_utilization=args.gpu_memory_utilization,
+                            metric_range=metric_range,
                         )
                         rows.extend(_augment(_rows(
                             configs, series=args.pretrained_label,
@@ -197,6 +222,7 @@ if __name__ == "__main__":
                             cs, metric, designs, obs, seed, args.num_samples,
                             model=finetuned_model, tokenizer=finetuned_tokenizer,
                             gpu_memory_utilization=args.gpu_memory_utilization,
+                            metric_range=metric_range,
                         )
                         rows.extend(_augment(_rows(
                             configs, series=args.finetuned_label,

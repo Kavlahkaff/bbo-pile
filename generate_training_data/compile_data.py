@@ -194,6 +194,77 @@ def compute_peer_baseline_per_benchmark(metadatas: dict, path: Path, num_cores: 
     return peer_baseline
 
 
+def compute_trial_metric_extent(args_tuple):
+    """Per-experiment (min, max) of the RAW per-trial metric values (not the
+    running-best curve -- that's monotone and understates the bad/worse
+    tail's true max). Same min-convention/per-trial ordering as
+    `compute_trial_running_best`. Debug/ablation-only: feeds
+    `compute_true_metric_range_per_benchmark`, used by `--metric_range_mode
+    true` to quantize training data against each benchmark's real observed
+    range instead of the causal default (see History.metric_range_override).
+    """
+    name, metadata, path = args_tuple
+    from load_data import load_result, get_config_space_from_metadata
+    benchmark_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+    metric_name = metadata["metric_names"][0]
+    metric_mode = metadata.get('metric_mode', 'min')
+
+    try:
+        config_space = get_config_space_from_metadata(metadata)
+        res = load_result(name, metric_name, config_space, path)
+    except Exception:
+        res = None
+
+    if res is None or metric_name not in res.columns:
+        return benchmark_name, None
+
+    per_trial_vals = []
+    for _, trial in res.groupby('trial_id'):
+        row = trial.iloc[-1]
+        val = row[metric_name]
+        if metric_mode == 'max':
+            val = -val
+        per_trial_vals.append(val)
+
+    if len(per_trial_vals) == 0:
+        return benchmark_name, None
+
+    return benchmark_name, (float(min(per_trial_vals)), float(max(per_trial_vals)))
+
+
+def compute_true_metric_range_per_benchmark(metadatas: dict, path: Path, num_cores: int = None) -> dict:
+    """For each benchmark, the TRUE (min, max) metric value observed across
+    ALL optimizers/seeds/experiments recorded for that benchmark in
+    `metadatas` -- an oracle range, as opposed to the causal per-trial range
+    `History` uses by default. Debug/ablation only (`--metric_range_mode
+    true`): lets you test whether a gap to baselines is a quantization
+    artifact rather than a model-capability issue.
+    """
+    tasks = [(name, metadata, path) for name, metadata in metadatas.items()]
+
+    if num_cores is None:
+        try:
+            num_cores = len(os.sched_getaffinity(0))
+        except AttributeError:
+            num_cores = multiprocessing.cpu_count()
+
+    logger.info(f"Computing true per-benchmark metric ranges using {num_cores} cores for {len(tasks)} tasks...")
+
+    true_range = {}
+    with multiprocessing.Pool(processes=num_cores) as pool:
+        for benchmark_name, extent in tqdm.tqdm(
+                pool.imap_unordered(compute_trial_metric_extent, tasks),
+                total=len(tasks),
+                desc="Computing true per-benchmark metric ranges",
+                mininterval=5.0):
+            if extent is None:
+                continue
+            lo, hi = extent
+            cur = true_range.get(benchmark_name)
+            true_range[benchmark_name] = (lo, hi) if cur is None else (min(cur[0], lo), max(cur[1], hi))
+    return true_range
+
+
 def compute_advantages_for_experiment(name, metadata, path, peer_baseline_by_benchmark, temperature=None):
     """Per-trial advantage = peer_baseline[benchmark][t] - running_best_this_experiment[t]
     (min-convention, so a trajectory doing better than its peers at trial t
@@ -223,7 +294,7 @@ def process_metadata_with_advantage(args_tuple):
     peer baseline. Additive/parallel to `process_metadata` above -- does not
     call or modify it.
     """
-    name, metadata, path, peer_baseline_by_benchmark, temperature, is_valid = args_tuple
+    name, metadata, path, peer_baseline_by_benchmark, temperature, is_valid, metric_range_by_benchmark = args_tuple
     from load_data import load_result, get_config_space_from_metadata
     from open_optformer.history import History
     from syne_tune.experiments import ExperimentResult
@@ -238,8 +309,13 @@ def process_metadata_with_advantage(args_tuple):
         config_space = get_config_space_from_metadata(metadata)
         metric_name = metadata["metric_names"][0]
         res = load_result(name, metric_name, config_space, path)
+        benchmark_name_lookup = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+        metric_range_override = (
+            metric_range_by_benchmark.get(benchmark_name_lookup) if metric_range_by_benchmark else None
+        )
         hist = History.from_syne_tune_experiment(
-            ExperimentResult(name=name, metadata=metadata, results=res, path=path, tuner=None)
+            ExperimentResult(name=name, metadata=metadata, results=res, path=path, tuner=None),
+            metric_range_override=metric_range_override,
         )
         advantages = advantages[:len(hist.trials)]
         _, segments = hist.get_prompt_with_weights(advantages=advantages)
@@ -258,19 +334,27 @@ def process_metadata_with_advantage(args_tuple):
 
 
 def process_metadata(args_tuple):
-    name, metadata, path, max_num_trials, remove_names, num_permutation, sample_shorter_trajectories, is_valid = args_tuple
+    (name, metadata, path, max_num_trials, remove_names, num_permutation,
+     sample_shorter_trajectories, is_valid, metric_range_by_benchmark) = args_tuple
     from load_data import create_history_from_results
     histories = []
-    
+
+    benchmark_name_lookup = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+    metric_range_override = (
+        metric_range_by_benchmark.get(benchmark_name_lookup) if metric_range_by_benchmark else None
+    )
+
     try:
         histories.extend(create_history_from_results(name, metadata, path, max_num_trials,
                                                      remove_names=remove_names,
-                                                     n_permutation=num_permutation))
+                                                     n_permutation=num_permutation,
+                                                     metric_range_override=metric_range_override))
         if not is_valid and sample_shorter_trajectories:
             for mt in [1, 5, 10, 20]:
                 histories.extend(create_history_from_results(name, metadata, path,
                                                              mt,
                                                              remove_names=remove_names,
+                                                             metric_range_override=metric_range_override,
                                                              n_permutation=0))
     except Exception as e:
         logger.error(f"Error processing {name}: {e}")
@@ -368,6 +452,18 @@ if __name__ == "__main__":
         help="if set, per-trial advantage weights are exp(advantage / temperature) instead of the raw "
              "difference against the peer baseline",
     )
+    parser.add_argument(
+        "--metric_range_mode",
+        type=str,
+        choices=["causal", "true"],
+        default="causal",
+        help="Debug/ablation knob for History's metric quantization range. 'causal' (default) computes "
+             "each trial's range only from trials observed up to that point (matches inference-time "
+             "availability). 'true' instead quantizes every trial in a benchmark against that "
+             "benchmark's TRUE (min, max) metric value observed across ALL recorded experiments -- an "
+             "oracle range unavailable at real inference time, useful for testing whether a gap to "
+             "baselines is a quantization artifact rather than a model-capability issue.",
+    )
 
     methods = [
         "REA",
@@ -417,6 +513,13 @@ if __name__ == "__main__":
         # Snapshot taken before --only_best/--rename_best may reassign/filter `metadatas` below,
         # so --emit_advantage_weighted always runs over the full pool independent of that pipeline.
         all_metadatas_for_advantage = dict(metadatas)
+
+        true_metric_range_by_benchmark = None
+        if args.metric_range_mode == "true":
+            with catchtime("Compute true per-benchmark metric ranges"):
+                true_metric_range_by_benchmark = compute_true_metric_range_per_benchmark(
+                    metadatas, path
+                )
 
         if args.only_best:
             with catchtime("Find best trajectories for each benchmark"):
@@ -503,7 +606,7 @@ if __name__ == "__main__":
                 else:
                     num_perm = args.num_permutation
                 
-                tasks_metadata.append((name, metadata, path, max_num_trials, args.remove_names, num_perm, args.sample_shorter_trajectories, is_valid))
+                tasks_metadata.append((name, metadata, path, max_num_trials, args.remove_names, num_perm, args.sample_shorter_trajectories, is_valid, true_metric_range_by_benchmark))
             
             try:
                 num_cores = len(os.sched_getaffinity(0))
@@ -547,7 +650,8 @@ if __name__ == "__main__":
                     benchmark_name = metadata.get('benchmark', '')
                     is_valid = benchmark_name in validation_tasks
                     adv_tasks.append(
-                        (name, metadata, path, peer_baseline_by_benchmark, args.advantage_temperature, is_valid)
+                        (name, metadata, path, peer_baseline_by_benchmark, args.advantage_temperature, is_valid,
+                         true_metric_range_by_benchmark)
                     )
 
                 logger.info(

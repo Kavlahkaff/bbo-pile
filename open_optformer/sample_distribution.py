@@ -292,6 +292,7 @@ def sample_optformer_configs(
     checkpoint_dir, benchmark_name: str, algorithm: str,
     cs, metric: str, designs, obs, seed: int, num_samples: int = 5000,
     model=None, tokenizer=None, gpu_memory_utilization: float = 0.2,
+    metric_range: Optional[Tuple[float, float]] = None,
 ) -> List[Dict[str, Any]]:
     """Sample `num_samples` configs from OptFormer conditioned on (designs, obs).
 
@@ -304,6 +305,12 @@ def sample_optformer_configs(
 
     Pass a preloaded `model`/`tokenizer` (from `load_optformer_model`) to
     reuse them across seeds/benchmarks instead of reloading vLLM each call.
+
+    `metric_range`: debug/ablation knob (see `History.metric_range_override`)
+    -- pass the task's TRUE (y_min, y_max) here (e.g. from
+    `true_metric_range_from_trials`) to quantize against that fixed oracle
+    range instead of the causal default, to test whether a gap to baselines
+    is a quantization artifact.
     """
     scheduler = OptformerScheduler(
         config_space=cs, metric=metric, checkpoint_dir=Path(checkpoint_dir),
@@ -311,11 +318,24 @@ def sample_optformer_configs(
         do_minimize=True, random_seed=seed, n_sample_configurations=num_samples,
         model=model, tokenizer=tokenizer,
         gpu_memory_utilization=gpu_memory_utilization,
+        metric_range=metric_range,
     )
     for i, (cfg, y) in enumerate(zip(designs, obs)):
         scheduler.on_trial_complete(Trial(i, cfg, 0.0), {metric: y})
     configs, _ = scheduler.searcher._sample_n_configs()
     return configs
+
+
+def true_metric_range_from_trials(trials) -> Tuple[float, float]:
+    """The task's TRUE (oracle) (min, max) metric value, from a list of
+    `Trial`s (already sign-flipped to always-minimize) covering the task's
+    FULL recorded history -- pass `max_trials=None` to `load_real_trajectory`
+    to get the untruncated trial list this expects, not one truncated to a
+    context depth. Debug/ablation use: see `sample_optformer_configs`'s
+    `metric_range` argument.
+    """
+    metrics = [t.metric for t in trials]
+    return (min(metrics), max(metrics))
 
 
 def _series_label(checkpoint_dir: Path, taken: set) -> str:
