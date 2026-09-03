@@ -72,6 +72,14 @@ class History:
     metric_names: list = field(default_factory=list)
     trials: list = field(default_factory=list)
     remove_names: bool = False
+    # Percentile (0-100) used to clip the "bad" tail of observed metrics
+    # (metrics are already normalized so that lower == better, see
+    # from_syne_tune_experiment). Defaults to 95 to protect against
+    # divergent/outlier trials (e.g. fcnet) stealing quantization resolution.
+    metric_percentile_hi: float = 95.0
+    # Percentile used to clip the "good" tail. Defaults to 0 (true min, no
+    # clipping) since resolution among the best trials matters most for search.
+    metric_percentile_lo: float = 0.0
 
     def add_trial(self, config, result, advantage=None):
 
@@ -150,20 +158,37 @@ class History:
             string += str(hp_encoded)
         string += f"*"
 
-        string += f"{quantize(trial.metric, y_min, y_max, q=self.num_numeric_tokens)}"
+        clipped_metric = min(max(trial.metric, y_min), y_max)
+        string += f"{quantize(clipped_metric, y_min, y_max, q=self.num_numeric_tokens)}"
         string += f"|"
         return string
+
+    def _causal_metric_ranges(self):
+        """For each trial t (in order), the (y_min, y_max) quantization range
+        computed only from trials observed up to and including t (never from
+        later trials), matching what is available at inference time. The
+        upper (worse) tail is percentile-clipped by default to stop a single
+        diverged trial from consuming the token resolution; the lower
+        (better) tail is left uncapped by default since resolution among the
+        best trials matters most for search.
+        """
+        observed_metrics = []
+        ranges = []
+        for trial in self.trials:
+            observed_metrics.append(trial.metric)
+            y_min = np.percentile(observed_metrics, self.metric_percentile_lo)
+            y_max = np.percentile(observed_metrics, self.metric_percentile_hi)
+            if y_min == y_max:
+                y_max += 1  # Avoid division by zero in quantization
+            ranges.append((y_min, y_max))
+        return ranges
 
     def get_prompt(self, shuffle=False, hp_order: list = None):
         hypers = self._resolve_hypers(shuffle=shuffle, hp_order=hp_order)
         string = self._build_header(hypers)
 
         if len(self.trials) > 0:
-            y_min = min(trial.metric for trial in self.trials)
-            y_max = max(trial.metric for trial in self.trials)
-            if y_min == y_max:
-                y_max += 1  # Avoid division by zero in quantization
-            for trial in self.trials:
+            for trial, (y_min, y_max) in zip(self.trials, self._causal_metric_ranges()):
                 string += self._build_trial_span(trial, hypers, y_min, y_max)
         return string
 
@@ -180,11 +205,7 @@ class History:
         segments = [(header, base_weight)]
 
         if len(self.trials) > 0:
-            y_min = min(trial.metric for trial in self.trials)
-            y_max = max(trial.metric for trial in self.trials)
-            if y_min == y_max:
-                y_max += 1  # Avoid division by zero in quantization
-            for i, trial in enumerate(self.trials):
+            for i, (trial, (y_min, y_max)) in enumerate(zip(self.trials, self._causal_metric_ranges())):
                 span = self._build_trial_span(trial, hypers, y_min, y_max)
                 if advantages is not None and i < len(advantages):
                     weight = advantages[i]
