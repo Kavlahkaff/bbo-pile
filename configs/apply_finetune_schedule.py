@@ -45,10 +45,10 @@ Usage:
         --train-tokens 478669284 \
         --epochs-grid 1 2 3 \
         --lr-grid 5e-4 1e-4 5e-5 \
-        --finetune-data-path /data/horse/ws/luth474h-master_thesis/experiments/data/tokenized_data/only-best \
+        --finetune-data-path /data/horse/ws/luth474h-bbo-pile-experiments/masters-thesis/experiments/data/tokenized_data/only-best \
         --checkpoint-base /projects/p_neurasearch/bbo-pile_experiments/checkpoints/v0.8 \
         --tokenizer-dir /projects/p_neurasearch/bbo-pile_experiments/tokenizer/v0.8 \
-        --out-base /data/horse/ws/luth474h-master_thesis/experiments/finetuned/only-best \
+        --out-base /data/horse/ws/luth474h-bbo-pile-experiments/masters-thesis/experiments/finetuned/only-best \
         --output-dir finetuning_only_best \
         --project open_optformer_qwen3_finetune_only_best_v0.9
 

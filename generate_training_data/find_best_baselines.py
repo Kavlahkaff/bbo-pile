@@ -11,7 +11,7 @@ reads it instead of re-scanning the (large) raw results directory on every
 run.
 
   python find_best_baselines.py \\
-      --results_path /data/horse/ws/luth474h-master_thesis/raw_data_bbo_pile \\
+      --results_path /data/horse/ws/luth474h-bbo-pile-experiments/raw_data_bbo_pile \\
       --out_json best_baselines.json
 """
 import argparse

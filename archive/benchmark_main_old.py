@@ -125,7 +125,7 @@ def run(
             callbacks=[SimulatorCallback()],
             results_update_interval=600,
             print_update_interval=30,
-            tuner_name=f"/data/horse/ws/luth474h-master_thesis/results/{model_name}/{variant_name}/{suffix}",
+            tuner_name=f"/data/horse/ws/luth474h-bbo-pile-experiments/masters-thesis/results/{model_name}/{variant_name}/{suffix}",
             save_tuner=False,
             suffix_tuner_name=False,
             metadata={

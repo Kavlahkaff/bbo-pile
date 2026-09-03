@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser.add_argument("--method", type=str, required=True)
     parser.add_argument("--benchmark", type=str, required=True)
     parser.add_argument("--max_trials", type=int, default=100)
-    parser.add_argument("--output_path", type=str, default='/data/horse/ws/luth474h-master_thesis/results_global')
+    parser.add_argument("--output_path", type=str, default='/data/horse/ws/luth474h-bbo-pile-experiments/masters-thesis/results_global')
     parser.add_argument("--num_start_points", type=int, default=5)
     parser.add_argument(
         "--checkpoint_dir",
@@ -68,7 +68,7 @@ if __name__ == "__main__":
         model_name = "default_model"
         variant_name = "default_variant"
 
-    base_dir = f"/data/horse/ws/luth474h-master_thesis/results_global/{model_name}/{variant_name}"
+    base_dir = f"/data/horse/ws/luth474h-bbo-pile-experiments/masters-thesis/results_global/{model_name}/{variant_name}"
     for seed in seeds:
         tuner_dir = Path(base_dir) / f'{benchmark}_{method}_seed_{seed}'
         os.makedirs(tuner_dir, exist_ok=True)

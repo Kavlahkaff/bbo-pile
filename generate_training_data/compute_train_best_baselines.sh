@@ -16,21 +16,23 @@
 # Run once (or whenever raw_data_bbo_pile / all_training_tasks.json change),
 # not once per self-play round -- the threshold is a property of the offline
 # baseline logs, independent of the current checkpoint being self-played.
+#
+# CPU-only -- submit from a Barnard login node, not Capella.
 
 set -euo pipefail
 trap 'echo "[FATAL] line $LINENO: command failed: $BASH_COMMAND" >&2' ERR
 
-module load release/25.06 GCCcore/13.3.0 Python/3.12.3 CUDA/13.0.0
+module load release/2026 GCCcore/14.2.0 Python/3.13.1
 
 cd "$(dirname "$0")"
-source ../.venv/bin/activate
+source ../.venv-datagen/bin/activate
 if [[ -z "${VIRTUAL_ENV:-}" ]]; then
-    echo "[FATAL] failed to activate virtualenv .venv" >&2
+    echo "[FATAL] failed to activate virtualenv .venv-datagen" >&2
     exit 1
 fi
 
-export PYTHONPATH=/data/horse/ws/luth474h-master_thesis/bbo-pile:${PYTHONPATH:-}
-export RESULTS_PATH=/data/horse/ws/luth474h-master_thesis/raw_data_bbo_pile
+export PYTHONPATH=/data/horse/ws/luth474h-bbo-pile-experiments/masters-thesis/bbo-pile:${PYTHONPATH:-}
+export RESULTS_PATH=/data/horse/ws/luth474h-bbo-pile-experiments/raw_data_bbo_pile
 
 ALL_TRAINING_TASKS_JSON="all_training_tasks.json"
 OUT_JSON="train_best_baselines.json"

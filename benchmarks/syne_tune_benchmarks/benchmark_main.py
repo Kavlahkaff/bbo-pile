@@ -133,7 +133,7 @@ def run(
             variant_name = "default_variant"
 
         suffix = f"{method}-{seed}-{benchmark_name}".replace("_", "-")
-        tuner_dir = f"/data/horse/ws/luth474h-master_thesis/results/{model_name}/{variant_name}/{suffix}"
+        tuner_dir = f"/data/horse/ws/luth474h-bbo-pile-experiments/masters-thesis/results/{model_name}/{variant_name}/{suffix}"
 
         tuner = Tuner(
             trial_backend=backend,

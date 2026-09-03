@@ -19,7 +19,7 @@ configs/finetune/*.yaml) rather than re-sweeping -- this is a single
 targeted ablation, not a new hyperparameter search.
 
 Usage:
-    export BASE_PATH=/data/horse/ws/luth474h-master_thesis/experiments
+    export BASE_PATH=/data/horse/ws/luth474h-bbo-pile-experiments/masters-thesis/experiments
     cd configs && python generate_configs_constant_lr.py
 """
 import os
