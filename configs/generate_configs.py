@@ -22,6 +22,9 @@ def generate_configs():
 #        'qwen3_450M': 450e6,
     }
 
+    out_dir = Path(__file__).parent / "pretrain"
+    out_dir.mkdir(exist_ok=True)
+
     counter = 0
     for model_name, model_size in model_names.items():
         base_config_path = Path(__file__).parent / f"{model_name}.yaml"
@@ -91,7 +94,7 @@ def generate_configs():
                         new_config['model_config']['vocab_size'] = 1061
                         new_config['model_config']['padded_vocab_size'] = 1061
                     new_filename = f"{run_name}.yaml"
-                    new_filepath = base_config_path.parent / new_filename
+                    new_filepath = out_dir / new_filename
 
                     with open(new_filepath, 'w') as f:
                        yaml.dump(new_config, f, sort_keys=False)

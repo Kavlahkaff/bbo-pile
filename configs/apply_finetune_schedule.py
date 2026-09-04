@@ -41,7 +41,7 @@ used in the sbatch array script, e.g.:
 
 Usage:
     python apply_finetune_schedule.py \
-        --configs finetune/*.yaml \
+        --configs pretrain/*.yaml \
         --train-tokens 478669284 \
         --epochs-grid 1 2 3 \
         --lr-grid 5e-4 1e-4 5e-5 \

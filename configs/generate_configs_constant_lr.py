@@ -15,7 +15,7 @@ cosine schedule baked into pretraining. This is the ablation debugged in
 
 Reuses each model size's already-established best (lr, batch_size) from the
 main sweep (see checkpoint paths in sample_distribution_opt_best.sh /
-configs/finetune/*.yaml) rather than re-sweeping -- this is a single
+configs/pretrain/*.yaml) rather than re-sweeping -- this is a single
 targeted ablation, not a new hyperparameter search.
 
 Usage:
