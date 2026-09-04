@@ -74,6 +74,19 @@ def select_and_serialize(rollout_dir: Path, best_baselines_json: Path,
     n_kept_by_benchmark = defaultdict(int)
     n_total_by_benchmark = defaultdict(int)
 
+    from open_optformer.sample_distribution import _load_blackbox
+    # Rollout files are named "{benchmark}__seed{seed}.json" and iterated in
+    # sorted order, so every seed of a given benchmark is contiguous -- cache
+    # the loaded blackbox by benchmark name instead of reloading it (an
+    # expensive surrogate load) for every one of the n_seeds rollout files.
+    _blackbox_cache: dict = {}
+
+    def _get_blackbox(benchmark_name):
+        if benchmark_name not in _blackbox_cache:
+            bb, _ = _load_blackbox(benchmark_name)
+            _blackbox_cache[benchmark_name] = bb
+        return _blackbox_cache[benchmark_name]
+
     for rollout_path in sorted(rollout_dir.glob("*.json")):
         with open(rollout_path) as f:
             rollout = json.load(f)
@@ -92,8 +105,7 @@ def select_and_serialize(rollout_dir: Path, best_baselines_json: Path,
         if regret >= threshold:
             continue  # did not beat the best of the six baselines -- discard
 
-        from open_optformer.sample_distribution import _load_blackbox
-        bb, _ = _load_blackbox(benchmark)
+        bb = _get_blackbox(benchmark)
         segments = _rollout_to_segments(rollout, bb.configuration_space)
 
         kept.append({

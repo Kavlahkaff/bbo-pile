@@ -38,7 +38,7 @@ def process_best_trajectory(args_tuple):
     return benchmark_name, name, val
 
 def find_best_algorithms(metadatas: dict, path: Path,
-                          num_cores: int = None) -> dict:
+                          num_cores: int = None, pool=None) -> dict:
     """For each benchmark present in `metadatas`, determine:
       - "best_experiment": (experiment_name, val), the single experiment
         with the lowest `val` (see `process_best_trajectory`) across every
@@ -52,6 +52,12 @@ def find_best_algorithms(metadatas: dict, path: Path,
     Reused by both `--keep_all_seeds_of_best` (via "algorithm") and the
     single-best-experiment path (via "best_experiment") below, and by
     `find_best_baselines.py`.
+
+    `pool`: an already-open `multiprocessing.Pool` to reuse (e.g. the shared
+    pool `compile_data.py`'s __main__ opens once for the whole run). If
+    omitted, a temporary pool sized to `num_cores` is opened and closed here,
+    same as before -- this keeps `find_best_baselines.py`'s standalone call
+    working unchanged.
     """
     from collections import defaultdict
 
@@ -69,12 +75,9 @@ def find_best_algorithms(metadatas: dict, path: Path,
     benchmark_algo_vals = defaultdict(lambda: defaultdict(list))
     benchmark_algo_seed_experiments = defaultdict(lambda: defaultdict(dict))
 
-    with multiprocessing.Pool(processes=num_cores) as pool:
+    def _consume(iterator):
         for benchmark_name, name, val in tqdm.tqdm(
-                pool.imap_unordered(process_best_trajectory, tasks),
-                total=len(tasks),
-                desc="Finding best trajectories",
-                mininterval=5.0):
+                iterator, total=len(tasks), desc="Finding best trajectories", mininterval=5.0):
             if val is None:
                 continue
 
@@ -85,6 +88,12 @@ def find_best_algorithms(metadatas: dict, path: Path,
             seed = metadatas[name].get("seed")
             benchmark_algo_vals[benchmark_name][algo].append(val)
             benchmark_algo_seed_experiments[benchmark_name][algo][seed] = name
+
+    if pool is not None:
+        _consume(pool.imap_unordered(process_best_trajectory, tasks))
+    else:
+        with multiprocessing.Pool(processes=num_cores) as p:
+            _consume(p.imap_unordered(process_best_trajectory, tasks))
 
     results = {}
     for bench, algos in benchmark_algo_vals.items():
@@ -147,12 +156,16 @@ def compute_trial_running_best(args_tuple):
     return benchmark_name, name, running_best
 
 
-def compute_peer_baseline_per_benchmark(metadatas: dict, path: Path, num_cores: int = None) -> dict:
+def compute_peer_baseline_per_benchmark(metadatas: dict, path: Path, num_cores: int = None,
+                                         pool=None) -> dict:
     """For each benchmark, the mean running-best-so-far curve across ALL
     optimizers/seeds/experiments recorded for that benchmark in `metadatas`
     (short trajectories are forward-filled to the longest trajectory's
     length before averaging). This is the peer baseline that per-trial
     advantages are computed against.
+
+    `pool`: see `find_best_algorithms` -- reuse an already-open pool instead
+    of opening a temporary one.
     """
     tasks = [(name, metadata, path) for name, metadata in metadatas.items()]
 
@@ -165,15 +178,20 @@ def compute_peer_baseline_per_benchmark(metadatas: dict, path: Path, num_cores: 
     logger.info(f"Computing peer baselines using {num_cores} cores for {len(tasks)} tasks...")
 
     per_benchmark_curves = {}
-    with multiprocessing.Pool(processes=num_cores) as pool:
+
+    def _consume(iterator):
         for benchmark_name, _, running_best in tqdm.tqdm(
-                pool.imap_unordered(compute_trial_running_best, tasks),
-                total=len(tasks),
-                desc="Computing per-trial running-best curves",
+                iterator, total=len(tasks), desc="Computing per-trial running-best curves",
                 mininterval=5.0):
             if not running_best:
                 continue
             per_benchmark_curves.setdefault(benchmark_name, []).append(running_best)
+
+    if pool is not None:
+        _consume(pool.imap_unordered(compute_trial_running_best, tasks))
+    else:
+        with multiprocessing.Pool(processes=num_cores) as p:
+            _consume(p.imap_unordered(compute_trial_running_best, tasks))
 
     peer_baseline = {}
     for benchmark_name, curves in per_benchmark_curves.items():
@@ -227,7 +245,8 @@ def compute_trial_metric_values(args_tuple):
 
 
 def compute_true_metric_range_per_benchmark(metadatas: dict, path: Path, num_cores: int = None,
-                                             percentile_lo: float = 0.0, percentile_hi: float = 95.0) -> dict:
+                                             percentile_lo: float = 0.0, percentile_hi: float = 95.0,
+                                             pool=None) -> dict:
     """For each benchmark, the TRUE (oracle) (min, max) metric quantization
     range, percentile-clipped (same (0, 95) defaults as
     `History.metric_percentile_lo/_hi`'s causal range) over the RAW per-trial
@@ -255,16 +274,25 @@ def compute_true_metric_range_per_benchmark(metadatas: dict, path: Path, num_cor
 
     from collections import defaultdict
     pooled_vals = defaultdict(list)
-    with multiprocessing.Pool(processes=num_cores) as pool:
+
+    def _consume(iterator):
         for benchmark_name, vals in tqdm.tqdm(
-                pool.imap_unordered(compute_trial_metric_values, tasks),
-                total=len(tasks),
-                desc="Computing true per-benchmark metric ranges",
+                iterator, total=len(tasks), desc="Computing true per-benchmark metric ranges",
                 mininterval=5.0):
             if vals is None:
                 continue
             pooled_vals[benchmark_name].extend(vals)
 
+    if pool is not None:
+        _consume(pool.imap_unordered(compute_trial_metric_values, tasks))
+    else:
+        with multiprocessing.Pool(processes=num_cores) as p:
+            _consume(p.imap_unordered(compute_trial_metric_values, tasks))
+
+    return _percentile_range_from_pooled_vals(pooled_vals, percentile_lo, percentile_hi)
+
+
+def _percentile_range_from_pooled_vals(pooled_vals: dict, percentile_lo: float, percentile_hi: float) -> dict:
     true_range = {}
     for benchmark_name, vals in pooled_vals.items():
         y_min = float(np.percentile(vals, percentile_lo))
@@ -273,6 +301,123 @@ def compute_true_metric_range_per_benchmark(metadatas: dict, path: Path, num_cor
             y_max += 1  # avoid division by zero in quantization, matches History
         true_range[benchmark_name] = (y_min, y_max)
     return true_range
+
+
+def process_best_trajectory_and_metric_values(args_tuple):
+    """Combined worker for `find_best_algorithms_and_true_range`: loads
+    `res` once per experiment and returns both `process_best_trajectory`'s
+    best-trajectory `val` and `compute_trial_metric_values`'s raw per-trial
+    metric values, so a single multiprocessing pass over the raw results
+    directory can feed both --only_best selection and --metric_range_mode
+    true instead of two separate passes each re-reading the same
+    results.csv.zip files. Computes the exact same two values those two
+    functions compute, from the same loaded `res`.
+    """
+    name, metadata, path = args_tuple
+    from load_data import load_result, get_config_space_from_metadata
+    benchmark_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+    metric_name = metadata["metric_names"][0]
+    metric_mode = metadata.get('metric_mode', 'min')
+
+    try:
+        config_space = get_config_space_from_metadata(metadata)
+        res = load_result(name, metric_name, config_space, path)
+    except Exception:
+        res = None
+
+    val = None
+    per_trial_vals = None
+    if res is not None and metric_name in res.columns:
+        if metric_mode == 'max':
+            val = -res[metric_name].max()
+        else:
+            val = res[metric_name].min()
+
+        per_trial_vals = []
+        for _, trial in res.groupby('trial_id'):
+            row = trial.iloc[-1]
+            tv = row[metric_name]
+            if metric_mode == 'max':
+                tv = -tv
+            per_trial_vals.append(float(tv))
+        if len(per_trial_vals) == 0:
+            per_trial_vals = None
+
+    return benchmark_name, name, val, per_trial_vals
+
+
+def find_best_algorithms_and_true_range(metadatas: dict, path: Path, num_cores: int = None,
+                                         percentile_lo: float = 0.0, percentile_hi: float = 95.0,
+                                         pool=None):
+    """Combined form of `find_best_algorithms` + `compute_true_metric_range_per_benchmark`,
+    for the case where both --only_best and --metric_range_mode true are
+    requested together (as experiments/quantization_debug/generate_dataset_true_range.sh
+    does): loads each experiment's results.csv.zip once via
+    `process_best_trajectory_and_metric_values` instead of once per function.
+
+    Returns the exact same `(best_by_benchmark, true_range_by_benchmark)`
+    pair that calling `find_best_algorithms` and
+    `compute_true_metric_range_per_benchmark` separately on the same
+    `metadatas` would have returned -- this only removes the duplicate
+    results.csv.zip load, it does not change either computation.
+    """
+    from collections import defaultdict
+
+    tasks = [(name, metadata, path) for name, metadata in metadatas.items()]
+
+    if num_cores is None:
+        try:
+            num_cores = len(os.sched_getaffinity(0))
+        except AttributeError:
+            num_cores = multiprocessing.cpu_count()
+
+    logger.info(f"Detecting best trajectories and true per-benchmark metric ranges "
+                f"using {num_cores} cores for {len(tasks)} tasks...")
+
+    best_experiments = {}
+    benchmark_algo_vals = defaultdict(lambda: defaultdict(list))
+    benchmark_algo_seed_experiments = defaultdict(lambda: defaultdict(dict))
+    pooled_vals = defaultdict(list)
+
+    def _consume(iterator):
+        for benchmark_name, name, val, per_trial_vals in tqdm.tqdm(
+                iterator, total=len(tasks),
+                desc="Finding best trajectories + true ranges", mininterval=5.0):
+            if val is not None:
+                if benchmark_name not in best_experiments or val < best_experiments[benchmark_name][1]:
+                    best_experiments[benchmark_name] = (name, val)
+                algo = metadatas[name]["algorithm"]
+                seed = metadatas[name].get("seed")
+                benchmark_algo_vals[benchmark_name][algo].append(val)
+                benchmark_algo_seed_experiments[benchmark_name][algo][seed] = name
+            if per_trial_vals:
+                pooled_vals[benchmark_name].extend(per_trial_vals)
+
+    if pool is not None:
+        _consume(pool.imap_unordered(process_best_trajectory_and_metric_values, tasks))
+    else:
+        with multiprocessing.Pool(processes=num_cores) as p:
+            _consume(p.imap_unordered(process_best_trajectory_and_metric_values, tasks))
+
+    best_by_benchmark = {}
+    for bench, algos in benchmark_algo_vals.items():
+        best_algo = None
+        best_avg = float('inf')
+        for algo, vals in algos.items():
+            avg_val = np.mean(vals)
+            if avg_val < best_avg:
+                best_avg = avg_val
+                best_algo = algo
+        best_by_benchmark[bench] = {
+            "algorithm": best_algo,
+            "mean_val": best_avg,
+            "seed_experiments": benchmark_algo_seed_experiments[bench][best_algo],
+            "best_experiment": best_experiments.get(bench),
+        }
+
+    true_range_by_benchmark = _percentile_range_from_pooled_vals(pooled_vals, percentile_lo, percentile_hi)
+
+    return best_by_benchmark, true_range_by_benchmark
 
 
 def compute_advantages_for_experiment(name, metadata, path, peer_baseline_by_benchmark, temperature=None):
@@ -469,6 +614,14 @@ if __name__ == "__main__":
              "oracle range unavailable at real inference time, useful for testing whether a gap to "
              "baselines is a quantization artifact rather than a model-capability issue.",
     )
+    parser.add_argument(
+        "--skip_standard_output",
+        action='store_true',
+        help="skip building/writing train.txt and valid.txt (the process_metadata pass). "
+             "For --emit_advantage_weighted-only runs (e.g. advantage_sft/generate_dataset.sh) "
+             "where that plain-text output isn't consumed by anything downstream -- see that "
+             "script's header. Has no effect on advantage_{train,valid}.jsonl.",
+    )
 
     methods = [
         "REA",
@@ -519,39 +672,63 @@ if __name__ == "__main__":
         # so --emit_advantage_weighted always runs over the full pool independent of that pipeline.
         all_metadatas_for_advantage = dict(metadatas)
 
+        try:
+            num_cores = len(os.sched_getaffinity(0))
+        except AttributeError:
+            num_cores = multiprocessing.cpu_count()
+
+        # One pool, opened once and reused by every multiprocessing stage
+        # below (instead of each stage opening/closing its own) -- avoids
+        # repeated worker-process startup/teardown overhead. This only
+        # changes how the same imap_unordered tasks get scheduled, not what
+        # they compute.
+        pool = multiprocessing.Pool(processes=num_cores)
+
         true_metric_range_by_benchmark = None
-        if args.metric_range_mode == "true":
-            with catchtime("Compute true per-benchmark metric ranges"):
-                true_metric_range_by_benchmark = compute_true_metric_range_per_benchmark(
-                    metadatas, path
+        best_by_benchmark = None
+        if args.metric_range_mode == "true" and args.only_best:
+            # Both passes scan the same full `metadatas` set and each used to
+            # separately load every experiment's results.csv.zip -- combined
+            # here into one pass that loads it once per experiment. Returns
+            # the same (best_by_benchmark, true_range) the two separate calls
+            # below would have returned.
+            with catchtime("Find best trajectories and true per-benchmark metric ranges"):
+                best_by_benchmark, true_metric_range_by_benchmark = find_best_algorithms_and_true_range(
+                    metadatas, path, num_cores=num_cores, pool=pool
                 )
+        else:
+            if args.metric_range_mode == "true":
+                with catchtime("Compute true per-benchmark metric ranges"):
+                    true_metric_range_by_benchmark = compute_true_metric_range_per_benchmark(
+                        metadatas, path, num_cores=num_cores, pool=pool
+                    )
+            if args.only_best:
+                with catchtime("Find best trajectories for each benchmark"):
+                    best_by_benchmark = find_best_algorithms(metadatas, path, num_cores=num_cores, pool=pool)
 
         if args.only_best:
-            with catchtime("Find best trajectories for each benchmark"):
-                best_by_benchmark = find_best_algorithms(metadatas, path)
+            if args.keep_all_seeds_of_best:
+                best_algorithms = {
+                    bench: r["algorithm"] for bench, r in best_by_benchmark.items()
+                }
+                new_metadatas = {}
+                for k, v in metadatas.items():
+                    bench = v.get('benchmark', v.get('entrypoint', 'unknown'))
+                    if bench in best_algorithms and v["algorithm"] == best_algorithms[bench]:
+                        new_metadatas[k] = v
+                metadatas = new_metadatas
+            else:
+                best_names = {
+                    r["best_experiment"][0] for r in best_by_benchmark.values()
+                    if r["best_experiment"] is not None
+                }
+                metadatas = {k: v for k, v in metadatas.items() if k in best_names}
 
-                if args.keep_all_seeds_of_best:
-                    best_algorithms = {
-                        bench: r["algorithm"] for bench, r in best_by_benchmark.items()
-                    }
-                    new_metadatas = {}
-                    for k, v in metadatas.items():
-                        bench = v.get('benchmark', v.get('entrypoint', 'unknown'))
-                        if bench in best_algorithms and v["algorithm"] == best_algorithms[bench]:
-                            new_metadatas[k] = v
-                    metadatas = new_metadatas
-                else:
-                    best_names = {
-                        r["best_experiment"][0] for r in best_by_benchmark.values()
-                        if r["best_experiment"] is not None
-                    }
-                    metadatas = {k: v for k, v in metadatas.items() if k in best_names}
+            if args.rename_best:
+                for v in metadatas.values():
+                    v['algorithm'] = 'best'
 
-                if args.rename_best:
-                    for v in metadatas.values():
-                        v['algorithm'] = 'best'
-                        
-                logger.info(f"Filtered down to {len(metadatas)} best experiment metadata entries.")
+            logger.info(f"Filtered down to {len(metadatas)} best experiment metadata entries.")
 
         summary_data = []
         for k, v in metadatas.items():
@@ -566,61 +743,56 @@ if __name__ == "__main__":
         with open(str(output_path / "dataset_summary.json"), "w") as f:
             json.dump(summary_data, f, indent=4)
 
-        with catchtime("Load results dataframes"):
-            # load results in parallel
+        if not args.skip_standard_output:
+            with catchtime("Load results dataframes"):
+                # load results in parallel
 
-            hist_train = list()
-            hist_valid = list()
-            
-            perm_config = {}
-            if args.permutation_config and os.path.exists(args.permutation_config):
-                with open(args.permutation_config, 'r') as f:
-                    perm_config = json.load(f)
+                hist_train = list()
+                hist_valid = list()
 
-            def get_dataset_category(metadata):
-                b_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
-                masked = len(metadata.get('masked_params', [])) > 0
-                
-                if b_name.startswith('fcnet'):
-                    return 'Masked FC-Net' if masked else 'FC-Net'
-                elif b_name.startswith('nas201'):
-                    return 'Masked NAS-Bench-201' if masked else 'NAS-Bench-201'
-                elif b_name.startswith('lcbench'):
-                    return 'LC-Bench'
-                elif b_name.startswith('pd1'):
-                    return 'PD1'
-                elif b_name.startswith('hpob'):
-                    return 'HPO-B'
-                elif b_name.startswith('tabrepo'):
-                    return 'TabRepo'
-                elif b_name.startswith('global-optimization'):
-                    return 'Global Optimization'
-                else:
-                    return 'Unknown'
-            
-            tasks_metadata = []
-            for name, metadata in metadatas.items():
-                benchmark_name = metadata.get('benchmark', '')
-                is_valid = benchmark_name in validation_tasks
-                
-                if perm_config:
-                    category = get_dataset_category(metadata)
-                    num_perm = perm_config.get(category, args.num_permutation)
-                else:
-                    num_perm = args.num_permutation
-                
-                tasks_metadata.append((name, metadata, path, max_num_trials, args.remove_names, num_perm, args.sample_shorter_trajectories, is_valid, true_metric_range_by_benchmark))
-            
-            try:
-                num_cores = len(os.sched_getaffinity(0))
-            except AttributeError:
-                num_cores = multiprocessing.cpu_count()
-                
-            logger.info(f"Loading and processing dataframes using {num_cores} cores for {len(tasks_metadata)} tasks...")
-                
-            with multiprocessing.Pool(processes=num_cores) as pool:
+                perm_config = {}
+                if args.permutation_config and os.path.exists(args.permutation_config):
+                    with open(args.permutation_config, 'r') as f:
+                        perm_config = json.load(f)
+
+                def get_dataset_category(metadata):
+                    b_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+                    masked = len(metadata.get('masked_params', [])) > 0
+
+                    if b_name.startswith('fcnet'):
+                        return 'Masked FC-Net' if masked else 'FC-Net'
+                    elif b_name.startswith('nas201'):
+                        return 'Masked NAS-Bench-201' if masked else 'NAS-Bench-201'
+                    elif b_name.startswith('lcbench'):
+                        return 'LC-Bench'
+                    elif b_name.startswith('pd1'):
+                        return 'PD1'
+                    elif b_name.startswith('hpob'):
+                        return 'HPO-B'
+                    elif b_name.startswith('tabrepo'):
+                        return 'TabRepo'
+                    elif b_name.startswith('global-optimization'):
+                        return 'Global Optimization'
+                    else:
+                        return 'Unknown'
+
+                tasks_metadata = []
+                for name, metadata in metadatas.items():
+                    benchmark_name = metadata.get('benchmark', '')
+                    is_valid = benchmark_name in validation_tasks
+
+                    if perm_config:
+                        category = get_dataset_category(metadata)
+                        num_perm = perm_config.get(category, args.num_permutation)
+                    else:
+                        num_perm = args.num_permutation
+
+                    tasks_metadata.append((name, metadata, path, max_num_trials, args.remove_names, num_perm, args.sample_shorter_trajectories, is_valid, true_metric_range_by_benchmark))
+
+                logger.info(f"Loading and processing dataframes using {num_cores} cores for {len(tasks_metadata)} tasks...")
+
                 for is_valid, histories in tqdm.tqdm(
-                        pool.imap_unordered(process_metadata, tasks_metadata), 
+                        pool.imap_unordered(process_metadata, tasks_metadata),
                         total=len(tasks_metadata),
                         desc="Loading results",
                         mininterval=5.0):
@@ -629,23 +801,25 @@ if __name__ == "__main__":
                     else:
                         hist_train.extend(histories)
 
-            logger.info(f"Data loading complete. Writing outputs to {output_path}...")
-            random.shuffle(hist_train)
-            for split in ['train', 'valid']:
-                file_name = f"{split}.txt"
-                if split == 'train':
-                    hist_split = hist_train
-                else:
-                    hist_split = hist_valid
-                with open(str(output_path / file_name), 'w', encoding='utf-8') as f:
-                    f.write('\n'.join(hist_split))
+                logger.info(f"Data loading complete. Writing outputs to {output_path}...")
+                random.shuffle(hist_train)
+                for split in ['train', 'valid']:
+                    file_name = f"{split}.txt"
+                    if split == 'train':
+                        hist_split = hist_train
+                    else:
+                        hist_split = hist_valid
+                    with open(str(output_path / file_name), 'w', encoding='utf-8') as f:
+                        f.write('\n'.join(hist_split))
 
-            del hist_train, hist_valid
+                del hist_train, hist_valid
+        else:
+            logger.info("--skip_standard_output set: not building train.txt/valid.txt.")
 
         if args.emit_advantage_weighted:
             with catchtime("Compute advantage-weighted training data"):
                 peer_baseline_by_benchmark = compute_peer_baseline_per_benchmark(
-                    all_metadatas_for_advantage, path
+                    all_metadatas_for_advantage, path, num_cores=num_cores, pool=pool
                 )
 
                 adv_tasks = []
@@ -663,18 +837,17 @@ if __name__ == "__main__":
 
                 adv_train = []
                 adv_valid = []
-                with multiprocessing.Pool(processes=num_cores) as pool:
-                    for is_valid, example in tqdm.tqdm(
-                            pool.imap_unordered(process_metadata_with_advantage, adv_tasks),
-                            total=len(adv_tasks),
-                            desc="Computing advantage-weighted examples",
-                            mininterval=5.0):
-                        if example is None:
-                            continue
-                        if is_valid:
-                            adv_valid.append(example)
-                        else:
-                            adv_train.append(example)
+                for is_valid, example in tqdm.tqdm(
+                        pool.imap_unordered(process_metadata_with_advantage, adv_tasks),
+                        total=len(adv_tasks),
+                        desc="Computing advantage-weighted examples",
+                        mininterval=5.0):
+                    if example is None:
+                        continue
+                    if is_valid:
+                        adv_valid.append(example)
+                    else:
+                        adv_train.append(example)
 
                 random.shuffle(adv_train)
                 for split, examples in [('train', adv_train), ('valid', adv_valid)]:
@@ -687,3 +860,6 @@ if __name__ == "__main__":
                     f"Wrote {len(adv_train)} advantage-weighted train examples and "
                     f"{len(adv_valid)} valid examples to {output_path}."
                 )
+
+        pool.close()
+        pool.join()
