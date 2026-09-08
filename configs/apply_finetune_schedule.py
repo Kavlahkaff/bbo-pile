@@ -54,6 +54,17 @@ Usage:
 
 For a single non-swept config, just pass one value each: --epochs-grid 1 --lr-grid 1e-4
 
+By default, the finetune run's own min_lr is derived from the base pretrain
+config as `lr * (base_config.train.min_lr / base_config.optimizer.lr)` --
+i.e. it inherits the base config's min_lr/lr RATIO, not an absolute value.
+For a normally-annealed base config (min_lr << lr) this gives a small ratio
+and the finetune run itself gets a real cosine decay. For a CONSTANT-LR base
+config (train.min_lr == optimizer.lr, e.g. configs/pretrain_constant_lr/*),
+the inherited ratio is 1.0, which makes the generated finetune run flat too
+(no decay) -- silently defeating the point of using finetuning as the
+annealing stage. Pass --min-lr-ratio explicitly to override this when
+finetuning constant-lr checkpoints, e.g. --min-lr-ratio 0.02.
+
 Add --dry-run to preview changes without writing files.
 """
 
@@ -128,6 +139,11 @@ def main():
     ap.add_argument("--num-evals", type=int, default=50, help="eval.interval = ceil(total_steps / this)")
     ap.add_argument("--num-logs", type=int, default=200, help="log_interval = ceil(total_steps / this)")
     ap.add_argument("--warmup-fraction", type=float, default=0.1, help="lr_warmup_steps = int(total_steps * this)")
+    ap.add_argument("--min-lr-ratio", type=float, default=None,
+                     help="override min_lr/lr ratio for ALL configs instead of deriving it per-config from "
+                          "base_config.train.min_lr / base_config.optimizer.lr. Needed for constant-lr base "
+                          "configs (train.min_lr == optimizer.lr), whose inherited ratio is 1.0 and would "
+                          "otherwise produce a flat (non-annealed) finetune schedule.")
     ap.add_argument("--dry-run", action="store_true", help="print planned changes without writing files")
     args = ap.parse_args()
 
@@ -165,12 +181,20 @@ def main():
 
         model_name = derive_model_name(path)
         group_name = derive_group(model_name)
-        orig_min_lr = base_cfg["train"].get("min_lr", None)
-        orig_lr = base_cfg["optimizer"]["init_args"]["lr"]
-        try:
-            min_lr_ratio = float(orig_min_lr) / float(orig_lr) if orig_min_lr is not None else 0.2
-        except (TypeError, ValueError, ZeroDivisionError):
-            min_lr_ratio = 0.2
+        if args.min_lr_ratio is not None:
+            min_lr_ratio = args.min_lr_ratio
+        else:
+            orig_min_lr = base_cfg["train"].get("min_lr", None)
+            orig_lr = base_cfg["optimizer"]["init_args"]["lr"]
+            try:
+                min_lr_ratio = float(orig_min_lr) / float(orig_lr) if orig_min_lr is not None else 0.2
+            except (TypeError, ValueError, ZeroDivisionError):
+                min_lr_ratio = 0.2
+            if min_lr_ratio >= 1.0:
+                print(f"[warn] {path}: base config has min_lr/lr ratio {min_lr_ratio:.3g} (>= 1.0, i.e. no "
+                      f"annealing in the base config -- likely a constant-lr pretrain config). The generated "
+                      f"finetune run will ALSO be flat (no decay) unless you pass --min-lr-ratio explicitly.",
+                      file=sys.stderr)
 
         tokens_per_step = gbs * block_size
         for epochs in args.epochs_grid:

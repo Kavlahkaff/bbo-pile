@@ -11,7 +11,7 @@ from syne_tune.optimizer.schedulers.single_objective_scheduler import (
 )
 
 from open_optformer.optformer_searcher import OptformerScheduler
-# from open_optformer.hebo_searcher import HEBOSearcher
+#from open_optformer.hebo_searcher import HEBOSearcher
 
 
 @dataclass
@@ -46,12 +46,12 @@ class Methods:
     TPE = "TPE"
     REA = "REA"
     CQR = "CQR"
-    # HEBO = "HEBO"
+   # HEBO = "HEBO"
     OPT_RS = "OPT-RS"
     OPT_REA = "OPT-REA"
     OPT_BORE = "OPT-BORE"
     OPT_TPE = "OPT-TPE"
-    # OPT_HEBO = "OPT-HEBO"
+    OPT_HEBO = "OPT-HEBO"
     OPT_CQR = "OPT-CQR"
     OPT_CQR_TS = "OPT-CQR-TS"
     OPT_CQR_TS_5 = "OPT-CQR-TS-5"
@@ -98,18 +98,18 @@ methods = {
         random_seed=method_arguments.random_seed,
         searcher_kwargs={"points_to_evaluate": method_arguments.points_to_evaluate},
     ),
-    # Methods.HEBO: lambda method_arguments: SingleObjectiveScheduler(
-    #     config_space=method_arguments.config_space,
-    #     searcher=HEBOSearcher(
-    #         config_space=method_arguments.config_space,
-    #         do_minimize=method_arguments.mode == "min",
-    #         random_seed=method_arguments.random_seed,
-    #         points_to_evaluate=method_arguments.points_to_evaluate
-    #     ),
-    #     metric=method_arguments.metric,
-    #     do_minimize=method_arguments.mode == "min",
-    #     random_seed=method_arguments.random_seed,
-    # ),
+    #Methods.HEBO: lambda method_arguments: SingleObjectiveScheduler(
+    #    config_space=method_arguments.config_space,
+    #    searcher=HEBOSearcher(
+    #        config_space=method_arguments.config_space,
+    #        do_minimize=method_arguments.mode == "min",
+    #        random_seed=method_arguments.random_seed,
+    #        points_to_evaluate=method_arguments.points_to_evaluate
+    #    ),
+    #    metric=method_arguments.metric,
+    #    do_minimize=method_arguments.mode == "min",
+    #    random_seed=method_arguments.random_seed,
+    #),
     Methods.REA: lambda method_arguments: SingleObjectiveScheduler(
         config_space=method_arguments.config_space,
         searcher="regularized_evolution",
@@ -210,20 +210,24 @@ methods = {
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
         metric_range=method_arguments.metric_range,
     ),
-    # Methods.OPT_HEBO: lambda method_arguments: OptformerScheduler(
-    #     config_space=method_arguments.config_space,
-    #     metric=method_arguments.metric,
-    #     checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
-    #     task_info={
-    #         "name": method_arguments.benchmark_name,
-    #         "algorithm": "HEBO",
-    #         "metric_names": "feval",
-    #     },
-    #     do_minimize=method_arguments.mode == "min",
-    #     random_seed=method_arguments.random_seed,
-    #     points_to_evaluate=method_arguments.points_to_evaluate,
-    #     n_sample_configurations=1,
-    # ),
+    Methods.OPT_HEBO: lambda method_arguments: OptformerScheduler(
+        config_space=method_arguments.config_space,
+        metric=method_arguments.metric,
+        checkpoint_dir=_to_path(method_arguments.checkpoint_dir),
+        task_info={
+            "name": method_arguments.benchmark_name,
+            "algorithm": "HEBO",
+            "metric_names": "feval",
+        },
+        do_minimize=method_arguments.mode == "min",
+        random_seed=method_arguments.random_seed,
+        points_to_evaluate=method_arguments.points_to_evaluate,
+        n_sample_configurations=1,
+        model=method_arguments.model,
+        tokenizer=method_arguments.tokenizer,
+        gpu_memory_utilization=method_arguments.gpu_memory_utilization,
+        metric_range=method_arguments.metric_range,
+    ),
     Methods.OPT_CQR_TS_5: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
         metric=method_arguments.metric,
