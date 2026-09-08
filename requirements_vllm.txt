@@ -113,7 +113,11 @@ lightning==2.6.5
 lightning-utilities==0.15.3
 linear_operator==0.6.1
 litdata==0.2.61
-litgpt==0.5.12
+# litgpt==0.5.12 intentionally NOT pinned here: it requires
+# huggingface-hub<0.35, which conflicts with the huggingface_hub==1.21.0
+# vllm/transformers need. optformer_searcher.py imports litgpt at module
+# level even on the vllm-only (HF checkpoint) path, but never calls into it
+# there, so install it separately with --no-deps -- see RUN_ORDER.md.
 llguidance==1.7.6
 llvmlite==0.47.0
 lm-format-enforcer==0.11.3

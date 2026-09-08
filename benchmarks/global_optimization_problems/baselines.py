@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional, Any, Tuple
 from syne_tune.optimizer.baselines import REA, RandomSearch, CQR, TPE, BORE
 from syne_tune.optimizer.schedulers.single_objective_scheduler import SingleObjectiveScheduler
 #from open_optformer.hebo_searcher import HEBOSearcher
@@ -18,6 +18,12 @@ class MethodArguments:
     model: Optional[Any] = None
     tokenizer: Optional[Any] = None
     gpu_memory_utilization: float = 0.2
+    # Debug-quantization ablation: overrides History's causal/default metric
+    # quantization range with this benchmark's TRUE (y_min, y_max), computed
+    # offline from recorded experiment data -- see
+    # experiments/quantization_debug/compute_validation_true_ranges.sh. None
+    # (default) means "use the causal/default range", same as today.
+    metric_range: Optional[Tuple[float, float]] = None
 
 class Methods:
     BORE = "BORE"
@@ -98,6 +104,7 @@ methods = {
         model=method_arguments.model,
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
+        metric_range=method_arguments.metric_range,
     ),
     Methods.OPT_REA: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -113,6 +120,7 @@ methods = {
         model=method_arguments.model,
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
+        metric_range=method_arguments.metric_range,
     ),
     Methods.OPT_BORE: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -128,6 +136,7 @@ methods = {
         model=method_arguments.model,
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
+        metric_range=method_arguments.metric_range,
     ),
     Methods.OPT_TPE: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -143,6 +152,7 @@ methods = {
         model=method_arguments.model,
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
+        metric_range=method_arguments.metric_range,
     ),
   #  Methods.OPT_HEBO: lambda method_arguments: OptformerScheduler(
   #      config_space=method_arguments.config_space,
@@ -173,6 +183,7 @@ methods = {
         model=method_arguments.model,
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
+        metric_range=method_arguments.metric_range,
     ),
     Methods.OPT_CQR_TS_5: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -188,6 +199,7 @@ methods = {
         model=method_arguments.model,
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
+        metric_range=method_arguments.metric_range,
     ),
     Methods.OPT_BEST: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -205,6 +217,7 @@ methods = {
         model=method_arguments.model,
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
+        metric_range=method_arguments.metric_range,
     ),
 
 }

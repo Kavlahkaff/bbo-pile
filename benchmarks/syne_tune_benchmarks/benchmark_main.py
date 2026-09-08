@@ -29,6 +29,8 @@ def run(
     max_num_evaluations=None,
     n_workers: int = 1,
     gpu_memory_utilization: float = 0.2,
+    metric_range_by_benchmark: dict = None,
+    output_suffix: str = "",
 ):
     logging.getLogger("syne_tune.optimizer.schedulers").setLevel(logging.WARNING)
     logging.getLogger("syne_tune.backend").setLevel(logging.WARNING)
@@ -100,6 +102,16 @@ def run(
             for _ in range(num_random_candidates)
         ]
         
+        metric_range = None
+        if metric_range_by_benchmark and method.upper().startswith("OPT"):
+            metric_range = metric_range_by_benchmark.get(benchmark_name)
+            if metric_range is None:
+                print(f"[WARN] no precomputed metric_range for benchmark={benchmark_name}, "
+                      f"falling back to the causal/default range")
+            else:
+                metric_range = tuple(metric_range)
+                print(f"[INFO] using oracle metric_range={metric_range} for benchmark={benchmark_name}")
+
         scheduler = methods[method](
             MethodArguments(
                 benchmark_name=benchmark.blackbox_name + "_" + benchmark.dataset_name,
@@ -114,6 +126,7 @@ def run(
                 model=optformer_model,
                 tokenizer=optformer_tokenizer,
                 gpu_memory_utilization=gpu_memory_utilization,
+                metric_range=metric_range,
             )
         )
 
@@ -127,10 +140,10 @@ def run(
         if checkpoint_dir:
             ckpt_path = Path(checkpoint_dir).resolve()
             model_name = ckpt_path.name
-            variant_name = ckpt_path.parent.name
+            variant_name = ckpt_path.parent.name + output_suffix
         else:
             model_name = "default_model"
-            variant_name = "default_variant"
+            variant_name = "default_variant" + output_suffix
 
         suffix = f"{method}-{seed}-{benchmark_name}".replace("_", "-")
         tuner_dir = f"/data/horse/ws/luth474h-bbo-pile-experiments/masters-thesis/results/{model_name}/{variant_name}/{suffix}"
@@ -214,7 +227,31 @@ if __name__ == "__main__":
         default=0.2,
         help="GPU memory utilization for vLLM",
     )
+    parser.add_argument(
+        "--metric_range_json",
+        type=str,
+        required=False,
+        default="",
+        help="path to a JSON file mapping benchmark_name -> [y_min, y_max] (see "
+             "experiments/quantization_debug/compute_validation_true_ranges.sh). When set, "
+             "OPT-* methods are quantized against that benchmark's precomputed TRUE metric "
+             "range instead of History's causal/default range (debug-quantization ablation).",
+    )
+    parser.add_argument(
+        "--output_suffix",
+        type=str,
+        required=False,
+        default="",
+        help="suffix appended to the results variant_name directory, so e.g. "
+             "--metric_range_json runs don't clobber normal eval results.",
+    )
     args, _ = parser.parse_known_args()
+
+    metric_range_by_benchmark = None
+    if args.metric_range_json:
+        import json
+        with open(args.metric_range_json) as f:
+            metric_range_by_benchmark = json.load(f)
 
     if args.run_all_seeds:
         seeds = list(range(args.seed + 1))
@@ -235,6 +272,8 @@ if __name__ == "__main__":
         seeds=seeds,
         n_workers=args.n_workers,
         gpu_memory_utilization=args.gpu_utilization,
+        metric_range_by_benchmark=metric_range_by_benchmark,
+        output_suffix=args.output_suffix,
     )
 
     os._exit(0)

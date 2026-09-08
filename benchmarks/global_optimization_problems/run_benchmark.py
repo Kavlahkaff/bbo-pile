@@ -38,7 +38,39 @@ if __name__ == "__main__":
         default=0.2,
         help="GPU memory utilization for vLLM",
     )
+    parser.add_argument(
+        "--metric_range_json",
+        type=str,
+        required=False,
+        default="",
+        help="path to a JSON file mapping benchmark_name -> [y_min, y_max] (see "
+             "experiments/quantization_debug/compute_validation_true_ranges.sh). When set, "
+             "OPT-* methods are quantized against this benchmark's precomputed TRUE metric "
+             "range instead of History's causal/default range (debug-quantization ablation). "
+             "Keys are looked up as 'global-optimization_' + --benchmark.",
+    )
+    parser.add_argument(
+        "--output_suffix",
+        type=str,
+        required=False,
+        default="",
+        help="suffix appended to the results variant_name directory, so e.g. "
+             "--metric_range_json runs don't clobber normal eval results.",
+    )
     args, _ = parser.parse_known_args()
+
+    metric_range = None
+    if args.metric_range_json and args.method.startswith("OPT"):
+        with open(args.metric_range_json) as f:
+            metric_range_by_benchmark = json.load(f)
+        lookup_key = f"global-optimization_{args.benchmark}"
+        metric_range = metric_range_by_benchmark.get(lookup_key)
+        if metric_range is None:
+            print(f"[WARN] no precomputed metric_range for benchmark={lookup_key}, "
+                  f"falling back to the causal/default range")
+        else:
+            metric_range = tuple(metric_range)
+            print(f"[INFO] using oracle metric_range={metric_range} for benchmark={lookup_key}")
 
     if args.run_all_seeds:
         seeds = list(range(args.seed))
@@ -63,10 +95,10 @@ if __name__ == "__main__":
     if args.checkpoint_dir:
         ckpt_path = Path(args.checkpoint_dir).resolve()
         model_name = ckpt_path.name
-        variant_name = ckpt_path.parent.name
+        variant_name = ckpt_path.parent.name + args.output_suffix
     else:
         model_name = "default_model"
-        variant_name = "default_variant"
+        variant_name = "default_variant" + args.output_suffix
 
     base_dir = f"/data/horse/ws/luth474h-bbo-pile-experiments/masters-thesis/results_global/{model_name}/{variant_name}"
     for seed in seeds:
@@ -88,7 +120,8 @@ if __name__ == "__main__":
                 benchmark_name=args.benchmark,
                 model=optformer_model,
                 tokenizer=optformer_tokenizer,
-                gpu_memory_utilization=args.gpu_utilization
+                gpu_memory_utilization=args.gpu_utilization,
+                metric_range=metric_range,
             )
         )
 
