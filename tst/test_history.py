@@ -74,19 +74,42 @@ def test_history():
     assert "{name:z,type:CAT,categories:[0,1,2]}" in prompt
     assert '500,500,<0>*0|599,599,<1>*999|' in prompt
     
+def test_history_original_mode_is_default_and_leaks_future_trials():
+    """metric_quantization_mode defaults to "original" (matches upstream
+    bbo-pile): a later, much-worse trial DOES change the token for an
+    earlier trial, unlike "causal" mode (see test_history_causal)."""
+    config_space = {'x': uniform(0, 1)}
+    assert History(name='t', algorithm='t', config_space=config_space).metric_quantization_mode == "original"
+
+    history_prefix = History(name='t', algorithm='t', config_space=config_space, num_numeric_tokens=1000)
+    history_prefix.add_trial({'x': 0.1}, 0.5)
+    history_prefix.add_trial({'x': 0.2}, 0.6)
+    prefix_prompt = history_prefix.get_prompt()
+
+    history_full = History(name='t', algorithm='t', config_space=config_space, num_numeric_tokens=1000)
+    history_full.add_trial({'x': 0.1}, 0.5)
+    history_full.add_trial({'x': 0.2}, 0.6)
+    history_full.add_trial({'x': 0.3}, 100.0)  # later, much worse trial
+    full_prompt = history_full.get_prompt()
+
+    prefix_history_part = prefix_prompt.split('history:')[1]
+    full_history_part = full_prompt.split('history:')[1]
+    assert not full_history_part.startswith(prefix_history_part)
+
+
 def test_history_causal():
     """Token for trial t must not depend on trials that come after it."""
     config_space = {'x': uniform(0, 1)}
     history_prefix = History(name='t', algorithm='t', config_space=config_space,
-                              num_numeric_tokens=1000, metric_percentile_lo=0.0,
-                              metric_percentile_hi=100.0)
+                              num_numeric_tokens=1000, metric_quantization_mode="causal",
+                              metric_percentile_lo=0.0, metric_percentile_hi=100.0)
     history_prefix.add_trial({'x': 0.1}, 0.5)
     history_prefix.add_trial({'x': 0.2}, 0.6)
     prefix_prompt = history_prefix.get_prompt()
 
     history_full = History(name='t', algorithm='t', config_space=config_space,
-                            num_numeric_tokens=1000, metric_percentile_lo=0.0,
-                            metric_percentile_hi=100.0)
+                            num_numeric_tokens=1000, metric_quantization_mode="causal",
+                            metric_percentile_lo=0.0, metric_percentile_hi=100.0)
     history_full.add_trial({'x': 0.1}, 0.5)
     history_full.add_trial({'x': 0.2}, 0.6)
     history_full.add_trial({'x': 0.3}, 100.0)  # later, much worse trial
@@ -102,8 +125,8 @@ def test_history_causal():
 def test_history_asymmetric_percentile_clip():
     config_space = {'x': uniform(0, 1)}
     history = History(name='t', algorithm='t', config_space=config_space,
-                       num_numeric_tokens=1000, metric_percentile_lo=0.0,
-                       metric_percentile_hi=50.0)
+                       num_numeric_tokens=1000, metric_quantization_mode="causal",
+                       metric_percentile_lo=0.0, metric_percentile_hi=50.0)
     # Bad (high-metric) outlier should saturate to q-1 once it pushes past
     # the hi percentile bound, while earlier good trials keep resolution.
     history.add_trial({'x': 0.1}, 0.1)
@@ -122,8 +145,8 @@ def test_history_good_tail_not_clipped_by_default():
 
     def middle_token(metric_percentile_lo):
         history = History(name='t', algorithm='t', config_space=config_space,
-                           num_numeric_tokens=1000, metric_percentile_hi=100.0,
-                           metric_percentile_lo=metric_percentile_lo)
+                           num_numeric_tokens=1000, metric_quantization_mode="causal",
+                           metric_percentile_hi=100.0, metric_percentile_lo=metric_percentile_lo)
         history.add_trial({'x': 0.1}, -1000.0)  # extreme good outlier, first
         history.add_trial({'x': 0.2}, 0.5)
         history.add_trial({'x': 0.3}, 0.4)  # not the running max/min

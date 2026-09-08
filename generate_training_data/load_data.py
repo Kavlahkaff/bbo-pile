@@ -58,6 +58,7 @@ def create_history_from_results(name, metadata, path: Path,
                                 remove_names: bool = False,
                                 n_permutation: int = 0,
                                 include_original: bool = True,
+                                metric_quantization_mode: str = "original",
                                 metric_range_override: tuple = None) -> list[str]:
     config_space = get_config_space_from_metadata(metadata)
     metric_name = metadata["metric_names"][0]
@@ -75,6 +76,7 @@ def create_history_from_results(name, metadata, path: Path,
                                              num_numeric_tokens=num_numeric_tokens,
                                              remove_names=remove_names,
                                              max_num_trials=max_num_trials,
+                                             metric_quantization_mode=metric_quantization_mode,
                                              metric_range_override=metric_range_override)
     traj = list()
     if include_original:

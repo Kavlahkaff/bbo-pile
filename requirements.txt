@@ -1,11 +1,12 @@
   numpy>=2.0
   coolname
   pandas
-  huggingface-hub
+  huggingface-hub<1.4,>=0.30
   scikit-learn
   dill
   litgpt>=0.5.12
   litdata
+  transformers<5
 #  syne-tune[extra]
   pyparfor
   sentencepiece

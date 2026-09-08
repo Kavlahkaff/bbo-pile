@@ -449,7 +449,8 @@ def process_metadata_with_advantage(args_tuple):
     peer baseline. Additive/parallel to `process_metadata` above -- does not
     call or modify it.
     """
-    name, metadata, path, peer_baseline_by_benchmark, temperature, is_valid, metric_range_by_benchmark = args_tuple
+    (name, metadata, path, peer_baseline_by_benchmark, temperature, is_valid,
+     metric_range_by_benchmark, metric_quantization_mode) = args_tuple
     from load_data import load_result, get_config_space_from_metadata
     from open_optformer.history import History
     from syne_tune.experiments import ExperimentResult
@@ -470,6 +471,7 @@ def process_metadata_with_advantage(args_tuple):
         )
         hist = History.from_syne_tune_experiment(
             ExperimentResult(name=name, metadata=metadata, results=res, path=path, tuner=None),
+            metric_quantization_mode=metric_quantization_mode,
             metric_range_override=metric_range_override,
         )
         advantages = advantages[:len(hist.trials)]
@@ -490,7 +492,8 @@ def process_metadata_with_advantage(args_tuple):
 
 def process_metadata(args_tuple):
     (name, metadata, path, max_num_trials, remove_names, num_permutation,
-     sample_shorter_trajectories, is_valid, metric_range_by_benchmark) = args_tuple
+     sample_shorter_trajectories, is_valid, metric_range_by_benchmark,
+     metric_quantization_mode) = args_tuple
     from load_data import create_history_from_results
     histories = []
 
@@ -503,12 +506,14 @@ def process_metadata(args_tuple):
         histories.extend(create_history_from_results(name, metadata, path, max_num_trials,
                                                      remove_names=remove_names,
                                                      n_permutation=num_permutation,
+                                                     metric_quantization_mode=metric_quantization_mode,
                                                      metric_range_override=metric_range_override))
         if not is_valid and sample_shorter_trajectories:
             for mt in [1, 5, 10, 20]:
                 histories.extend(create_history_from_results(name, metadata, path,
                                                              mt,
                                                              remove_names=remove_names,
+                                                             metric_quantization_mode=metric_quantization_mode,
                                                              metric_range_override=metric_range_override,
                                                              n_permutation=0))
     except Exception as e:
@@ -605,14 +610,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--metric_range_mode",
         type=str,
-        choices=["causal", "true"],
-        default="causal",
-        help="Debug/ablation knob for History's metric quantization range. 'causal' (default) computes "
-             "each trial's range only from trials observed up to that point (matches inference-time "
-             "availability). 'true' instead quantizes every trial in a benchmark against that "
-             "benchmark's TRUE (min, max) metric value observed across ALL recorded experiments -- an "
-             "oracle range unavailable at real inference time, useful for testing whether a gap to "
-             "baselines is a quantization artifact rather than a model-capability issue.",
+        choices=["original", "causal", "true"],
+        default="original",
+        help="Selects History's metric quantization range. 'original' (default) matches the upstream "
+             "bbo-pile repo: a single global (y_min, y_max) per benchmark experiment, computed from all "
+             "of its trials, no percentile clipping -- this is what makes baseline pretraining data "
+             "identical to the original repo's. 'causal' is the opt-in quantization-causal-robust fix: "
+             "each trial's range is computed only from trials observed up to that point (matches "
+             "inference-time availability), with the bad tail percentile-clipped. 'true' instead "
+             "quantizes every trial in a benchmark against that benchmark's TRUE (min, max) metric value "
+             "observed across ALL recorded experiments -- an oracle range unavailable at real inference "
+             "time, useful for testing whether a gap to baselines is a quantization artifact rather than "
+             "a model-capability issue.",
     )
     parser.add_argument(
         "--skip_standard_output",
@@ -683,6 +692,13 @@ if __name__ == "__main__":
         # changes how the same imap_unordered tasks get scheduled, not what
         # they compute.
         pool = multiprocessing.Pool(processes=num_cores)
+
+        # "true" mode overrides the range per-benchmark via
+        # true_metric_range_by_benchmark below (History.metric_range_override
+        # always wins over metric_quantization_mode); for any benchmark not
+        # covered by that override, fall back to "original" (upstream-
+        # matching) rather than silently opting into the causal fix.
+        metric_quantization_mode = "causal" if args.metric_range_mode == "causal" else "original"
 
         true_metric_range_by_benchmark = None
         best_by_benchmark = None
@@ -787,7 +803,7 @@ if __name__ == "__main__":
                     else:
                         num_perm = args.num_permutation
 
-                    tasks_metadata.append((name, metadata, path, max_num_trials, args.remove_names, num_perm, args.sample_shorter_trajectories, is_valid, true_metric_range_by_benchmark))
+                    tasks_metadata.append((name, metadata, path, max_num_trials, args.remove_names, num_perm, args.sample_shorter_trajectories, is_valid, true_metric_range_by_benchmark, metric_quantization_mode))
 
                 logger.info(f"Loading and processing dataframes using {num_cores} cores for {len(tasks_metadata)} tasks...")
 
@@ -828,7 +844,7 @@ if __name__ == "__main__":
                     is_valid = benchmark_name in validation_tasks
                     adv_tasks.append(
                         (name, metadata, path, peer_baseline_by_benchmark, args.advantage_temperature, is_valid,
-                         true_metric_range_by_benchmark)
+                         true_metric_range_by_benchmark, metric_quantization_mode)
                     )
 
                 logger.info(

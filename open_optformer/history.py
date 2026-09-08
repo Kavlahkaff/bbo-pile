@@ -86,20 +86,35 @@ class History:
     metric_names: list = field(default_factory=list)
     trials: list = field(default_factory=list)
     remove_names: bool = False
+    # Selects how the (y_min, y_max) metric quantization range is computed
+    # per History (ignored when `metric_range_override` is set -- that
+    # always wins). "original" (default) matches the upstream bbo-pile
+    # repo: a single GLOBAL range spanning every trial in this History
+    # (including ones after the trial being quantized), no percentile
+    # clipping. "causal" is the opt-in quantization-causal-robust fix: the
+    # range for trial t is computed only from trials observed up to and
+    # including t (never from later trials, matching what is available at
+    # inference time), with the bad tail percentile-clipped by
+    # `metric_percentile_hi`/`metric_percentile_lo` below to stop a single
+    # diverged trial from consuming the token resolution. See
+    # _metric_ranges().
+    metric_quantization_mode: str = "original"
     # Percentile (0-100) used to clip the "bad" tail of observed metrics
     # (metrics are already normalized so that lower == better, see
-    # from_syne_tune_experiment). Defaults to 95 to protect against
-    # divergent/outlier trials (e.g. fcnet) stealing quantization resolution.
+    # from_syne_tune_experiment). Only used when metric_quantization_mode ==
+    # "causal". Defaults to 95 to protect against divergent/outlier trials
+    # (e.g. fcnet) stealing quantization resolution.
     metric_percentile_hi: float = 95.0
-    # Percentile used to clip the "good" tail. Defaults to 0 (true min, no
+    # Percentile used to clip the "good" tail. Only used when
+    # metric_quantization_mode == "causal". Defaults to 0 (true min, no
     # clipping) since resolution among the best trials matters most for search.
     metric_percentile_lo: float = 0.0
     # Debug/ablation knob: when set to (y_min, y_max), every trial is
-    # quantized against this FIXED range instead of the causal per-trial
-    # percentile range above -- e.g. the task's true (oracle) metric range,
-    # to test whether quantization mismatch (not model capability) explains
-    # a gap to baselines. None (default) preserves the causal-robust
-    # behavior. See _causal_metric_ranges().
+    # quantized against this FIXED range instead of metric_quantization_mode
+    # above -- e.g. the task's true (oracle) metric range, to test whether
+    # quantization mismatch (not model capability) explains a gap to
+    # baselines. None (default) leaves metric_quantization_mode in effect.
+    # See _metric_ranges().
     metric_range_override: tuple = None
     # Quantize the metric on a signed-log scale (see `symlog`) instead of
     # linearly. Off by default -- a metric already bounded on a fixed,
@@ -194,16 +209,23 @@ class History:
         string += f"|"
         return string
 
-    def _causal_metric_ranges(self):
+    def _metric_ranges(self):
         """For each trial t (in order), the (y_min, y_max) quantization range
         to use. If `metric_range_override` is set, every trial uses that
         fixed range (a debug/ablation mode -- see its docstring). Otherwise,
-        the range is computed only from trials observed up to and including
-        t (never from later trials), matching what is available at inference
-        time. The upper (worse) tail is percentile-clipped by default to
-        stop a single diverged trial from consuming the token resolution;
-        the lower (better) tail is left uncapped by default since resolution
-        among the best trials matters most for search.
+        dispatches on `metric_quantization_mode`:
+
+        - "original" (default, matches upstream bbo-pile): a single GLOBAL
+          range spanning every trial in this History -- computed once from
+          the full trial list, so later trials influence the range used for
+          earlier ones. No percentile clipping.
+        - "causal": the opt-in quantization-causal-robust fix. The range for
+          trial t is computed only from trials observed up to and including
+          t (never from later trials, matching what is available at
+          inference time). The upper (worse) tail is percentile-clipped by
+          default to stop a single diverged trial from consuming the token
+          resolution; the lower (better) tail is left uncapped by default
+          since resolution among the best trials matters most for search.
 
         If `metric_log_scale` is set, ranges are computed on the symlog'd
         metric (see `symlog`) -- `_build_trial_span` symlogs each trial's
@@ -218,6 +240,20 @@ class History:
             if y_min == y_max:
                 y_max += 1  # Avoid division by zero in quantization
             return [(y_min, y_max)] * len(self.trials)
+
+        if self.metric_quantization_mode == "original":
+            observed_metrics = [transform(trial.metric) for trial in self.trials]
+            y_min = min(observed_metrics)
+            y_max = max(observed_metrics)
+            if y_min == y_max:
+                y_max += 1  # Avoid division by zero in quantization
+            return [(y_min, y_max)] * len(self.trials)
+
+        if self.metric_quantization_mode != "causal":
+            raise ValueError(
+                f"Unsupported metric_quantization_mode: {self.metric_quantization_mode!r} "
+                "(expected 'original' or 'causal')"
+            )
 
         observed_metrics = []
         ranges = []
@@ -235,7 +271,7 @@ class History:
         string = self._build_header(hypers)
 
         if len(self.trials) > 0:
-            for trial, (y_min, y_max) in zip(self.trials, self._causal_metric_ranges()):
+            for trial, (y_min, y_max) in zip(self.trials, self._metric_ranges()):
                 string += self._build_trial_span(trial, hypers, y_min, y_max)
         return string
 
@@ -252,7 +288,7 @@ class History:
         segments = [(header, base_weight)]
 
         if len(self.trials) > 0:
-            for i, (trial, (y_min, y_max)) in enumerate(zip(self.trials, self._causal_metric_ranges())):
+            for i, (trial, (y_min, y_max)) in enumerate(zip(self.trials, self._metric_ranges())):
                 span = self._build_trial_span(trial, hypers, y_min, y_max)
                 if advantages is not None and i < len(advantages):
                     weight = advantages[i]
@@ -270,14 +306,20 @@ class History:
                                   num_numeric_tokens: int = 1000,
                                   remove_names: bool = False,
                                   max_num_trials: int = None,
+                                  metric_quantization_mode: str = "original",
                                   metric_range_override: tuple = None,
                                   metric_log_scale: bool = False):
         """
         Create a History object from a Syne Tune ExperimentResult.
 
+        `metric_quantization_mode`: see `History.metric_quantization_mode` --
+        "original" (default) matches upstream bbo-pile's global-range
+        quantization; "causal" opts into the quantization-causal-robust fix.
+
         `metric_range_override`: see `History.metric_range_override` --
         pass a benchmark's true (y_min, y_max) here to build a History that
-        quantizes against that fixed range instead of the causal default.
+        quantizes against that fixed range instead of
+        `metric_quantization_mode`.
 
         `metric_log_scale`: see `History.metric_log_scale` -- set for
         benchmark families whose metric varies over orders of magnitude
@@ -296,6 +338,7 @@ class History:
                         metric_names=metric_name,
                    num_numeric_tokens=num_numeric_tokens,
                    remove_names=remove_names,
+                   metric_quantization_mode=metric_quantization_mode,
                    metric_range_override=metric_range_override,
                    metric_log_scale=metric_log_scale)
 
