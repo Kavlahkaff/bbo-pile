@@ -162,6 +162,73 @@ def test_history_good_tail_not_clipped_by_default():
     assert default_token > clipped_token
 
 
+def _y_tokens(history):
+    prompt = history.get_prompt()
+    return [int(span.split('*')[1]) for span in prompt.split('history:')[1].split('|') if span]
+
+
+def _quantile_history(metrics, **kwargs):
+    history = History(name='t', algorithm='t', config_space={'x': uniform(0, 1)},
+                      num_numeric_tokens=1000, metric_quantization_mode="quantile", **kwargs)
+    for i, m in enumerate(metrics):
+        history.add_trial({'x': i / max(1, len(metrics))}, m)
+    return history
+
+
+def test_history_quantile_rank_tokens():
+    """Rank tokens: best -> 0, worst -> 999, ties share their average rank,
+    and the magnitude of an outlier does not compress the other tokens."""
+    assert _y_tokens(_quantile_history([0.5])) == [0]
+    assert _y_tokens(_quantile_history([0.6, 0.5])) == [999, 0]
+    # ranks 0..4, the two 0.3s share average rank 2.5 -> round(2.5/4*999)
+    assert _y_tokens(_quantile_history([0.3, 0.1, 0.3, 1e9, 0.2])) == [624, 0, 624, 999, 250]
+    # scale-invariant: same ranks -> same tokens
+    assert _y_tokens(_quantile_history([3.0, 1.0, 3.0, 1e12, 2.0])) == [624, 0, 624, 999, 250]
+    # mixed numpy/python dtypes still tie exactly
+    import numpy as np
+    assert _y_tokens(_quantile_history([np.float64(0.3), 0.3, np.int64(1)])) == [250, 250, 999]
+
+
+def test_history_quantile_prefix_reranks_within_prefix():
+    """Like "original", quantile ranks against every trial in the History,
+    so a truncated prefix History re-ranks among only its own trials."""
+    prefix = _y_tokens(_quantile_history([0.5, 0.6]))
+    full = _y_tokens(_quantile_history([0.5, 0.6, 100.0]))
+    assert prefix == [0, 999]
+    assert full == [0, 500, 999]
+
+
+def test_history_quantile_rejects_range_override():
+    import pytest
+    with pytest.raises(ValueError):
+        _quantile_history([0.5, 0.6], metric_range_override=(0.0, 1.0)).get_prompt()
+
+
+def test_history_quantile_rejects_nan():
+    import pytest
+    with pytest.raises(ValueError):
+        _quantile_history([0.5, float('nan')]).get_prompt()
+
+
+def test_history_range_modes_unchanged_by_token_refactor():
+    """Pin the exact prompt of the range-based modes so the shared
+    _build_trial_span/_metric_tokens path stays byte-identical for the
+    baseline datasets."""
+    config_space = {'x': uniform(0, 1)}
+    metrics = [0.5, 0.2, 100.0, 0.3]
+    expected = {
+        "original": [3, 0, 999, 1],
+        "causal": [0, 0, 999, 1],
+    }
+    for mode, tokens in expected.items():
+        history = History(name='t', algorithm='t', config_space=config_space,
+                          num_numeric_tokens=1000, metric_quantization_mode=mode,
+                          metric_percentile_lo=0.0, metric_percentile_hi=100.0)
+        for i, m in enumerate(metrics):
+            history.add_trial({'x': i / 4}, m)
+        assert _y_tokens(history) == tokens, mode
+
+
 def test_trial():
     trial = Trial(config={'x': 0.5}, metric=0.5)
     assert trial.config == {'x': 0.5}

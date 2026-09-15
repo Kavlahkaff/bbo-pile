@@ -43,11 +43,35 @@ if __name__ == "__main__":
         type=str,
         required=False,
         default="",
-        help="path to a JSON file mapping benchmark_name -> [y_min, y_max] (see "
+        help="path to a JSON file mapping benchmark_name -> {algorithm: [y_min, y_max]} (see "
              "experiments/quantization_debug/compute_validation_true_ranges.sh). When set, "
-             "OPT-* methods are quantized against this benchmark's precomputed TRUE metric "
-             "range instead of History's causal/default range (debug-quantization ablation). "
-             "Keys are looked up as 'global-optimization_' + --benchmark.",
+             "OPT-* methods are quantized against this benchmark+algorithm's precomputed TRUE "
+             "metric range instead of History's causal/default range (debug-quantization "
+             "ablation). Keys are looked up as 'global-optimization_' + --benchmark. The "
+             "algorithm key defaults to whatever follows 'OPT-' in --method (e.g. 'OPT-CQR' -> "
+             "'CQR'); override with --metric_range_algorithm for methods like 'OPT-best' that "
+             "don't name a real algorithm.",
+    )
+    parser.add_argument(
+        "--metric_range_algorithm",
+        type=str,
+        required=False,
+        default=None,
+        help="algorithm key to look up in --metric_range_json, overriding the default derived "
+             "from --method. Needed for 'OPT-best' (finetuned-on-best checkpoints) -- pass "
+             "whichever real algorithm was actually best for this benchmark (e.g. from "
+             "BEST_BASELINES_JSON), since 'best' is a synthetic imitation token, not a key in "
+             "the (benchmark, algorithm)-keyed true-range JSON.",
+    )
+    parser.add_argument(
+        "--metric_quantization_mode",
+        type=str,
+        choices=["original", "causal", "quantile"],
+        default="original",
+        help="History.metric_quantization_mode used to build the OPT-* prompt at inference. Must "
+             "match the mode the checkpoint's training data was compiled with (compile_data.py "
+             "--metric_range_mode): 'quantile' for experiments/quantile_norm checkpoints. Cannot "
+             "be combined with --metric_range_json when set to 'quantile'.",
     )
     parser.add_argument(
         "--output_suffix",
@@ -55,7 +79,7 @@ if __name__ == "__main__":
         required=False,
         default="",
         help="suffix appended to the results variant_name directory, so e.g. "
-             "--metric_range_json runs don't clobber normal eval results.",
+             "--metric_range_json or --metric_quantization_mode runs don't clobber normal eval results.",
     )
     args, _ = parser.parse_known_args()
 
@@ -64,13 +88,21 @@ if __name__ == "__main__":
         with open(args.metric_range_json) as f:
             metric_range_by_benchmark = json.load(f)
         lookup_key = f"global-optimization_{args.benchmark}"
-        metric_range = metric_range_by_benchmark.get(lookup_key)
+        # true-range JSON is keyed per (benchmark, algorithm) -- see
+        # compile_data.py's compute_true_metric_range_per_benchmark
+        # docstring for why (an earlier per-benchmark-only version, pooling
+        # every optimizer's trials together, correlated with the
+        # true-range-pretrained checkpoint overfitting).
+        algorithm_key = args.metric_range_algorithm or args.method.split("-", 1)[-1]
+        benchmark_ranges = metric_range_by_benchmark.get(lookup_key, {})
+        metric_range = benchmark_ranges.get(algorithm_key)
         if metric_range is None:
-            print(f"[WARN] no precomputed metric_range for benchmark={lookup_key}, "
-                  f"falling back to the causal/default range")
+            print(f"[WARN] no precomputed metric_range for benchmark={lookup_key} "
+                  f"algorithm={algorithm_key}, falling back to the causal/default range")
         else:
             metric_range = tuple(metric_range)
-            print(f"[INFO] using oracle metric_range={metric_range} for benchmark={lookup_key}")
+            print(f"[INFO] using oracle metric_range={metric_range} for benchmark={lookup_key} "
+                  f"algorithm={algorithm_key}")
 
     if args.run_all_seeds:
         seeds = list(range(args.seed))
@@ -122,6 +154,7 @@ if __name__ == "__main__":
                 tokenizer=optformer_tokenizer,
                 gpu_memory_utilization=args.gpu_utilization,
                 metric_range=metric_range,
+                metric_quantization_mode=args.metric_quantization_mode,
             )
         )
 

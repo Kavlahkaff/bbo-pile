@@ -37,6 +37,11 @@ class MethodArguments:
     # experiments/quantization_debug/compute_validation_true_ranges.sh. None
     # (default) means "use the causal/default range", same as today.
     metric_range: Optional[Tuple[float, float]] = None
+    # History.metric_quantization_mode for OPT-* methods: must match the mode
+    # the checkpoint's training data was compiled with (compile_data.py
+    # --metric_range_mode), e.g. "quantile" for experiments/quantile_norm.
+    # Ignored when metric_range is set ("quantile" rejects that combination).
+    metric_quantization_mode: str = "original"
 
 
 class Methods:
@@ -138,6 +143,7 @@ methods = {
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
         metric_range=method_arguments.metric_range,
+        metric_quantization_mode=method_arguments.metric_quantization_mode,
     ),
     Methods.OPT_REA: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -155,6 +161,7 @@ methods = {
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
         metric_range=method_arguments.metric_range,
+        metric_quantization_mode=method_arguments.metric_quantization_mode,
     ),
     Methods.OPT_CQR: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -173,6 +180,7 @@ methods = {
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
         metric_range=method_arguments.metric_range,
+        metric_quantization_mode=method_arguments.metric_quantization_mode,
     ),
     Methods.OPT_BORE: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -191,6 +199,7 @@ methods = {
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
         metric_range=method_arguments.metric_range,
+        metric_quantization_mode=method_arguments.metric_quantization_mode,
     ),
     Methods.OPT_TPE: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -209,6 +218,7 @@ methods = {
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
         metric_range=method_arguments.metric_range,
+        metric_quantization_mode=method_arguments.metric_quantization_mode,
     ),
     Methods.OPT_HEBO: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -227,6 +237,7 @@ methods = {
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
         metric_range=method_arguments.metric_range,
+        metric_quantization_mode=method_arguments.metric_quantization_mode,
     ),
     Methods.OPT_CQR_TS_5: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -245,6 +256,7 @@ methods = {
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
         metric_range=method_arguments.metric_range,
+        metric_quantization_mode=method_arguments.metric_quantization_mode,
     ),
     Methods.OPT_CQR_TS: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -263,6 +275,7 @@ methods = {
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
         metric_range=method_arguments.metric_range,
+        metric_quantization_mode=method_arguments.metric_quantization_mode,
     ),
     Methods.OPT_BEST: lambda method_arguments: OptformerScheduler(
         config_space=method_arguments.config_space,
@@ -281,6 +294,7 @@ methods = {
         tokenizer=method_arguments.tokenizer,
         gpu_memory_utilization=method_arguments.gpu_memory_utilization,
         metric_range=method_arguments.metric_range,
+        metric_quantization_mode=method_arguments.metric_quantization_mode,
     ),
 }
 

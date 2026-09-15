@@ -177,6 +177,7 @@ class OptformerScheduler(SingleObjectiveScheduler):
         model=None,
         tokenizer=None,
         metric_range: Optional[Tuple[float, float]] = None,
+        metric_quantization_mode: str = "original",
     ):
         super(OptformerScheduler, self).__init__(
             config_space=config_space,
@@ -194,6 +195,7 @@ class OptformerScheduler(SingleObjectiveScheduler):
                 model=model,
                 tokenizer=tokenizer,
                 metric_range=metric_range,
+                metric_quantization_mode=metric_quantization_mode,
             ),
             random_seed=random_seed,
         )
@@ -217,6 +219,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         model=None,
         tokenizer=None,
         metric_range: Optional[Tuple[float, float]] = None,
+        metric_quantization_mode: str = "original",
     ):
         super().__init__(config_space, points_to_evaluate, random_seed)
         if random_seed is not None:
@@ -291,6 +294,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
             num_numeric_tokens=self.num_numeric_tokens,
             remove_names=remove_names,
             metric_range_override=metric_range,
+            metric_quantization_mode=metric_quantization_mode,
         )
 
         self.hp_cont_names = [

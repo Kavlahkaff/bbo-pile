@@ -20,6 +20,8 @@ from baselines import (
     methods,
 )
 
+DEFAULT_RESULTS_ROOT = "/data/horse/ws/luth474h-bbo-pile-experiments/masters-thesis/results"
+
 
 def run(
     method_names,
@@ -30,7 +32,10 @@ def run(
     n_workers: int = 1,
     gpu_memory_utilization: float = 0.2,
     metric_range_by_benchmark: dict = None,
+    metric_range_algorithm: str = None,
+    metric_quantization_mode: str = "original",
     output_suffix: str = "",
+    results_root: str = DEFAULT_RESULTS_ROOT,
 ):
     logging.getLogger("syne_tune.optimizer.schedulers").setLevel(logging.WARNING)
     logging.getLogger("syne_tune.backend").setLevel(logging.WARNING)
@@ -104,13 +109,30 @@ def run(
         
         metric_range = None
         if metric_range_by_benchmark and method.upper().startswith("OPT"):
-            metric_range = metric_range_by_benchmark.get(benchmark_name)
+            # validation_true_ranges.json is keyed per (benchmark, algorithm)
+            # -- see compute_validation_true_ranges.py/compile_data.py's
+            # compute_true_metric_range_per_benchmark docstring for why (an
+            # earlier per-benchmark-only version, pooling every optimizer's
+            # trials together, correlated with the true-range-pretrained
+            # checkpoint overfitting). `metric_range_algorithm` lets the
+            # caller name that algorithm explicitly -- needed for
+            # method="OPT-best" (finetuned-on-best checkpoints imitate the
+            # synthetic "best" token, not a real optimizer, so the range must
+            # come from whichever real algorithm was actually best for this
+            # benchmark, e.g. via BEST_BASELINES_JSON -- see
+            # eval_all_oracle_range.sh). Defaults to stripping the "OPT-"
+            # prefix off `method`, which is correct for the OPT-<algorithm>
+            # imitation jobs (pretrained checkpoints).
+            algorithm_key = metric_range_algorithm or method.split("-", 1)[-1]
+            benchmark_ranges = metric_range_by_benchmark.get(benchmark_name, {})
+            metric_range = benchmark_ranges.get(algorithm_key)
             if metric_range is None:
-                print(f"[WARN] no precomputed metric_range for benchmark={benchmark_name}, "
-                      f"falling back to the causal/default range")
+                print(f"[WARN] no precomputed metric_range for benchmark={benchmark_name} "
+                      f"algorithm={algorithm_key}, falling back to the causal/default range")
             else:
                 metric_range = tuple(metric_range)
-                print(f"[INFO] using oracle metric_range={metric_range} for benchmark={benchmark_name}")
+                print(f"[INFO] using oracle metric_range={metric_range} for benchmark={benchmark_name} "
+                      f"algorithm={algorithm_key}")
 
         scheduler = methods[method](
             MethodArguments(
@@ -127,6 +149,7 @@ def run(
                 tokenizer=optformer_tokenizer,
                 gpu_memory_utilization=gpu_memory_utilization,
                 metric_range=metric_range,
+                metric_quantization_mode=metric_quantization_mode,
             )
         )
 
@@ -146,7 +169,7 @@ def run(
             variant_name = "default_variant" + output_suffix
 
         suffix = f"{method}-{seed}-{benchmark_name}".replace("_", "-")
-        tuner_dir = f"/data/horse/ws/luth474h-bbo-pile-experiments/masters-thesis/results/{model_name}/{variant_name}/{suffix}"
+        tuner_dir = f"{results_root}/{model_name}/{variant_name}/{suffix}"
 
         tuner = Tuner(
             trial_backend=backend,
@@ -232,10 +255,42 @@ if __name__ == "__main__":
         type=str,
         required=False,
         default="",
-        help="path to a JSON file mapping benchmark_name -> [y_min, y_max] (see "
+        help="path to a JSON file mapping benchmark_name -> {algorithm: [y_min, y_max]} (see "
              "experiments/quantization_debug/compute_validation_true_ranges.sh). When set, "
-             "OPT-* methods are quantized against that benchmark's precomputed TRUE metric "
-             "range instead of History's causal/default range (debug-quantization ablation).",
+             "OPT-* methods are quantized against that benchmark+algorithm's precomputed TRUE "
+             "metric range instead of History's causal/default range (debug-quantization "
+             "ablation). The algorithm key defaults to whatever follows 'OPT-' in --method (e.g. "
+             "'OPT-CQR' -> 'CQR'); override with --metric_range_algorithm for methods like "
+             "'OPT-best' that don't name a real algorithm.",
+    )
+    parser.add_argument(
+        "--metric_range_algorithm",
+        type=str,
+        required=False,
+        default=None,
+        help="algorithm key to look up in --metric_range_json, overriding the default derived "
+             "from --method. Needed for 'OPT-best' (finetuned-on-best checkpoints) -- pass "
+             "whichever real algorithm was actually best for this benchmark (e.g. from "
+             "BEST_BASELINES_JSON), since 'best' is a synthetic imitation token, not a key in "
+             "the (benchmark, algorithm)-keyed true-range JSON.",
+    )
+    parser.add_argument(
+        "--metric_quantization_mode",
+        type=str,
+        choices=["original", "causal", "quantile"],
+        default="original",
+        help="History.metric_quantization_mode used to build the OPT-* prompt at inference. Must "
+             "match the mode the checkpoint's training data was compiled with (compile_data.py "
+             "--metric_range_mode): 'quantile' for experiments/quantile_norm checkpoints (rank "
+             "tokens, no range), 'original' (default) for every other checkpoint. Cannot be "
+             "combined with --metric_range_json when set to 'quantile'.",
+    )
+    parser.add_argument(
+        "--results_root",
+        type=str,
+        default=DEFAULT_RESULTS_ROOT,
+        help="root directory for tuner results, laid out as "
+             "<results_root>/<model_name>/<variant_name><output_suffix>/<method>-<seed>-<benchmark>",
     )
     parser.add_argument(
         "--output_suffix",
@@ -243,7 +298,7 @@ if __name__ == "__main__":
         required=False,
         default="",
         help="suffix appended to the results variant_name directory, so e.g. "
-             "--metric_range_json runs don't clobber normal eval results.",
+             "--metric_range_json or --metric_quantization_mode runs don't clobber normal eval results.",
     )
     args, _ = parser.parse_known_args()
 
@@ -273,7 +328,10 @@ if __name__ == "__main__":
         n_workers=args.n_workers,
         gpu_memory_utilization=args.gpu_utilization,
         metric_range_by_benchmark=metric_range_by_benchmark,
+        metric_range_algorithm=args.metric_range_algorithm,
+        metric_quantization_mode=args.metric_quantization_mode,
         output_suffix=args.output_suffix,
+        results_root=args.results_root,
     )
 
     os._exit(0)

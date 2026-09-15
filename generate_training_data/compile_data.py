@@ -212,12 +212,18 @@ def compute_trial_metric_values(args_tuple):
     tail's true max). Same min-convention/per-trial ordering as
     `compute_trial_running_best`. Debug/ablation-only: feeds
     `compute_true_metric_range_per_benchmark`, used by `--metric_range_mode
-    true` to quantize training data against each benchmark's real observed
-    range instead of the causal default (see History.metric_range_override).
+    true` to quantize training data against each (benchmark, algorithm)
+    pair's real observed range instead of the causal default (see
+    History.metric_range_override).
+
+    Returns the experiment's `algorithm` alongside its benchmark name --
+    see `compute_true_metric_range_per_benchmark`'s docstring for why the
+    range is pooled per (benchmark, algorithm), not per benchmark alone.
     """
     name, metadata, path = args_tuple
     from load_data import load_result, get_config_space_from_metadata
     benchmark_name = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+    algorithm = metadata.get('original_algorithm', metadata.get('algorithm'))
     metric_name = metadata["metric_names"][0]
     metric_mode = metadata.get('metric_mode', 'min')
 
@@ -228,7 +234,7 @@ def compute_trial_metric_values(args_tuple):
         res = None
 
     if res is None or metric_name not in res.columns:
-        return benchmark_name, None
+        return benchmark_name, algorithm, None
 
     per_trial_vals = []
     for _, trial in res.groupby('trial_id'):
@@ -239,22 +245,40 @@ def compute_trial_metric_values(args_tuple):
         per_trial_vals.append(float(val))
 
     if len(per_trial_vals) == 0:
-        return benchmark_name, None
+        return benchmark_name, algorithm, None
 
-    return benchmark_name, per_trial_vals
+    return benchmark_name, algorithm, per_trial_vals
 
 
 def compute_true_metric_range_per_benchmark(metadatas: dict, path: Path, num_cores: int = None,
                                              percentile_lo: float = 0.0, percentile_hi: float = 95.0,
                                              pool=None) -> dict:
-    """For each benchmark, the TRUE (oracle) (min, max) metric quantization
-    range, percentile-clipped (same (0, 95) defaults as
+    """For each (benchmark, algorithm) pair, the TRUE (oracle) (min, max)
+    metric quantization range, percentile-clipped (same (0, 95) defaults as
     `History.metric_percentile_lo/_hi`'s causal range) over the RAW per-trial
-    metric values pooled across ALL optimizers/seeds/experiments recorded for
-    that benchmark in `metadatas` -- as opposed to the causal per-trial range
-    `History` uses by default. Debug/ablation only (`--metric_range_mode
-    true`): lets you test whether a gap to baselines is a quantization
-    artifact rather than a model-capability issue.
+    metric values pooled across that algorithm's own ~30 seeds/experiments
+    recorded for that benchmark in `metadatas` -- as opposed to the causal
+    per-trial range `History` uses by default. Debug/ablation only
+    (`--metric_range_mode true`): lets you test whether a gap to baselines
+    is a quantization artifact rather than a model-capability issue.
+
+    Keyed by (benchmark, algorithm) rather than by benchmark alone -- an
+    earlier version pooled every optimizer/seed/experiment for a benchmark
+    into one shared range. That mixed each algorithm's own quantization
+    range with the exploration noise of every OTHER algorithm recorded for
+    that benchmark (e.g. unguided random search's much wider, worse spread
+    stretching the range used to quantize a exploitation-heavy CQR/BORE
+    trajectory), and reused the exact same fixed (y_min, y_max) pair across
+    every one of a benchmark's ~150-180 experiments (30 seeds x 5-6
+    algorithms) -- a highly repetitive, low-diversity training target that
+    the pretrained-on-it checkpoint (experiments/quantization_debug/
+    pretrain_true_range.sh) memorized rather than generalized from: val_loss
+    /val_ppl bottomed out around step ~7k of 30k and rose steadily after,
+    while train loss stayed flat -- textbook overfitting, not present in the
+    causal/original-range pretraining run. See
+    quantization_debugging/changelog/2026-09-10-per-benchmark-true-range.md
+    for the removed per-benchmark implementation and the full writeup of why
+    it was replaced with this per-(benchmark, algorithm) version.
 
     Percentile-clipped rather than raw min/max: a single diverged trial
     anywhere in the pool would otherwise consume most of the oracle range's
@@ -270,18 +294,18 @@ def compute_true_metric_range_per_benchmark(metadatas: dict, path: Path, num_cor
         except AttributeError:
             num_cores = multiprocessing.cpu_count()
 
-    logger.info(f"Computing true per-benchmark metric ranges using {num_cores} cores for {len(tasks)} tasks...")
+    logger.info(f"Computing true per-(benchmark, algorithm) metric ranges using {num_cores} cores for {len(tasks)} tasks...")
 
     from collections import defaultdict
     pooled_vals = defaultdict(list)
 
     def _consume(iterator):
-        for benchmark_name, vals in tqdm.tqdm(
-                iterator, total=len(tasks), desc="Computing true per-benchmark metric ranges",
+        for benchmark_name, algorithm, vals in tqdm.tqdm(
+                iterator, total=len(tasks), desc="Computing true per-(benchmark, algorithm) metric ranges",
                 mininterval=5.0):
             if vals is None:
                 continue
-            pooled_vals[benchmark_name].extend(vals)
+            pooled_vals[(benchmark_name, algorithm)].extend(vals)
 
     if pool is not None:
         _consume(pool.imap_unordered(compute_trial_metric_values, tasks))
@@ -293,13 +317,16 @@ def compute_true_metric_range_per_benchmark(metadatas: dict, path: Path, num_cor
 
 
 def _percentile_range_from_pooled_vals(pooled_vals: dict, percentile_lo: float, percentile_hi: float) -> dict:
+    """`pooled_vals` is keyed by (benchmark, algorithm) tuples -- see
+    `compute_true_metric_range_per_benchmark`. Returns a dict with the same
+    keys."""
     true_range = {}
-    for benchmark_name, vals in pooled_vals.items():
+    for key, vals in pooled_vals.items():
         y_min = float(np.percentile(vals, percentile_lo))
         y_max = float(np.percentile(vals, percentile_hi))
         if y_min == y_max:
             y_max += 1  # avoid division by zero in quantization, matches History
-        true_range[benchmark_name] = (y_min, y_max)
+        true_range[key] = (y_min, y_max)
     return true_range
 
 
@@ -360,6 +387,8 @@ def find_best_algorithms_and_true_range(metadatas: dict, path: Path, num_cores: 
     `compute_true_metric_range_per_benchmark` separately on the same
     `metadatas` would have returned -- this only removes the duplicate
     results.csv.zip load, it does not change either computation.
+    `true_range_by_benchmark` is keyed by (benchmark, algorithm), like
+    `compute_true_metric_range_per_benchmark`'s return value.
     """
     from collections import defaultdict
 
@@ -371,7 +400,7 @@ def find_best_algorithms_and_true_range(metadatas: dict, path: Path, num_cores: 
         except AttributeError:
             num_cores = multiprocessing.cpu_count()
 
-    logger.info(f"Detecting best trajectories and true per-benchmark metric ranges "
+    logger.info(f"Detecting best trajectories and true per-(benchmark, algorithm) metric ranges "
                 f"using {num_cores} cores for {len(tasks)} tasks...")
 
     best_experiments = {}
@@ -391,7 +420,8 @@ def find_best_algorithms_and_true_range(metadatas: dict, path: Path, num_cores: 
                 benchmark_algo_vals[benchmark_name][algo].append(val)
                 benchmark_algo_seed_experiments[benchmark_name][algo][seed] = name
             if per_trial_vals:
-                pooled_vals[benchmark_name].extend(per_trial_vals)
+                algo_key = metadatas[name].get('original_algorithm', metadatas[name].get('algorithm'))
+                pooled_vals[(benchmark_name, algo_key)].extend(per_trial_vals)
 
     if pool is not None:
         _consume(pool.imap_unordered(process_best_trajectory_and_metric_values, tasks))
@@ -466,8 +496,10 @@ def process_metadata_with_advantage(args_tuple):
         metric_name = metadata["metric_names"][0]
         res = load_result(name, metric_name, config_space, path)
         benchmark_name_lookup = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+        algorithm_lookup = metadata.get('original_algorithm', metadata.get('algorithm'))
         metric_range_override = (
-            metric_range_by_benchmark.get(benchmark_name_lookup) if metric_range_by_benchmark else None
+            metric_range_by_benchmark.get((benchmark_name_lookup, algorithm_lookup))
+            if metric_range_by_benchmark else None
         )
         hist = History.from_syne_tune_experiment(
             ExperimentResult(name=name, metadata=metadata, results=res, path=path, tuner=None),
@@ -498,8 +530,14 @@ def process_metadata(args_tuple):
     histories = []
 
     benchmark_name_lookup = metadata.get('benchmark', metadata.get('entrypoint', 'unknown'))
+    # `original_algorithm` (set before any --rename_best mutation, see
+    # __main__ below) so the lookup key still resolves after renaming --
+    # keeps the range tied to whichever optimizer actually produced these
+    # trials, not to whatever `metadata["algorithm"]` was rewritten to.
+    algorithm_lookup = metadata.get('original_algorithm', metadata.get('algorithm'))
     metric_range_override = (
-        metric_range_by_benchmark.get(benchmark_name_lookup) if metric_range_by_benchmark else None
+        metric_range_by_benchmark.get((benchmark_name_lookup, algorithm_lookup))
+        if metric_range_by_benchmark else None
     )
 
     try:
@@ -610,18 +648,23 @@ if __name__ == "__main__":
     parser.add_argument(
         "--metric_range_mode",
         type=str,
-        choices=["original", "causal", "true"],
+        choices=["original", "causal", "true", "quantile"],
         default="original",
-        help="Selects History's metric quantization range. 'original' (default) matches the upstream "
+        help="Selects History's metric quantization range. 'quantile' uses no range at all: each "
+             "trial's y-token is its rank among all trials of its trajectory (average rank for ties), "
+             "scaled to [0, 999] -- uniform per document, robust to a single diverged trial, and "
+             "reproducible at inference without any oracle (see History._rank_tokens). "
+             "'original' (default) matches the upstream "
              "bbo-pile repo: a single global (y_min, y_max) per benchmark experiment, computed from all "
              "of its trials, no percentile clipping -- this is what makes baseline pretraining data "
              "identical to the original repo's. 'causal' is the opt-in quantization-causal-robust fix: "
              "each trial's range is computed only from trials observed up to that point (matches "
              "inference-time availability), with the bad tail percentile-clipped. 'true' instead "
-             "quantizes every trial in a benchmark against that benchmark's TRUE (min, max) metric value "
-             "observed across ALL recorded experiments -- an oracle range unavailable at real inference "
-             "time, useful for testing whether a gap to baselines is a quantization artifact rather than "
-             "a model-capability issue.",
+             "quantizes every trial against its (benchmark, algorithm) pair's TRUE (min, max) metric value, "
+             "observed across that algorithm's own ~30 seeds recorded for that benchmark (not pooled across "
+             "every other optimizer too -- see compute_true_metric_range_per_benchmark's docstring for why) "
+             "-- an oracle range unavailable at real inference time, useful for testing whether a gap to "
+             "baselines is a quantization artifact rather than a model-capability issue.",
     )
     parser.add_argument(
         "--skip_standard_output",
@@ -698,7 +741,12 @@ if __name__ == "__main__":
         # always wins over metric_quantization_mode); for any benchmark not
         # covered by that override, fall back to "original" (upstream-
         # matching) rather than silently opting into the causal fix.
-        metric_quantization_mode = "causal" if args.metric_range_mode == "causal" else "original"
+        metric_quantization_mode = {
+            "original": "original",
+            "causal": "causal",
+            "true": "original",
+            "quantile": "quantile",
+        }[args.metric_range_mode]
 
         true_metric_range_by_benchmark = None
         best_by_benchmark = None

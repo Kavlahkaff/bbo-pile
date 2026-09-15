@@ -97,7 +97,14 @@ class History:
     # inference time), with the bad tail percentile-clipped by
     # `metric_percentile_hi`/`metric_percentile_lo` below to stop a single
     # diverged trial from consuming the token resolution. See
-    # _metric_ranges().
+    # _metric_ranges(). "quantile" drops the (y_min, y_max) range entirely:
+    # each trial's token is its rank among ALL trials of this History
+    # (average rank for ties), scaled to [0, num_numeric_tokens-1], so the
+    # tokens are uniform per document, immune to a single diverged trial and
+    # need no oracle range at inference (the prompt is rebuilt from all
+    # observed trials on every suggest()). Incompatible with
+    # `metric_range_override`; `metric_log_scale` is a no-op under ranks.
+    # See _metric_tokens().
     metric_quantization_mode: str = "original"
     # Percentile (0-100) used to clip the "bad" tail of observed metrics
     # (metrics are already normalized so that lower == better, see
@@ -191,7 +198,7 @@ class History:
         string += ',history:'
         return string
 
-    def _build_trial_span(self, trial, hypers, y_min, y_max):
+    def _build_trial_span(self, trial, hypers, y_token):
         string = ""
         for i, (hp_name, hp) in enumerate(hypers):
             if not isinstance(hp, Domain):
@@ -202,12 +209,47 @@ class History:
             hp_encoded = encode(trial.config[hp_name], hp, hp_name=hp_name, q=self.num_numeric_tokens)
             string += str(hp_encoded)
         string += f"*"
-
-        metric_val = symlog(trial.metric) if self.metric_log_scale else trial.metric
-        clipped_metric = min(max(metric_val, y_min), y_max)
-        string += f"{quantize(clipped_metric, y_min, y_max, q=self.num_numeric_tokens)}"
+        string += f"{y_token}"
         string += f"|"
         return string
+
+    def _rank_tokens(self):
+        """Quantile/rank y-tokens: average 0-based rank of each trial's metric
+        among all trials of this History, scaled to [0, q-1]. Ties share a
+        token; the best trial is always 0 and the worst q-1."""
+        ys = np.asarray([float(trial.metric) for trial in self.trials])
+        if np.isnan(ys).any():
+            # match quantize(): int(round(nan)) raises, so a NaN trial drops
+            # the whole experiment at compile time rather than being ranked last
+            raise ValueError("NaN metric in History; cannot rank")
+        n = len(ys)
+        if n <= 1:
+            return [0] * n
+        _, inverse, counts = np.unique(ys, return_inverse=True, return_counts=True)
+        first_rank = np.cumsum(counts) - counts
+        avg_rank = first_rank + (counts - 1) / 2
+        u = avg_rank[inverse] / (n - 1)
+        return np.rint(u * (self.num_numeric_tokens - 1)).astype(int).tolist()
+
+    def _metric_tokens(self):
+        """For each trial t (in order), the integer y-token to emit. In
+        "quantile" mode these are rank tokens (see `_rank_tokens`); otherwise
+        the metric is clipped to and linearly quantized against the per-trial
+        (y_min, y_max) from `_metric_ranges`."""
+        if self.metric_quantization_mode == "quantile":
+            if self.metric_range_override is not None:
+                raise ValueError(
+                    "metric_range_override is incompatible with metric_quantization_mode='quantile' "
+                    "(rank tokens do not use a range); drop the override or pick a range-based mode"
+                )
+            return self._rank_tokens()
+
+        tokens = []
+        for trial, (y_min, y_max) in zip(self.trials, self._metric_ranges()):
+            metric_val = symlog(trial.metric) if self.metric_log_scale else trial.metric
+            clipped_metric = min(max(metric_val, y_min), y_max)
+            tokens.append(quantize(clipped_metric, y_min, y_max, q=self.num_numeric_tokens))
+        return tokens
 
     def _metric_ranges(self):
         """For each trial t (in order), the (y_min, y_max) quantization range
@@ -252,7 +294,7 @@ class History:
         if self.metric_quantization_mode != "causal":
             raise ValueError(
                 f"Unsupported metric_quantization_mode: {self.metric_quantization_mode!r} "
-                "(expected 'original' or 'causal')"
+                "(expected 'original', 'causal' or 'quantile')"
             )
 
         observed_metrics = []
@@ -271,8 +313,8 @@ class History:
         string = self._build_header(hypers)
 
         if len(self.trials) > 0:
-            for trial, (y_min, y_max) in zip(self.trials, self._metric_ranges()):
-                string += self._build_trial_span(trial, hypers, y_min, y_max)
+            for trial, y_token in zip(self.trials, self._metric_tokens()):
+                string += self._build_trial_span(trial, hypers, y_token)
         return string
 
     def get_prompt_with_weights(self, advantages: list = None, shuffle=False,
@@ -288,8 +330,8 @@ class History:
         segments = [(header, base_weight)]
 
         if len(self.trials) > 0:
-            for i, (trial, (y_min, y_max)) in enumerate(zip(self.trials, self._metric_ranges())):
-                span = self._build_trial_span(trial, hypers, y_min, y_max)
+            for i, (trial, y_token) in enumerate(zip(self.trials, self._metric_tokens())):
+                span = self._build_trial_span(trial, hypers, y_token)
                 if advantages is not None and i < len(advantages):
                     weight = advantages[i]
                 elif trial.advantage is not None:
@@ -314,7 +356,8 @@ class History:
 
         `metric_quantization_mode`: see `History.metric_quantization_mode` --
         "original" (default) matches upstream bbo-pile's global-range
-        quantization; "causal" opts into the quantization-causal-robust fix.
+        quantization; "causal" opts into the quantization-causal-robust fix;
+        "quantile" emits per-History rank tokens instead of a range.
 
         `metric_range_override`: see `History.metric_range_override` --
         pass a benchmark's true (y_min, y_max) here to build a History that
@@ -367,6 +410,15 @@ if __name__ == "__main__":
     history.add_trial({'x': 0.6, 'y': 6, 'z': 'b', 'log_x': 0.9}, 0.6)
     prompt = history.get_prompt()
     print(prompt)
+
+    rank_history = History(name='test', algorithm='test', config_space=config_space,
+                           metric_quantization_mode="quantile")
+    cfg = {'x': 0.5, 'y': 5, 'z': 'a', 'log_x': 0.1}
+    for metric in [0.3, 0.1, 0.3, 1e9, 0.2]:
+        rank_history.add_trial(cfg, metric)
+    # ranks 0..4 with the two 0.3s sharing average rank 2.5 -> 2.5/4*999
+    assert rank_history._metric_tokens() == [624, 0, 624, 999, 250], rank_history._metric_tokens()
+    print(rank_history.get_prompt())
 
     test_cases = [
         (0.1, 0.01, 1, True),

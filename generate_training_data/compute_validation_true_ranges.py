@@ -1,7 +1,8 @@
-"""Precomputes each validation benchmark's TRUE (y_min, y_max) metric range
-from the raw recorded experiment data under RESULTS_PATH, for the live
-"debug quantization" eval ablation (see RUNNING.md / RUN_ORDER.md
-"Debug quantization" sections, `experiments/quantization_debug/`).
+"""Precomputes each validation (benchmark, algorithm) pair's TRUE (y_min,
+y_max) metric range from the raw recorded experiment data under
+RESULTS_PATH, for the live "debug quantization" eval ablation (see
+RUNNING.md / RUN_ORDER.md "Debug quantization" sections,
+`experiments/quantization_debug/`).
 
 Reuses `compute_true_metric_range_per_benchmark` -- the exact function the
 training-time true-range ablation (`--metric_range_mode true` on
@@ -14,6 +15,15 @@ already sign-flips max-mode metrics before `History` sees them, exactly
 matching `compute_trial_metric_values`'s `if metric_mode == 'max': val =
 -val` -- reading raw, un-flipped values from a blackbox table would have
 been wrong for every max-mode benchmark.
+
+Output is keyed per (benchmark, algorithm), not per benchmark -- see
+compile_data.py's `compute_true_metric_range_per_benchmark` docstring and
+quantization_debugging/changelog/2026-09-10-per-benchmark-true-range.md for
+why the earlier per-benchmark-only version (pooling every optimizer's trials
+together) was replaced: it correlated with the true-range-pretrained
+checkpoint overfitting (val loss/ppl bottoming out early and rising for the
+rest of training, while train loss stayed flat -- not seen in the
+causal/original-range pretraining run).
 
 Benchmark set: every entry in `validation_tasks.json` (the same file
 compile_data.py uses to mark held-out validation tasks during training data
@@ -74,14 +84,24 @@ if __name__ == "__main__":
     true_ranges = compute_true_metric_range_per_benchmark(
         metadatas, results_path, num_cores=args.num_cores
     )
+    # true_ranges is keyed by (benchmark, algorithm) -- reshape into the
+    # nested {benchmark: {algorithm: [y_min, y_max]}} JSON schema, so a
+    # lookup by benchmark+method (e.g. "OPT-CQR" -> algorithm "CQR") at eval
+    # time (see benchmark_main.py) doesn't need to parse tuple-like keys
+    # back out of JSON, which has no native tuple-key representation.
+    nested_ranges = {}
+    for (benchmark_name, algorithm), rng in true_ranges.items():
+        nested_ranges.setdefault(benchmark_name, {})[algorithm] = list(rng)
 
-    missing = validation_benchmarks - true_ranges.keys()
+    covered_benchmarks = set(nested_ranges.keys())
+    missing = validation_benchmarks - covered_benchmarks
     if missing:
         print(f"[WARN] no recorded experiments found for {len(missing)} benchmarks: {sorted(missing)}")
 
     out_path = Path(args.out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:
-        json.dump({name: list(rng) for name, rng in true_ranges.items()}, f, indent=2)
+        json.dump(nested_ranges, f, indent=2)
 
-    print(f"Wrote {len(true_ranges)} benchmark ranges to {out_path}")
+    print(f"Wrote {len(true_ranges)} (benchmark, algorithm) ranges across "
+          f"{len(nested_ranges)} benchmarks to {out_path}")
