@@ -1,0 +1,28 @@
+# extra user-defined symbols of the GP tokenizer (gp_v1): every tag of every scheme is exactly one token
+GP-UCB
+RS
+GP-RBF-UCB
+GP-M12-UCB
+GP-M32-UCB
+GP-M52-UCB
+GP-RBF-ORACLE
+GP-M12-ORACLE
+GP-M32-ORACLE
+GP-M52-ORACLE
+GP-RBF-MLE
+GP-M12-MLE
+GP-M32-MLE
+GP-M52-MLE
+GP-ORACLE
+GP-BASE
+BEST
+UNK
+hp:
+ls:
+os:
+# pieces of the fixed search-space header (identical in every line; otherwise ~80 character tokens per line)
+search-space
+min_value
+max_value
+0.0
+1.0

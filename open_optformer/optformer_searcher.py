@@ -211,6 +211,9 @@ class OptformerScheduler(SingleObjectiveScheduler):
         random_seed: Optional[int] = None,
         points_to_evaluate: Optional[List[dict]] = None,
         n_sample_configurations: int = 1,
+        use_vllm: bool = True,
+        remove_names: bool = True,
+        space_first: bool = False,
     ):
         super(OptformerScheduler, self).__init__(
             config_space=config_space,
@@ -223,6 +226,9 @@ class OptformerScheduler(SingleObjectiveScheduler):
                 checkpoint_dir=checkpoint_dir,
                 task_info=task_info,
                 n_sample_configurations=n_sample_configurations,
+                use_vllm=use_vllm,
+                remove_names=remove_names,
+                space_first=space_first,
             ),
             random_seed=random_seed,
         )
@@ -252,6 +258,7 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
         remove_names: bool = True,
         n_sample_configurations: int = 1,
         use_vllm: bool = True,
+        space_first: bool = False,
     ):
         """
         :param checkpoint_dir:
@@ -306,11 +313,12 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
             self.task_info = task_info
 
         self.study = History(config_space=config_space,
-                             name=self.task_info['name'],
+                             name=self.task_info.get('name', 'tst'),
                              algorithm=self.task_info['algorithm'],
-                             metric_names=[self.task_info['metric_names']],
+                             metric_names=[self.task_info.get('metric_names', 'y')],
                              num_numeric_tokens=self.num_numeric_tokens,
                              remove_names=remove_names,
+                             space_first=space_first,
                              )
 
         # Sort hp to have continuous first and categorical after
@@ -490,7 +498,8 @@ class OptFormerSearcher(SingleObjectiveBaseSearcher):
                 if self.use_hf_checkpoint:
                     int_token = int(self.tokenizer.convert_ids_to_tokens(hp_token))
                 else:
-                    int_token = int(self.tokenizer.id_to_token(hp_token))
+                    # litgpt's Tokenizer has no id_to_token; decode the single id (sentencepiece may prefix '▁')
+                    int_token = int(self.tokenizer.decode(torch.tensor([hp_token])).strip().lstrip("▁"))
                 config[hp_name] = dequantize(
                     x=int_token,
                     x_min=self.config_space[hp_name].lower,

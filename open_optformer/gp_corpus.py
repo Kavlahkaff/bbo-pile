@@ -197,9 +197,10 @@ def read_traj_file(path, fields: tuple | None = None) -> dict[str, dict]:
                 d = json.loads(line)
             except json.JSONDecodeError:
                 continue
+            key = d["key"]
             if fields is not None:
                 d = {k: d[k] for k in fields if k in d}
-            out[d["key"]] = d
+            out[key] = d
     return out
 
 

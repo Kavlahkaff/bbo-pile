@@ -71,6 +71,9 @@ class History:
     metric_names: list = field(default_factory=list)
     trials: list = field(default_factory=list)
     remove_names: bool = False
+    # if True, the prompt is "search-space:...,algorithm:<tag>,history:..." (search space before the optimizer tag);
+    # the default keeps the original order "algorithm:<tag>,search-space:...,history:..."
+    space_first: bool = False
 
     def add_trial(self, config, result):
 
@@ -81,7 +84,8 @@ class History:
         string = ""
         if not self.remove_names:
             string += f"benchmark:{self.name},"
-        string += f"algorithm:{self.algorithm},"
+        if not self.space_first:
+            string += f"algorithm:{self.algorithm},"
         hypers = list(self.config_space.items())
         if shuffle:
             random.shuffle(hypers)
@@ -126,6 +130,8 @@ class History:
                 raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
             string += "}"
 
+        if self.space_first:
+            string += f",algorithm:{self.algorithm}"
         string += ',history:'
 
         if len(self.trials) > 0:

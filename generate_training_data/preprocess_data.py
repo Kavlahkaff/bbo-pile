@@ -33,6 +33,12 @@ if __name__ == "__main__":
         default='./',
         help="",
     )
+    parser.add_argument(
+        "--block_size",
+        type=int,
+        default=534,
+        help="block size of the TokensLoader used when writing the chunks",
+    )
     args, _ = parser.parse_known_args()
 
     os.makedirs(args.output_path, exist_ok=True)
@@ -57,6 +63,6 @@ if __name__ == "__main__":
             output_dir= Path(args.output_path) / split,             # optimized data is stored here
             num_workers=4,                      # The number of workers on the same machine
             chunk_bytes="64MB",                  # size of each chunk
-            item_loader = ld.TokensLoader(block_size=534),
+            item_loader = ld.TokensLoader(block_size=args.block_size),
             mode='overwrite',
         )
