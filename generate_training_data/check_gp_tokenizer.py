@@ -16,8 +16,25 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from litgpt import Tokenizer  # noqa: E402
+import sentencepiece as spm  # noqa: E402
+
+
+class Tokenizer:
+    """Minimal stand-in for litgpt.Tokenizer on a bare sentencepiece model (no tokenizer_config.json, so litgpt adds
+    no BOS either). Avoids importing litgpt -> lightning -> torchmetrics -> torch(vision) for a CPU-only check."""
+
+    def __init__(self, tokenizer_dir):
+        self.processor = spm.SentencePieceProcessor(model_file=str(Path(tokenizer_dir) / "tokenizer.model"))
+        self.vocab_size = self.processor.vocab_size()
+
+    def encode(self, s, bos=False):
+        ids = self.processor.encode(s)
+        if bos:
+            ids = [self.processor.bos_id()] + ids
+        return np.asarray(ids)
+
+    def decode(self, ids):
+        return self.processor.decode(list(map(int, ids)))
 
 HEADER = "search-space:{type:UNI,min_value:0.0,max_value:1.0,linear_scale}{type:UNI,min_value:0.0,max_value:1.0,linear_scale}"
 
