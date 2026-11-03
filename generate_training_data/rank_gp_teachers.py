@@ -114,7 +114,7 @@ def win_frequency(df, metric, pool):
         share = (best / best.sum(1, keepdims=True)).mean(0)
         out.append(pd.Series(share, index=M.columns, name=fam))
     W = pd.DataFrame(out).T.fillna(0.0)
-    W["all"] = W.mean(1)
+    W["all"] = W.mean(axis=1)
     return W
 
 
@@ -152,14 +152,14 @@ def headroom(df, metric, pool):
             C, E = C.loc[fids], E.loc[fids]
             fixed = C.mean().idxmin()
             fam_best = {f: C[fam_of[C.index] == f].mean().idxmin() for f in fam_of[C.index].unique()}
-            sel = C.idxmin(1)
+            sel = C.idxmin(axis=1)
             r = pd.DataFrame({
                 "family": fam_of[fids].values,
                 "fixed": E[fixed].values,
                 "family_fixed": [E.at[i, fam_best[fam_of[i]]] for i in fids],
                 "per_fn": [E.at[i, sel[i]] for i in fids],
-                "mixture": E.mean(1).values,
-                "in_sample": E.min(1).values,
+                "mixture": E.mean(axis=1).values,
+                "in_sample": E.min(axis=1).values,
             }, index=fids)
             r["fixed_mid"] = fixed
             per_fid.append(r)
@@ -186,8 +186,8 @@ def loss_rates(df, metric):
     ora = M["oracle"]
     mle_cols = [c for c in M.columns if c.startswith("mle|")]
     mle_m = pd.Series({f: M.at[f, f"mle|ucb4|{info.at[f, 'family']}"] for f in M.index})
-    oracle_loses = ora > M.min(1) + 1e-12
-    mle_loses = mle_m > M[mle_cols].min(1) + 1e-12
+    oracle_loses = ora > M.min(axis=1) + 1e-12
+    mle_loses = mle_m > M[mle_cols].min(axis=1) + 1e-12
     rows = []
     for m in MARGINS:
         near = info.edge <= m
@@ -226,7 +226,7 @@ def best_distribution(df, metric, pool, margin=None):
         d = d[d.edge_dist > margin]
     M = per_function(d, metric).dropna()
     fam = d.groupby("fid").family.first().loc[M.index]
-    best = M.idxmin(1)
+    best = M.idxmin(axis=1)
     T = pd.crosstab(best.rename("teacher"), fam, normalize="columns")
     T["all"] = best.value_counts(normalize=True)
     return T.fillna(0.0)
