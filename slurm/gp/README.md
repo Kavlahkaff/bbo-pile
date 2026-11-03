@@ -51,8 +51,9 @@ pip install torch                       # CUDA build
 pip install -r requirements.txt syne-tune
 ```
 Existing venvs work too (set `VENV_CPU` / `VENV_GPU` in `env.sh`) if they have `litgpt`, `litdata`, `sentencepiece`,
-`syne-tune`, `pandas`, `pyarrow` and `transformers`. With numpy < 2 use `pyarrow<17`: pyarrow 17.0 ships a stray
-top-level `benchmarks` package that shadows the repo's.
+`syne-tune`, `pandas`, `pyarrow` and `transformers`. Python 3.13 (Barnard) needs `numpy>=2` and `pyarrow>=18` (no wheels for older versions); Python 3.12 (Capella)
+keeps `numpy==1.26.3` with `pyarrow<17`. `requirements.txt` selects these by Python version. Avoid pyarrow 17.0:
+it ships a stray top-level `benchmarks` package that shadows the repo's.
 
 ## Resources (rough, full corpus)
 export ~1.9M trajectories per dataset in minutes on 32 cores; train 5M × 300M tokens ≈ 18k steps; rollouts

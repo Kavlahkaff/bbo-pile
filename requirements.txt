@@ -1,4 +1,5 @@
-  numpy==1.26.3
+  numpy==1.26.3 ; python_version < "3.13"
+  numpy>=2 ; python_version >= "3.13"  # numpy 1.26 has no wheels for python 3.13 (Barnard)
   coolname
   pandas
   huggingface-hub
@@ -11,6 +12,7 @@
   sentencepiece
   wandb
   matplotlib
-  pyarrow<17  # parquet (teacher_ranks); >=18 needs numpy>=2, 17.0 ships a stray top-level `benchmarks` package
+  pyarrow<17 ; python_version < "3.13"  # parquet; >=18 needs numpy>=2, 17.0 ships a stray top-level `benchmarks` package
+  pyarrow>=18 ; python_version >= "3.13"  # first version with python 3.13 wheels (16.x would build from source and fail)
   boto3>=1.34  # old botocore pulled in by litdata breaks on python>=3.10
   transformers>=4.51  # imported by open_optformer/optformer_searcher.py (Qwen3ForCausalLM)
