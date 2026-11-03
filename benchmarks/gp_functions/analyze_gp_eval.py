@@ -212,9 +212,8 @@ def main():
         core = {k: v for k, v in sep.items() if "exact" not in k}
         verdict["tag_likelihood_separates_oracle_mle_rs"] = bool(all(core.values()))
 
-    if verdict:
-        say += ["", "== 3. GO / NO-GO", json.dumps(verdict, indent=1)]
-        json.dump(verdict, open(out / "verdict.json", "w"), indent=1)
+    say += ["", "== 3. GO / NO-GO", json.dumps(verdict, indent=1)]
+    json.dump(verdict, open(out / "verdict.json", "w"), indent=1)
     text = "\n".join(say)
     (out / "report.txt").write_text(text)
     print(text)

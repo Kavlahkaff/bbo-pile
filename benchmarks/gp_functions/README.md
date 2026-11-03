@@ -34,6 +34,7 @@ Prompt format (search space first, `History(space_first=True)`; HPO prompts are 
 - Prompt-tag templates in rollouts / scoring: `{K}` = function family, e.g. `GP-{K}-ORACLE` = matched oracle tag.
 
 ## Early go/no-go check
+On the cluster use the SLURM jobs in `slurm/gp/` (see `slurm/gp/README.md`); they wrap the stages below.
 `benchmarks/gp_functions/gonogo.sh <stage>` with stages
 `rank export tokenizer preprocess configs` → train `R` and `O` (5M, 300M tokens) → `rollouts score analyze`.
 Passes if, on test_core (floored metric), the oracle-prompted student is not worse than the matched MLE teacher (better =

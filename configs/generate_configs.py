@@ -34,6 +34,14 @@ TOKEN_COUNTS = {
 LEGACY_VOCAB = {'v0.3': 1106, 'v0.4': 1072, 'v0.5': 1069, 'v0.6': 1069, 'v0.7': 1069, 'v0.8': 1069}
 
 
+def parse_tokens(name: str) -> int:
+    """'300M' -> 300_000_000, '1.2B' -> 1_200_000_000 (any number with suffix K, M or B)."""
+    if name in TOKEN_COUNTS:
+        return TOKEN_COUNTS[name]
+    mult = {"K": 1e3, "M": 1e6, "B": 1e9}[name[-1].upper()]
+    return int(float(name[:-1]) * mult)
+
+
 def parse_args():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--base_path", default=os.environ.get("BASE_PATH"), help="default: $BASE_PATH")
@@ -73,7 +81,7 @@ def generate_configs(args):
         with open(Path(__file__).parent / f"{model_name}.yaml", 'r') as f:
             base_config = yaml.safe_load(f)
         for name in args.tokens:
-            tokens = TOKEN_COUNTS[name]
+            tokens = parse_tokens(name)
             if tokens < args.min_tokens_per_param * model_size:
                 # Do not run any model with smaller token budget of 2 times the parameter count
                 continue
