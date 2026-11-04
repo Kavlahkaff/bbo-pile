@@ -83,9 +83,19 @@ case "${1:-}" in
     python generate_training_data/check_gp_tokenizer.py --tokenizer_dir $BASE/tokenizer/$VERSION \
         --symbols generate_training_data/gp_tokenizer_symbols.txt --exports $T/* | tee $OUT/tokenizer_check.json ;;
   preprocess)
+    # litdata stages its item list (pickle) and chunks in $TMPDIR / its cache folders before moving them to the
+    # output; node-local /tmp is too small for R (9.4M lines), so keep everything on the workspace and clean up after
     for d in $DATASETS; do
+      SCRATCH=$OUT/tmp/preprocess_${d}_${SLURM_JOB_ID:-$$}
+      mkdir -p $SCRATCH/{tmp,chunks,data}
+      trap 'rm -rf "$SCRATCH"' EXIT
+      export TMPDIR=$SCRATCH/tmp DATA_OPTIMIZER_CACHE_FOLDER=$SCRATCH/chunks DATA_OPTIMIZER_DATA_CACHE_FOLDER=$SCRATCH/data
       (cd generate_training_data && python preprocess_data.py --input_path $OUT/export/$d \
           --output_path $BASE/tokenized_dataset/$VERSION/$d --tokenizer_dir $BASE/tokenizer/$VERSION --block_size 1025)
+      for s in train valid; do
+        [[ -f $BASE/tokenized_dataset/$VERSION/$d/$s/index.json ]] || { echo "[FATAL] preprocess $d/$s wrote no index.json" >&2; exit 1; }
+      done
+      echo "[INFO] preprocess $d done"
     done ;;
   configs)
     make_configs ;;
@@ -96,7 +106,10 @@ case "${1:-}" in
     for d in $DATASETS; do
       cfg=$(config_of $d)
       [[ -n "$cfg" ]] || { echo "[FATAL] no config for $d in $CONFIG_DIR" >&2; exit 1; }
-      [[ -d $BASE/tokenized_dataset/$VERSION/$d/train ]] || { echo "[FATAL] run preprocess for $d first" >&2; exit 1; }
+      for s in train valid; do
+        [[ -f $BASE/tokenized_dataset/$VERSION/$d/$s/index.json ]] || {
+          echo "[FATAL] $BASE/tokenized_dataset/$VERSION/$d/$s has no index.json: preprocess for $d has not finished (or failed)" >&2; exit 1; }
+      done
       echo "[INFO] training $d with $cfg"
       python open_optformer/training/pretrain.py Qwen3-5M --config "$cfg" "${LOGGER[@]}"
     done ;;
