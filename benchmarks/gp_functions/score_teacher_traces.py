@@ -51,10 +51,11 @@ def resolve(template, spec, hp_suffix):
     return tag
 
 
-def encode_trace(tok, tag, X, y, space_first, prefix_cache):
+def encode_trace(tok, tag, X, y, space_first, prefix_cache, y_norm="global"):
     """Token ids of the full trace and the index of the first history token. Checks that the history part tokenizes
     as exactly 6 tokens per trial, so positions are known without searching."""
-    h = History(name="gp", algorithm=tag, config_space=dict(CONFIG_SPACE), remove_names=True, space_first=space_first)
+    h = History(name="gp", algorithm=tag, config_space=dict(CONFIG_SPACE), remove_names=True, space_first=space_first,
+                y_norm=y_norm)
     for (x0, x1), v in zip(X, y):
         h.add_trial({"x0": float(x0), "x1": float(x1)}, float(v))
     line = h.get_prompt()
@@ -105,6 +106,9 @@ def main():
     ap.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
     ap.add_argument("--max_functions", type=int, default=None)
     ap.add_argument("--no_space_first", dest="space_first", action="store_false")
+    ap.add_argument("--y_norm", choices=["global", "causal"], default="global",
+                    help="y quantization; must match the training export. With causal, teacher forcing sees exactly "
+                         "the prompts of a rollout; with global, early y tokens are scaled with the full trace")
     ap.add_argument("--batch_size", type=int, default=64)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--output", required=True)
@@ -119,7 +123,8 @@ def main():
         per = max(1, args.max_functions // len(by_kind))
         fids = [f for v in by_kind.values() for f in v[:per]]
     fids = set(fids)
-    traces = [t for t in iter_trajectories(args.corpus, fields=("fid", "seed", "mid", "X", "y", "n_init", "key"))
+    traces = [t for t in iter_trajectories(args.corpus, fields=("fid", "seed", "mid", "X", "y", "n_init", "key"),
+                                           split="test")
               if t["fid"] in fids and t["seed"] in args.seeds]
     model, tok = load_model(args.checkpoint_dir, args.device)
     number_ids = [tok.token_to_id(str(i)) for i in range(1000)]
@@ -148,7 +153,7 @@ def main():
         Xq = np.rint(np.clip(X, 0, 1) * 999).astype(int)
         for tmpl in args.tags:
             tag = resolve(tmpl, spec, args.hp_suffix)
-            ids, start = encode_trace(tok, tag, X, t["y"], args.space_first, cache)
+            ids, start = encode_trace(tok, tag, X, t["y"], args.space_first, cache, args.y_norm)
             pending.append((ids, start, (t, tmpl, Xq)))
             if len(pending) >= args.batch_size:
                 flush()

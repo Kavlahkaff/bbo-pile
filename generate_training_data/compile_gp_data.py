@@ -37,7 +37,15 @@ Function selection (train/val; test is never touched):
 
 Augmentation:
     --symmetries k [--symmetry_set d4|noswap|rot]: k of the square symmetries per trajectory (identity always included)
-    --sample_shorter_trajectories: also the first [1, 5, 10, 20] trials (train only, as compile_data.py)
+    --prefix_mode {none,fixed,random} (train only; valid.txt always has full trajectories only):
+        fixed   also the first [1, 5, 10, 20] trials as extra lines (as compile_data.py;
+                --sample_shorter_trajectories is the old spelling of this)
+        random  also --n_prefixes prefixes with lengths drawn uniformly (without replacement) from
+                [n_init + 1, n - 1], i.e. every prefix contains at least one BO step; seeded per trajectory
+        none    full trajectories only (default)
+        Prefix lines matter with --y_norm global (they are the only lines whose y scaling matches inference);
+        with --y_norm causal every prefix of a full line is already exactly an inference prompt.
+    --y_norm {global,causal}: y quantization, see History.y_norm (rollouts / scoring must use the same)
     --num_permutation n: hyperparameter-order shuffles (default 0). With two identical UNI dims this IS the axis swap,
         so it is rejected together with --symmetries > 1 or --hp_suffix.
 """
@@ -171,6 +179,21 @@ def best_teachers(ranks_path, pool: str, best_by: str, fids) -> tuple[dict[str, 
 
 
 # ---------------------------------------------------------------------------- lines
+def prefix_lengths(t: dict, args) -> list[int]:
+    """Lengths of the extra prefix lines of one (train) trajectory, the same for all its symmetries."""
+    n = len(t["y"])
+    if args.prefix_mode == "fixed":
+        return [m for m in SHORTER if m < n]
+    if args.prefix_mode == "random":
+        lo = int(t.get("n_init", 1)) + 1
+        pool = np.arange(lo, n)
+        if len(pool) == 0:
+            return []
+        r = rng_of("prefix", args.seed, t["key"])
+        return sorted(int(m) for m in r.choice(pool, size=min(args.n_prefixes, len(pool)), replace=False))
+    return []
+
+
 def trajectory_lines(t: dict, spec: dict, args, train: bool) -> list[str]:
     X = np.asarray(t["X"], float)
     y = list(map(float, t["y"]))
@@ -178,12 +201,10 @@ def trajectory_lines(t: dict, spec: dict, args, train: bool) -> list[str]:
     for g in sample_symmetries(args.symmetries, t["key"], args.seed, args.symmetry_set):
         Xg = np.clip(apply_sym(X, g), 0.0, 1.0)
         tag = make_tag(t["mid"], spec, g, args, t["key"])
-        lengths = [len(y)]
-        if train and args.sample_shorter_trajectories:
-            lengths += [m for m in SHORTER if m < len(y)]
+        lengths = [len(y)] + (prefix_lengths(t, args) if train else [])
         for n in lengths:
             h = History(name=t["fid"], algorithm=tag, config_space=CONFIG_SPACE, remove_names=True,
-                        space_first=args.space_first)
+                        space_first=args.space_first, y_norm=args.y_norm)
             for (x0, x1), v in zip(Xg[:n], y[:n]):
                 h.add_trial({"x0": float(x0), "x1": float(x1)}, v)
             lines.append(h.get_prompt())
@@ -206,7 +227,7 @@ def _process_file(job):
     counts = Counter()
     handles = {s: open(tmp / f"{SPLIT_FILE[s]}_{idx:05d}.txt", "w", encoding="utf-8") for s in SPLIT_FILE}
     try:
-        for t in read_traj_file(path, fields=("key", "fid", "seed", "mid", "X", "y")).values():
+        for t in read_traj_file(path, fields=("key", "fid", "seed", "mid", "X", "y", "n_init")).values():
             spec = keep.get(t["fid"])
             if spec is None or not allowed(t["mid"], spec):
                 continue
@@ -244,7 +265,11 @@ def parse_args(argv=None):
     ap.add_argument("--symmetry_set", choices=list(SYMMETRY_SETS), default="d4")
     ap.add_argument("--frac_functions", type=float, default=1.0)
     ap.add_argument("--subset_seed", type=int, default=0)
-    ap.add_argument("--sample_shorter_trajectories", action="store_true")
+    ap.add_argument("--prefix_mode", choices=["none", "fixed", "random"], default=None,
+                    help="extra prefix lines per train trajectory (default none)")
+    ap.add_argument("--n_prefixes", type=int, default=2, help="prefixes per trajectory for --prefix_mode random")
+    ap.add_argument("--sample_shorter_trajectories", action="store_true", help="= --prefix_mode fixed")
+    ap.add_argument("--y_norm", choices=["global", "causal"], default="global")
     ap.add_argument("--num_permutation", type=int, default=0)
     ap.add_argument("--no_space_first", dest="space_first", action="store_false")
     ap.add_argument("--seed", type=int, default=0, help="seed for symmetry sampling and tag dropout")
@@ -258,6 +283,13 @@ def parse_args(argv=None):
         ap.error("--only_best needs --ranks teacher_ranks.parquet")
     if (args.boundary_control) and args.boundary_margin is None and not args.drop_boundary:
         ap.error("--boundary_control needs --boundary_margin or --drop_boundary")
+    if args.sample_shorter_trajectories:
+        if args.prefix_mode not in (None, "fixed"):
+            ap.error("--sample_shorter_trajectories means --prefix_mode fixed")
+        args.prefix_mode = "fixed"
+    args.prefix_mode = args.prefix_mode or "none"
+    if args.n_prefixes < 1:
+        ap.error("--n_prefixes must be >= 1")
     if not 0 < args.frac_functions <= 1:
         ap.error("--frac_functions must be in (0, 1]")
     return args
@@ -310,7 +342,7 @@ def main(argv=None):
                       "by_family": dict(Counter(f"{s['split']}/{s['kind']}" for s in keep.values()))},
         "counts": dict(sorted(counts.items())),
         "tags": all_tags(args.tag_scheme),
-        "val_note": "valid.txt uses the same tags, dropout and symmetries as train.txt, but no shorter trajectories",
+        "val_note": "valid.txt uses the same tags, dropout, symmetries and y_norm as train.txt, but no prefix lines",
         "only_best": best_info,
         "commits": {"bbo-pile": git_commit(Path(__file__).parent),
                     "generator": args.generator_commit or {str(c): git_commit(c) for c in args.corpus}},

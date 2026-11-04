@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import subprocess
 from pathlib import Path
 from typing import Iterable, Iterator
@@ -187,15 +188,25 @@ def load_specs(corpus_dirs: Iterable) -> dict[str, dict]:
     return specs
 
 
-def read_traj_file(path, fields: tuple | None = None) -> dict[str, dict]:
+_SPLIT_RE = re.compile(r'"split":\s*"([a-z_]+)"')
+
+
+def read_traj_file(path, fields: tuple | None = None, split: str | None = None) -> dict[str, dict]:
     """key -> trajectory (last line wins). Truncated lines (crash) are skipped. If `fields` is given, only those
-    are kept, which saves memory when the per-step diagnostics are not needed."""
+    are kept, which saves memory when the per-step diagnostics are not needed. If `split` is given, lines of other
+    splits are skipped before JSON parsing (fast: test is ~1% of the corpus)."""
     out = {}
     with open(path) as fh:
         for line in fh:
+            if split is not None:
+                m = _SPLIT_RE.search(line)
+                if m is not None and m.group(1) != split:
+                    continue
             try:
                 d = json.loads(line)
             except json.JSONDecodeError:
+                continue
+            if split is not None and d.get("split", split) != split:
                 continue
             key = d["key"]
             if fields is not None:
@@ -204,9 +215,9 @@ def read_traj_file(path, fields: tuple | None = None) -> dict[str, dict]:
     return out
 
 
-def iter_trajectories(corpus_dirs: Iterable, fields: tuple | None = None) -> Iterator[dict]:
+def iter_trajectories(corpus_dirs: Iterable, fields: tuple | None = None, split: str | None = None) -> Iterator[dict]:
     for f in traj_files(corpus_dirs):
-        yield from read_traj_file(f, fields).values()
+        yield from read_traj_file(f, fields, split).values()
 
 
 def git_commit(path) -> str | None:

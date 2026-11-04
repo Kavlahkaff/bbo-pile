@@ -48,7 +48,7 @@ def resolve_tag(template: str, spec: dict, symmetry: int, hp_suffix: bool) -> st
 def initial_designs(corpus_dirs, fids, seeds):
     """(fid, seed) -> initial design X[:n_init], taken from the RS teacher trace (all teachers share it)."""
     out = {}
-    for t in iter_trajectories(corpus_dirs, fields=("key", "fid", "seed", "mid", "X", "n_init")):
+    for t in iter_trajectories(corpus_dirs, fields=("key", "fid", "seed", "mid", "X", "n_init"), split="test"):
         if t["mid"] == "rs" and t["fid"] in fids and t["seed"] in seeds:
             out[(t["fid"], t["seed"])] = np.asarray(t["X"][: t["n_init"]], float)
     return out
@@ -57,13 +57,13 @@ def initial_designs(corpus_dirs, fids, seeds):
 class Student:
     """The trained model as an optimizer, loaded once and reused for many runs.
 
-    Each new point is sampled token by token (temperature 1) with the next-token distribution restricted to the 1000
+    Each new point is sampled token by token (--temperature; 0 = greedy) with the next-token distribution restricted to the 1000
     number tokens: x0 ~ p(. | prompt), then x1 ~ p(. | prompt, x0, ','). The restriction conditions on "the
     trajectory continues with a valid point". It is needed because training packs lines without a separator, and R
     contains shortened trajectories (1/5/10/20 trials), so after '|' the model also puts mass on the start of a new
     line ('▁search-space...'). That mass is recorded per run as p_nonnumber (mean over the proposed points)."""
 
-    def __init__(self, checkpoint_dir, space_first=True, device=None):
+    def __init__(self, checkpoint_dir, space_first=True, y_norm="global", temperature=1.0, device=None):
         from score_teacher_traces import load_model
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.model, self.tok = load_model(checkpoint_dir, self.device)
@@ -71,6 +71,8 @@ class Student:
         self.comma_id = self.tok.token_to_id(",")
         self.max_len = self.model.max_seq_length
         self.space_first = space_first
+        self.y_norm = y_norm
+        self.temperature = temperature
 
     @torch.no_grad()
     def _next_logits(self, ids):
@@ -79,16 +81,19 @@ class Student:
 
     def _sample_number(self, ids, gen):
         logits = self._next_logits(ids)
-        p_all = torch.softmax(logits, -1)
-        p_num = p_all[self.number_ids]
-        mass = float(p_num.sum())
-        k = int(torch.multinomial(p_num / p_num.sum(), 1, generator=gen))
+        mass = float(torch.softmax(logits, -1)[self.number_ids].sum())  # untempered, for the diagnostic
+        num_logits = logits[self.number_ids]
+        if self.temperature == 0:
+            k = int(num_logits.argmax())
+        else:
+            p = torch.softmax(num_logits / self.temperature, -1)
+            k = int(torch.multinomial(p, 1, generator=gen))
         return k, 1.0 - mass
 
     def run(self, f: GPGridFunction, X0: np.ndarray, tag: str, n_trials: int, seed: int):
         gen = torch.Generator(device=self.device).manual_seed(seed)
         h = History(name="gp", algorithm=tag, config_space=dict(CONFIG_SPACE), remove_names=True,
-                    space_first=self.space_first)
+                    space_first=self.space_first, y_norm=self.y_norm)
         X, y, nonnum = [], [], []
         for i in range(n_trials):
             if i < len(X0):
@@ -127,6 +132,10 @@ def main():
     ap.add_argument("--symmetries", type=int, nargs="+", default=[0], help="symmetries g to run (A1 invariance)")
     ap.add_argument("--n_trials", type=int, default=50)
     ap.add_argument("--no_space_first", dest="space_first", action="store_false")
+    ap.add_argument("--y_norm", choices=["global", "causal"], default="global",
+                    help="y quantization of the prompt; must match the export the model was trained on")
+    ap.add_argument("--temperature", type=float, default=1.0,
+                    help="sampling temperature over the number tokens; 0 = greedy (argmax)")
     ap.add_argument("--shard", default="0/1", help="i/n: run every n-th job starting at i")
     ap.add_argument("--output", required=True)
     args = ap.parse_args()
@@ -166,7 +175,8 @@ def main():
     jobs = [j for j in jobs if j not in done]
     student = None
     if any(t != "RS-baseline" for t in args.tags) and jobs:
-        student = Student(args.checkpoint_dir, space_first=args.space_first)
+        student = Student(args.checkpoint_dir, space_first=args.space_first, y_norm=args.y_norm,
+                          temperature=args.temperature)
     print(f"{len(jobs)} runs ({len(done)} already done)")
 
     t0 = time.time()
@@ -188,7 +198,7 @@ def main():
                 "symmetry": g, "n_init": len(X0), "boundary": spec["boundary"],
                 "edge_dist": edge_distance(spec["argmin"]), "X": np.round(X, 6).tolist(),
                 "y": np.round(y, 6).tolist(), "log_regret": np.round(lr, 4).tolist(), "n_invalid": 0,
-                "p_nonnumber": round(p_nn, 5)}) + "\n")
+                "p_nonnumber": round(p_nn, 5), "temperature": None if tmpl == "RS-baseline" else args.temperature}) + "\n")
             fo.flush()
             if (k + 1) % 10 == 0:
                 el = time.time() - t0

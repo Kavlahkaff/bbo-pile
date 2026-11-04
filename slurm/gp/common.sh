@@ -31,15 +31,20 @@ if [[ -f "${WANDB_ENV_FILE:-}" ]]; then
   set -a; source "$WANDB_ENV_FILE"; set +a
 fi
 
-export CORPUS BASE OUT TOKENS LR
+export CORPUS BASE OUT MODEL TOKENS LR
 export PYTHONPATH="$REPO${PYTHONPATH:+:$PYTHONPATH}"
 export PYTHONWARNINGS=ignore
 mkdir -p "$OUT"
 
-# array jobs over datasets: task 0 -> R, task 1 -> O
-DATASET_LIST=(R O)
+# array jobs over datasets: task i -> i-th entry of $DATASET_ARRAY (default "R O": task 0 -> R, task 1 -> O).
+# Override the array range to match, e.g. DATASET_ARRAY="O_none O_random O_causal" sbatch --array=0-2 ...
+read -r -a DATASET_LIST <<< "${DATASET_ARRAY:-R O}"
+if [[ -n "${SLURM_ARRAY_TASK_ID:-}" && "${ARRAY_OVER_DATASETS:-0}" == 1 ]] && (( SLURM_ARRAY_TASK_ID >= ${#DATASET_LIST[@]} )); then
+  echo "[FATAL] array task $SLURM_ARRAY_TASK_ID but DATASET_ARRAY has ${#DATASET_LIST[@]} entries: ${DATASET_LIST[*]}" >&2
+  exit 1
+fi
 if [[ -n "${SLURM_ARRAY_TASK_ID:-}" && -z "${DATASETS:-}" && "${ARRAY_OVER_DATASETS:-0}" == 1 ]]; then
   export DATASETS=${DATASET_LIST[$SLURM_ARRAY_TASK_ID]}
 fi
 echo "[INFO] $(date) job ${SLURM_JOB_ID:-local} task ${SLURM_ARRAY_TASK_ID:--} on $(hostname): venv=$VENV" \
-     "DATASETS=${DATASETS:-all} OUT=$OUT"
+     "DATASETS=${DATASETS:-all} MODEL=$MODEL TOKENS=$TOKENS OUT=$OUT"

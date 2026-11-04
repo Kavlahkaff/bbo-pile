@@ -74,6 +74,12 @@ class History:
     # if True, the prompt is "search-space:...,algorithm:<tag>,history:..." (search space before the optimizer tag);
     # the default keeps the original order "algorithm:<tag>,search-space:...,history:..."
     space_first: bool = False
+    # how y is quantized to 0..999:
+    #   "global": with the min / max over all trials in the prompt (original; every y token changes when a new
+    #             trial extends the range, and in a full training line early y tokens depend on later trials)
+    #   "causal": trial t with the min / max over trials 0..t only, so a y token never changes once written and every
+    #             prefix of a training line is exactly what the model sees at inference
+    y_norm: str = "global"
 
     def add_trial(self, config, result):
 
@@ -135,11 +141,16 @@ class History:
         string += ',history:'
 
         if len(self.trials) > 0:
+            assert self.y_norm in ("global", "causal"), f"unknown y_norm {self.y_norm}"
             y_min = min(trial.metric for trial in self.trials)
             y_max = max(trial.metric for trial in self.trials)
             if y_min == y_max:
                 y_max += 1  # Avoid division by zero in quantization
+            run_min, run_max = float("inf"), float("-inf")
             for trial in self.trials:
+                if self.y_norm == "causal":
+                    run_min, run_max = min(run_min, trial.metric), max(run_max, trial.metric)
+                    y_min, y_max = run_min, (run_max if run_max > run_min else run_min + 1)
                 for i, (hp_name, hp) in enumerate(hypers):
                     if not isinstance(hp, Domain):
                         continue

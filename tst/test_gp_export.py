@@ -204,3 +204,50 @@ def test_only_best(corpus, tmp_path):
     # all seeds of the kept teacher
     n_train_fn = sum(1 for s in specs.values() if s["split"] == "train")
     assert len(lines["train"]) == 2 * n_train_fn
+
+
+def test_prefix_modes(corpus, tmp_path):
+    root, specs, trajs = corpus
+    n_train = sum(1 for t in trajs.values() if specs[t["fid"]]["split"] == "train")
+    lines, man = export(corpus, tmp_path, "--prefix_mode", "none")
+    assert len(lines["train"]) == n_train and man["args"]["prefix_mode"] == "none"
+    lines, _ = export(corpus, tmp_path, "--prefix_mode", "fixed")
+    assert sorted({len(parse_history(l)[1]) for l in lines["train"]}) == [1, 5, 10, 20, 50]
+    lines, _ = export(corpus, tmp_path, "--prefix_mode", "random", "--n_prefixes", "2")
+    assert len(lines["train"]) == 3 * n_train
+    lens = [len(parse_history(l)[1]) for l in lines["train"]]
+    short = [n for n in lens if n < 50]
+    assert len(short) == 2 * n_train and min(short) >= 2 and max(short) <= 49  # n_init missing -> 1, so >= 2
+    assert len(set(short)) > 10  # spread over many lengths, not a fixed set
+    assert {len(parse_history(l)[1]) for l in lines["valid"]} == {50}
+    again, _ = export(corpus, tmp_path, "--prefix_mode", "random", "--n_prefixes", "2")
+    assert again == lines  # seeded
+    with pytest.raises(SystemExit):
+        cgd.parse_args(["--corpus", "x", "--output_path", "y", "--sample_shorter_trajectories",
+                        "--prefix_mode", "random"])
+
+
+def test_y_norm_causal_prefix_property():
+    """causal: the prompt of the first t trials is a prefix of the prompt of all trials (global: not in general)."""
+    from syne_tune.config_space import uniform
+    cs = {"x0": uniform(0.0, 1.0), "x1": uniform(0.0, 1.0)}
+    r = np.random.default_rng(1)
+    X, y = r.uniform(size=(30, 2)), r.normal(size=30)
+
+    def prompt(n, mode):
+        h = History(name="f", algorithm="A", config_space=cs, remove_names=True, space_first=True, y_norm=mode)
+        for (a, b), v in zip(X[:n], y[:n]):
+            h.add_trial({"x0": a, "x1": b}, v)
+        return h.get_prompt()
+
+    full = prompt(30, "causal")
+    for n in (1, 5, 17):
+        assert full.startswith(prompt(n, "causal"))
+    assert not all(prompt(30, "global").startswith(prompt(n, "global")) for n in (1, 5, 17))
+    # each y token of trial t is y_t scaled with min/max of y_0..y_t
+    ys = [int(seg.split("*")[1]) for seg in full.split("history:")[1].strip("|").split("|")]
+    for t, q in enumerate(ys):
+        lo, hi = y[: t + 1].min(), y[: t + 1].max()
+        assert q == (0 if t == 0 else quantize(y[t], lo, hi))
+    h = History(name="f", algorithm="A", config_space=cs, remove_names=True)
+    assert h.y_norm == "global"

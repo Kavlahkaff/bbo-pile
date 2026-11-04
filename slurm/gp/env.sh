@@ -11,9 +11,10 @@ VENV_CPU=$REPO/.venv-datagen
 MODULES_GPU="release/25.06 GCCcore/13.3.0 Python/3.12.3 CUDA/13.0.0"
 VENV_GPU=$REPO/.venv-litgpt
 
-# training run of the go/no-go
-TOKENS=300M
-LR=5e-3
+# training run (overridable per submission, e.g. MODEL=qwen3_10M TOKENS=1.2B sbatch ...)
+MODEL=${MODEL:-qwen3_5M}
+TOKENS=${TOKENS:-300M}
+LR=${LR:-5e-3}
 
 # optional: file with WANDB_API_KEY=... (without it training logs to csv)
 WANDB_ENV_FILE=$REPO/.env.wandb

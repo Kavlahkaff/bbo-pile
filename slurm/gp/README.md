@@ -28,7 +28,26 @@ cat logs/gp/gp-analyze-<jobid>.out       # ends with both verdict.json
 Single jobs can be (re)submitted on their own, e.g. `sbatch --array=1 slurm/gp/train.sbatch` (O only).
 Rollouts resume: resubmitting skips finished runs. Logs: `logs/gp/<job>-<jobid>[_<task>].out`.
 
-## Configure
+## Follow-up runs (decoding, scale, prefix / y-normalization ablation)
+Every model's rollouts are stored under a **label**: the dataset, plus model size / tokens / temperature where they
+differ from the defaults (5M, 300M, T=1): `R`, `R_T0.5`, `R_greedy`, `R_1.2B`, `R_10M_1.2B`, `O_causal`, ...
+Variables (set as a prefix on `sbatch`, they are passed into the job):
+
+| variable | used by | meaning |
+|---|---|---|
+| `DATASET_ARRAY` | export, preprocess, train (array jobs) | datasets of the array tasks (default `R O`); match `--array` |
+| `DATASETS` | rollouts, analyze | datasets to run (default `R O`) |
+| `MODEL`, `TOKENS` | train, rollouts, score | `qwen3_5M` / `qwen3_10M`, training tokens (default 300M) |
+| `ROLLOUT_TEMPERATURE` | rollouts | 1 (default), 0.5, 0 = greedy |
+| `ROLLOUT_TAGS` | rollouts | prompt tag templates (default all five) |
+| `SCORE_DATASETS` | score | default `R` |
+| `LABELS`, `REPORT_NAME`, `PLOT_TAGS` | analyze | labels to report; with >= 2 the first is the reference of `compare/<REPORT_NAME>`; plots in `plots/<REPORT_NAME>` |
+
+Datasets `O_none` (no prefix lines), `O_random` (2 random-length prefixes per trajectory), `O_causal` (causal y
+normalization, no prefixes) each differ from `O` in one thing (`ARGS` in `gonogo.sh`); the y normalization of each
+model is passed to rollouts and scoring automatically.
+
+## Configure## Configure
 All paths live in `slurm/gp/env.sh` (`CORPUS`, `BASE`, `OUT`, modules, venvs, `TOKENS`, `LR`, wandb key file).
 `BASE` must be reachable from both clusters. Use another file without editing it:
 `sbatch --export=ALL,GP_ENV_FILE=/path/my_env.sh slurm/gp/train.sbatch`.
