@@ -181,6 +181,15 @@ def fixed_best_mid(ranks_path, pool: str = "nopriv") -> str:
     return best
 
 
+def family_best_mids(ranks_path, pool: str = "nopriv") -> dict[str, str]:
+    """family -> the best fixed teacher of that family on the TRAIN functions (mean auc_floor). Used by the export
+    (--best_by family) and by the analysis (selection baseline sel_family), so both use the same rule. With pool all
+    an oracle winner is returned as 'oracle' (the matched-kernel oracle of each function)."""
+    tr = load_ranks(ranks_path, pool)
+    tr = tr[tr.split == "train"]
+    return tr.groupby(["family", "teacher"])[FIXED_METRIC].mean().unstack().idxmin(axis=1).to_dict()
+
+
 def best_teachers(ranks_path, pool: str, best_by: str, fids) -> tuple[dict[str, str], dict]:
     """fid -> the single mid to keep, plus info for the manifest."""
     df = load_ranks(ranks_path, pool)
@@ -190,9 +199,8 @@ def best_teachers(ranks_path, pool: str, best_by: str, fids) -> tuple[dict[str, 
         return {f: mid for f in fids}, {"fixed": mid, "train_means": means.round(4).to_dict()}
     if best_by == "family":
         # best fixed teacher per family, chosen on TRAIN functions only (never on val/test)
-        tr = df[df.split == "train"]
-        means = tr.groupby(["family", "teacher"])[FIXED_METRIC].mean().unstack()
-        fam_best = means.idxmin(axis=1).to_dict()
+        means = df[df.split == "train"].groupby(["family", "teacher"])[FIXED_METRIC].mean().unstack()
+        fam_best = family_best_mids(ranks_path, pool)
         fam_of = df.groupby("fid").family.first()
         out = {}
         for f in fids:

@@ -21,7 +21,8 @@
 # Datasets (see ARGS below):
 #   go/no-go     R, O, and the O ablations O_none / O_random / O_causal (prefix lines, y normalization)
 #   Q1 / Q2      ALL (4 MLE + RS, no oracle), BEST_fixed (only the best fixed teacher), BEST_only (per function only
-#                its best teacher, tag BEST), ALL_BEST (ALL + BEST_only lines), all with random prefixes, global y
+#                the best teacher of its family, tag BEST: the model must infer the family in context), ALL_BEST
+#                (ALL + BEST_only lines), all with random prefixes, global y
 #   scale        ALL_sym8 (ALL with all 8 square symmetries per trajectory); vary MODEL / TOKENS
 # BEST_* need the step 0 ranking ($OUT/ranks/teacher_ranks.parquet).
 # Environment: CORPUS, BASE, OUT (see slurm/gp/env.sh), optionally TOKENS (300M), LR (5e-3), DATASETS ("R O"),
@@ -62,7 +63,7 @@ declare -A ARGS=(
   # Q1 (diverse vs best data) and Q2 (strategy selection): no oracle; random prefixes and global y (ablation winners)
   [ALL]="--tag_scheme kernel_mode --teachers nopriv --tag_dropout 0.2 --prefix_mode random --n_prefixes 2"
   [BEST_fixed]="--tag_scheme kernel_mode --only_best nopriv --best_by fixed --ranks $RANKS --tag_dropout 0.2 --prefix_mode random --n_prefixes 2"
-  [BEST_only]="--tag_scheme best --only_best nopriv --best_by auc_floor --ranks $RANKS --prefix_mode random --n_prefixes 2"
+  [BEST_only]="--tag_scheme best --only_best nopriv --best_by family --ranks $RANKS --prefix_mode random --n_prefixes 2"
   [ALL_BEST]="combined"
 )
 # ALL_BEST = the lines of ALL plus those of BEST_only (each best trajectory once with its own tag, once as BEST)

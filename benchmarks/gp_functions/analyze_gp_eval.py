@@ -24,11 +24,16 @@ Sections
 Selection baselines (Q2), built from the stored test traces of the non-privileged pool (4 MLE teachers + RS):
     sel_fixed     the best fixed teacher, chosen on the TRAIN functions (--ranks teacher_ranks.parquet; without it
                   chosen on these test runs, which flatters it slightly)
+    sel_family    the best fixed teacher of the function's family, chosen on the TRAIN functions (same rule as the
+                  BEST export, --best_by family): the target of BEST; the family is not shown to the student, it has
+                  to infer it from the observations
     sel_loso      per function the best teacher by mean auc_floor over the OTHER seeds of that function, run on this
-                  seed (leave-one-seed-out: realistic per-function selection, the target of BEST)
+                  seed (leave-one-seed-out per-function selection; on the step 0 ranking no better than sel_fixed)
     sel_mixture   a uniformly random teacher of the pool (mean over the pool)
     sel_hindsight the best teacher on this very seed (optimistic upper bound, winner's curse)
-A student prompted BEST is compared with all four; "closed" for BEST is the share of the sel_fixed -> sel_loso gap.
+A student prompted BEST is compared with all of them; "closed" for BEST is the share of the sel_fixed -> sel_family
+gap. Because the student's imitation gap is larger than the selection headroom, the decisive Q2 comparison is student
+vs student of the same model: BEST vs the fixed teacher's tag (section 1b).
 Literal tags (e.g. GP-M12-MLE, the fixed teacher's tag) are compared with that teacher on every function.
 """
 import argparse
@@ -52,9 +57,10 @@ TAG_TEACHER = {"GP-{K}-ORACLE": "oracle", "GP-{K}-MLE": "mle_matched", "RS": "rs
 # fixed colours: a student and the teacher it imitates share the hue (student solid, teacher dashed)
 TAG_COLOR = {"GP-{K}-ORACLE": "#d62728", "GP-{K}-MLE": "#1f77b4", "RS": "#7f7f7f", "UNK": "#9467bd",
              "RS-baseline": "#bcbd22", "BEST": "#2ca02c", "fixed": "#e08a00"}
-TEACHER_COLOR = {"oracle": "#d62728", "mle_matched": "#1f77b4", "rs": "#7f7f7f", "sel_loso": "#2ca02c",
-                 "sel_fixed": "#e08a00", "sel_mixture": "#9467bd", "sel_hindsight": "#555555"}
-SELECTION = ["sel_fixed", "sel_loso", "sel_mixture", "sel_hindsight"]
+TEACHER_COLOR = {"oracle": "#d62728", "mle_matched": "#1f77b4", "rs": "#7f7f7f", "sel_loso": "#0f9fb5",
+                 "sel_fixed": "#e08a00", "sel_mixture": "#9467bd", "sel_hindsight": "#555555",
+                 "sel_family": "#2ca02c"}
+SELECTION = ["sel_fixed", "sel_family", "sel_loso", "sel_mixture", "sel_hindsight"]
 LITERAL_MLE = re.compile(r"^GP-([A-Z0-9]+)-MLE$")
 
 
@@ -64,7 +70,7 @@ def tag_reference(tag):
     if tag in TAG_TEACHER:
         return TAG_TEACHER[tag]
     if tag in ("BEST", "chosen"):  # chosen: an arm's selected prompt (compare_gp_arms label@TAG)
-        return "sel_loso"
+        return "sel_family"
     m = LITERAL_MLE.match(tag)
     if m:
         return f"mid=mle|ucb4|{m.group(1).lower()}"
@@ -82,6 +88,16 @@ def teacher_rows(T, ref):
     return T[T.teacher == ref]
 
 
+def family_choice(T, ranks):
+    """family -> mid of the best fixed non-privileged teacher of that family (train ranking, else these runs)."""
+    if ranks:
+        sys.path.insert(0, str(ROOT / "generate_training_data"))
+        from compile_gp_data import family_best_mids
+        return family_best_mids(ranks, "nopriv")
+    pool = T[T.mid.str.startswith("mle|") | (T.mid == "rs")]
+    return pool.groupby(["family", "mid"]).auc_floor.mean().unstack().idxmin(axis=1).to_dict()
+
+
 def fixed_choice(T, ranks):
     """Mid of the best fixed non-privileged teacher: from the train ranking if given, else on these runs."""
     if ranks:
@@ -93,18 +109,20 @@ def fixed_choice(T, ranks):
 
 
 def add_selection_baselines(T, ranks=None):
-    """T plus rows for sel_fixed / sel_loso / sel_mixture / sel_hindsight (see module doc). Returns (T, info)."""
+    """T plus rows for the selection baselines sel_* (see module doc). Returns (T, info)."""
     pool = T[T.mid.str.startswith("mle|") | (T.mid == "rs")]
     if pool.empty:
         return T, {}
     fixed, where = fixed_choice(T, ranks)
+    fam_pick = family_choice(T, ranks)
+    family_of = T.groupby("fid").family.first()
     A = pool.pivot_table(index=["fid", "seed"], columns="mid", values="auc_floor")
     by_key = {(r.fid, r.seed, r.mid): r for r in pool.itertuples(index=False)}
     rows = []
     for fid, g in A.groupby(level="fid"):
         for (_, seed), row in g.iterrows():
             others = g.drop(index=(fid, seed))
-            picks = {"sel_fixed": fixed, "sel_hindsight": row.idxmin()}
+            picks = {"sel_fixed": fixed, "sel_family": fam_pick.get(family_of[fid]), "sel_hindsight": row.idxmin()}
             if len(others):
                 picks["sel_loso"] = others.mean().idxmin()
             for name, mid in picks.items():
@@ -119,7 +137,8 @@ def add_selection_baselines(T, ranks=None):
             rows.append(mix)
     S = pd.DataFrame(rows)
     loso = S[S.teacher == "sel_loso"].picked.value_counts(normalize=True).round(3).to_dict()
-    return pd.concat([T, S], ignore_index=True), {"fixed": fixed, "fixed_chosen_on": where, "loso_picks": loso}
+    return pd.concat([T, S], ignore_index=True), {"fixed": fixed, "fixed_chosen_on": where, "family": fam_pick,
+                                                  "loso_picks": loso}
 
 
 def boot_ci(x, n=2000, seed=0):
@@ -246,7 +265,7 @@ def rollout_tables(R, T):
         t = teacher_rows(T, teacher)
         if t.empty:
             continue
-        # closed share against real teachers (anchor RS) and for BEST against sel_loso (anchor sel_fixed)
+        # closed share against real teachers (anchor RS) and for BEST against sel_family (anchor sel_fixed)
         main = teacher not in SELECTION or teacher == tag_reference(tag)
         base = tag_base(tag) if main and teacher != tag_base(tag) else None
         for metric in ("auc", "auc_floor"):
@@ -399,9 +418,10 @@ def main():
                 + ", ".join(f"{k} {v:.3f}" for k, v in R.groupby("tag").repeat.mean().items()),
                 "diff = student - teacher (negative = student better), per-function mean over seeds, 95% bootstrap "
                 "CI over functions; closed = share of the RS -> teacher gap the student closes (for BEST: of the "
-                "sel_fixed -> sel_loso gap)",
+                "sel_fixed -> sel_family gap)",
                 f"selection baselines (pool 4 MLE + RS): best fixed teacher {sel_info.get('fixed')} chosen on "
-                f"{sel_info.get('fixed_chosen_on')}; sel_loso picks {sel_info.get('loso_picks')}"]
+                f"{sel_info.get('fixed_chosen_on')}; per family {sel_info.get('family')}; sel_loso picks "
+                f"{sel_info.get('loso_picks')}"]
         for (tag, teacher, metric), tab in rollout_tables(R, T).items():
             if tab.empty:
                 say += ["", f"-- student[{tag}] vs teacher {teacher}, {metric}: no shared runs"]
@@ -416,7 +436,7 @@ def main():
                 verdict["oracle_tag_matches_mle_at_least"] = bool(a.ci_lo <= 0)
             if metric == "auc_floor" and "closed" in a and teacher == tag_reference(tag):
                 verdict[f"gap_closed_floor {tag} vs {teacher}"] = round(float(a.closed), 3)
-            if tag == "BEST" and metric == "auc_floor" and teacher in ("sel_fixed", "sel_loso"):
+            if tag == "BEST" and metric == "auc_floor" and teacher in ("sel_fixed", "sel_family"):
                 verdict[f"Q2 BEST vs {teacher} floor diff [ci]"] = [round(a["diff"], 4), round(a.ci_lo, 4),
                                                                    round(a.ci_hi, 4)]
                 if teacher == "sel_fixed":
@@ -426,6 +446,11 @@ def main():
             if tab.empty:
                 say += ["", f"-- student[{ta}] vs student[{tb}], {metric}: no shared (function, seed) pairs"]
                 continue
+            if ta == "BEST" and LITERAL_MLE.match(tb) and metric == "auc_floor":
+                a = tab.loc["all"]  # the decisive Q2 test: same model, same imitation error, only the selection differs
+                verdict[f"Q2 BEST vs {tb} (same model) floor diff [ci]"] = [round(a["diff"], 4), round(a.ci_lo, 4),
+                                                                            round(a.ci_hi, 4)]
+                verdict[f"Q2 BEST beats {tb} (same model)"] = bool(a.ci_hi < 0)
             tab = tab.rename(columns={"student": ta, "teacher": tb})
             tab.to_csv(out / f"student_{ta.replace('{K}', 'K')}_vs_{tb.replace('{K}', 'K')}_{metric}.csv")
             say += ["", f"-- student[{ta}] vs student[{tb}], {metric}", tab.round(3).to_string()]

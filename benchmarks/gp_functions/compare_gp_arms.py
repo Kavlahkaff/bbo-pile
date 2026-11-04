@@ -7,7 +7,7 @@ same (function, seed) starts from the same initial design in every arm.
 
 label@TAG=glob uses only the runs prompted with TAG and files them under the tag "chosen": arms with different
 prompts (e.g. BEST_only@BEST, ALL@UNK, BEST_fixed@GP-M52-MLE) are then paired directly, each against the selection
-baselines (teacher sel_loso, closed = share of the sel_fixed -> sel_loso gap). Q1 / Q2 use this.
+baselines (teacher sel_family, closed = share of the sel_fixed -> sel_family gap). Q1 / Q2 use this.
 
     python benchmarks/gp_functions/compare_gp_arms.py --corpus corpus \
         --arms 'R=rollouts/R_shard_*.jsonl' 'R_greedy=rollouts/R_greedy_shard_*.jsonl' --output_path compare/
@@ -51,7 +51,7 @@ def parse_arms(specs):
 
 
 def teacher_for(tag):
-    return tag_reference(tag) or "oracle"  # UNK is measured against the oracle, BEST against sel_loso
+    return tag_reference(tag) or "oracle"  # UNK is measured against the oracle, BEST against sel_family
 
 
 def main():
@@ -91,8 +91,8 @@ def main():
     say = [f"== ARM COMPARISON, reference = {ref}", "arms: " + ", ".join(f"{a} ({len(r)} runs)" for a, r in R.items()),
            "closed = share of the RS -> teacher gap closed (1 = teacher, 0 = RS); diff = arm - reference "
            "(negative = arm better), per-function mean over seeds, 95% bootstrap CI over functions; for BEST the "
-           "teacher is sel_loso (per-function best on the other seeds) and closed is the share of the sel_fixed -> "
-           "sel_loso gap",
+           "teacher is sel_family (best fixed teacher of the function's family) and closed is the share of the "
+           "sel_fixed -> sel_family gap",
            f"best fixed teacher: {sel_info.get('fixed')} (chosen on {sel_info.get('fixed_chosen_on')})"]
     summary = []
     for tag in tags:

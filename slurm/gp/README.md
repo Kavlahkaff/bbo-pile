@@ -56,13 +56,18 @@ floored AUC).
 |---|---|---|
 | `ALL` | 4 MLE + RS, kernel_mode tags, tag dropout 0.2 | `GP-{K}-MLE`, fixed teacher's tag, `UNK` |
 | `BEST_fixed` | only the best fixed teacher (train functions) | fixed teacher's tag |
-| `BEST_only` | per function only its best teacher (mean over its seeds), tag `BEST` | `BEST` |
+| `BEST_only` | per function only the best teacher of its family (chosen on train), tag `BEST` | `BEST` |
 | `ALL_BEST` | `ALL` + `BEST_only` lines (export after both; it concatenates them) | `BEST`, `GP-{K}-MLE`, fixed, `UNK` |
 | `ALL_sym8` | `ALL` with all 8 square symmetries per trajectory (8x unique data) | as `ALL` |
 
+Why per family: in the step 0 ranking, per-function selection on held-out seeds is no better than the best fixed
+teacher (which teacher wins a function is mostly seed noise), while the best teacher per family is 0.035 better
+(floored AUC, test; up to 0.08 on m12). The family is not in the prompt: BEST has to infer it from the observations.
 Analysis: the student prompted `BEST` is compared with the selection baselines `sel_fixed` (best fixed teacher),
-`sel_loso` (per-function best chosen on the other seeds), `sel_mixture` (random teacher), `sel_hindsight` (best on
-the same seed). `LABELS` entries `label@TAG` (`@FIXED` = the fixed teacher's tag) pair arms prompted differently,
+`sel_family` (best teacher of the function's family: the target), `sel_loso` (per-function best chosen on the other
+seeds), `sel_mixture` (random teacher), `sel_hindsight` (best on the same seed). The decisive Q2 comparison is
+student vs student of the same model (`ALL_BEST`: `BEST` vs the fixed teacher's tag), because the imitation gap is
+larger than the selection headroom. `LABELS` entries `label@TAG` (`@FIXED` = the fixed teacher's tag) pair arms prompted differently,
 e.g. `LABELS="BEST_fixed_1.2B@FIXED ALL_1.2B@FIXED ALL_1.2B@UNK BEST_only_1.2B@BEST ALL_BEST_1.2B@BEST"`.
 `SKIP_EVAL=1` skips the per-label reports (only comparison + plots). `PREPROCESS_WORKERS` sets the litdata workers.
 Exports above 4 GB (`ALL_sym8`) are shuffled in two passes (64 random buckets) instead of one `shuf` in memory.
