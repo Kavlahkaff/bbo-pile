@@ -5,6 +5,10 @@ Each arm is label=glob of its rollout files (run_gp_benchmark.py output). The fi
 prompt tag that two arms share, runs are paired per (function, seed); rollout seeds do not depend on the arm, so the
 same (function, seed) starts from the same initial design in every arm.
 
+label@TAG=glob uses only the runs prompted with TAG and files them under the tag "chosen": arms with different
+prompts (e.g. BEST_only@BEST, ALL@UNK, BEST_fixed@GP-M52-MLE) are then paired directly, each against the selection
+baselines (teacher sel_loso, closed = share of the sel_fixed -> sel_loso gap). Q1 / Q2 use this.
+
     python benchmarks/gp_functions/compare_gp_arms.py --corpus corpus \
         --arms 'R=rollouts/R_shard_*.jsonl' 'R_greedy=rollouts/R_greedy_shard_*.jsonl' --output_path compare/
 
@@ -25,13 +29,13 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from analyze_gp_eval import (KINDS, LF, TAG_TEACHER, boot_ci, load_rollouts, load_teachers, mean_curve,  # noqa: E402
-                             paired, summarize)
+from analyze_gp_eval import (KINDS, LF, add_selection_baselines, boot_ci, load_rollouts, load_teachers,  # noqa: E402
+                             mean_curve, paired, summarize, tag_base, tag_reference, teacher_rows)
 
 # fixed categorical order for arms (never cycled: more arms than colours is an error); adjacent pairs checked for
 # colour-vision-deficiency separation; every arm is also named in the legend
 ARM_COLORS = ["#d62728", "#1f77b4", "#e08a00", "#7b4fbf", "#2ca02c", "#d04f9e", "#6b6b00", "#0f9fb5"]
-TAGS = ["GP-{K}-ORACLE", "GP-{K}-MLE", "UNK", "RS"]
+TAGS = ["BEST", "GP-{K}-ORACLE", "GP-{K}-MLE", "UNK", "RS"]  # order of the report; other tags (literal) follow
 
 
 def parse_arms(specs):
@@ -47,14 +51,15 @@ def parse_arms(specs):
 
 
 def teacher_for(tag):
-    return TAG_TEACHER.get(tag, "oracle")  # UNK is measured against the oracle
+    return tag_reference(tag) or "oracle"  # UNK is measured against the oracle, BEST against sel_loso
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--corpus", nargs="+", required=True)
     ap.add_argument("--arms", nargs="+", required=True, help="label=glob; the first arm is the reference")
-    ap.add_argument("--tags", nargs="+", default=TAGS)
+    ap.add_argument("--tags", nargs="+", default=None, help="default: every tag of any arm")
+    ap.add_argument("--ranks", default=None, help="teacher_ranks.parquet (best fixed teacher chosen on train)")
     ap.add_argument("--output_path", required=True)
     args = ap.parse_args()
     out = Path(args.output_path)
@@ -64,23 +69,38 @@ def main():
     arms = parse_arms(args.arms)
     if len(arms) > len(ARM_COLORS):
         raise SystemExit(f"at most {len(ARM_COLORS)} arms per comparison (got {len(arms)})")
-    R = {a: load_rollouts(f) for a, f in arms.items()}
-    R = {a: r[r.symmetry == 0] for a, r in R.items()}
+    R = {}
+    for spec, files in arms.items():
+        label, _, chosen = spec.partition("@")
+        r = load_rollouts(files)
+        r = r[r.symmetry == 0]
+        if chosen:
+            if not (r.tag == chosen).any():
+                print(f"[WARN] arm {label}: no runs with tag {chosen}, skipped")
+                continue
+            r = r[r.tag == chosen].assign(tag="chosen")
+            label = f"{label}[{chosen}]"
+        R[label] = r
     ref = next(iter(R))
     fids = set().union(*(set(r.fid) for r in R.values()))
     seeds = set().union(*(set(r.seed) for r in R.values()))
-    T = load_teachers(args.corpus, fids, seeds)
-    rs = T[T.teacher == "rs"]
+    T, sel_info = add_selection_baselines(load_teachers(args.corpus, fids, seeds), args.ranks)
+    present = set().union(*(set(r.tag) for r in R.values()))
+    tags = args.tags or [t for t in TAGS if t in present] + sorted(present - set(TAGS))
 
     say = [f"== ARM COMPARISON, reference = {ref}", "arms: " + ", ".join(f"{a} ({len(r)} runs)" for a, r in R.items()),
            "closed = share of the RS -> teacher gap closed (1 = teacher, 0 = RS); diff = arm - reference "
-           "(negative = arm better), per-function mean over seeds, 95% bootstrap CI over functions"]
+           "(negative = arm better), per-function mean over seeds, 95% bootstrap CI over functions; for BEST the "
+           "teacher is sel_loso (per-function best on the other seeds) and closed is the share of the sel_fixed -> "
+           "sel_loso gap",
+           f"best fixed teacher: {sel_info.get('fixed')} (chosen on {sel_info.get('fixed_chosen_on')})"]
     summary = []
-    for tag in args.tags:
+    for tag in tags:
         have = {a: r[r.tag == tag] for a, r in R.items() if (r.tag == tag).any()}
         if not have:
             continue
-        teacher = T[T.teacher == teacher_for(tag)]
+        teacher = teacher_rows(T, teacher_for(tag))
+        rs = T[T.teacher == tag_base(tag)]
         # common (function, seed) pairs of all arms with this tag: the summary compares like with like
         common = None
         for r in have.values():
@@ -143,7 +163,10 @@ def plot_curves(have, teacher, rs, keep, tag, path):
         if not drawn:
             ax.set_visible(False)
             continue
-        for d, name, ls in ((teacher, f"teacher {teacher.teacher.iloc[0]}", "--"), (rs, "teacher rs", ":")):
+        for d, ls in ((teacher, "--"), (rs, ":")):
+            if d.empty:
+                continue
+            name = f"teacher {d.teacher.iloc[0]}"
             d = sel(d.merge(keep, on=["fid", "seed"]))
             if len(d):
                 ax.plot(np.arange(1, 51), mean_curve(d), color="#222222", lw=1.5, ls=ls, label=name)

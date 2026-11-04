@@ -47,7 +47,27 @@ Datasets `O_none` (no prefix lines), `O_random` (2 random-length prefixes per tr
 normalization, no prefixes) each differ from `O` in one thing (`ARGS` in `gonogo.sh`); the y normalization of each
 model is passed to rollouts and scoring automatically.
 
-## Configure## Configure
+## Q1 (diverse vs best data), Q2 (strategy selection), scale
+No oracle in the training data; random prefixes (2 per trajectory), global y normalization. The best fixed teacher
+and the per-function best come from the step 0 ranking (`$OUT/ranks/teacher_ranks.parquet`, pool 4 MLE + RS,
+floored AUC).
+
+| dataset | data | default rollout tags |
+|---|---|---|
+| `ALL` | 4 MLE + RS, kernel_mode tags, tag dropout 0.2 | `GP-{K}-MLE`, fixed teacher's tag, `UNK` |
+| `BEST_fixed` | only the best fixed teacher (train functions) | fixed teacher's tag |
+| `BEST_only` | per function only its best teacher (mean over its seeds), tag `BEST` | `BEST` |
+| `ALL_BEST` | `ALL` + `BEST_only` lines (export after both; it concatenates them) | `BEST`, `GP-{K}-MLE`, fixed, `UNK` |
+| `ALL_sym8` | `ALL` with all 8 square symmetries per trajectory (8x unique data) | as `ALL` |
+
+Analysis: the student prompted `BEST` is compared with the selection baselines `sel_fixed` (best fixed teacher),
+`sel_loso` (per-function best chosen on the other seeds), `sel_mixture` (random teacher), `sel_hindsight` (best on
+the same seed). `LABELS` entries `label@TAG` (`@FIXED` = the fixed teacher's tag) pair arms prompted differently,
+e.g. `LABELS="BEST_fixed_1.2B@FIXED ALL_1.2B@FIXED ALL_1.2B@UNK BEST_only_1.2B@BEST ALL_BEST_1.2B@BEST"`.
+`SKIP_EVAL=1` skips the per-label reports (only comparison + plots). `PREPROCESS_WORKERS` sets the litdata workers.
+Exports above 4 GB (`ALL_sym8`) are shuffled in two passes (64 random buckets) instead of one `shuf` in memory.
+
+## Configure
 All paths live in `slurm/gp/env.sh` (`CORPUS`, `BASE`, `OUT`, modules, venvs, `TOKENS`, `LR`, wandb key file).
 `BASE` must be reachable from both clusters. Use another file without editing it:
 `sbatch --export=ALL,GP_ENV_FILE=/path/my_env.sh slurm/gp/train.sbatch`.

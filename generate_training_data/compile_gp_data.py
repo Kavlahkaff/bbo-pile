@@ -22,12 +22,14 @@ ranges; ls0/ls1 swapped when the symmetry swaps the axes) to any scheme. --tag_d
 string (incl. the hp suffix) by UNK.
 
 Teacher selection:
-    --teachers {oracle,mle,oracle+mle,all} or a comma list of mids (true|ucb4|rbf, mle|ucb4|m32, rs, ...);
-               "oracle" in a list means the matched-kernel oracle of each function
-    --only_best {all,nopriv} --best_by {auc,auc_floor,family}   needs --ranks teacher_ranks.parquet (rank_gp_teachers)
+    --teachers {oracle,mle,oracle+mle,nopriv,all} or a comma list of mids (true|ucb4|rbf, mle|ucb4|m32, rs, ...);
+               "oracle" in a list means the matched-kernel oracle of each function; nopriv = the 4 MLE teachers + RS
+    --only_best {all,nopriv} --best_by {auc,auc_floor,family,fixed}   needs --ranks teacher_ranks.parquet
+        (rank_gp_teachers); pool all = every teacher, nopriv = MLE + RS (no oracle)
         per-function (auc/auc_floor): keep the teacher with the best mean over this function's seeds ("noisy best")
-        family: keep the best fixed teacher per function family, chosen on train functions (the G3 B_np rule;
-                with --only_best all this is the oracle everywhere, i.e. O)
+        family: keep the best fixed teacher per function family, chosen on train functions by auc_floor (the G3 B_np
+                rule; with --only_best all this is the oracle everywhere, i.e. O)
+        fixed:  keep one teacher for all functions, the best on the train functions by mean auc_floor
         all seeds of the kept teacher are exported.
 
 Function selection (train/val; test is never touched):
@@ -151,20 +153,45 @@ def teacher_filter(teachers: str):
         return lambda mid, s: parse_mid(mid)["mode"] == "mle"
     if teachers == "oracle+mle":
         return lambda mid, s: parse_mid(mid)["mode"] in ("true", "mle")
+    if teachers == "nopriv":
+        return lambda mid, s: parse_mid(mid)["mode"] in ("mle", "rs")
     wanted = {t.strip() for t in teachers.split(",")}
     return lambda mid, s: mid in wanted or ("oracle" in wanted and is_oracle(mid))
 
 
-def best_teachers(ranks_path, pool: str, best_by: str, fids) -> tuple[dict[str, str], dict]:
-    """fid -> the single mid to keep, plus info for the manifest."""
+FIXED_METRIC = "auc_floor"  # metric of the fixed / per-family choices
+
+
+def load_ranks(ranks_path, pool: str):
     import pandas as pd
     df = pd.read_parquet(ranks_path)
     if pool == "nopriv":
         df = df[df["mode"].isin(["mle", "rs"])]
+    return df
+
+
+def fixed_best_mid(ranks_path, pool: str = "nopriv") -> str:
+    """The single best teacher on the TRAIN functions (mean auc_floor over functions and seeds). Used by the export
+    (--best_by fixed) and by gonogo.sh for the rollout tag of that teacher, so both use the same rule."""
+    tr = load_ranks(ranks_path, pool)
+    tr = tr[tr.split == "train"]
+    best = tr.groupby("teacher")[FIXED_METRIC].mean().idxmin()
+    if best == "oracle":
+        raise ValueError("the best fixed teacher is the oracle (pool all), which has no single mid; use pool nopriv")
+    return best
+
+
+def best_teachers(ranks_path, pool: str, best_by: str, fids) -> tuple[dict[str, str], dict]:
+    """fid -> the single mid to keep, plus info for the manifest."""
+    df = load_ranks(ranks_path, pool)
+    if best_by == "fixed":
+        mid = fixed_best_mid(ranks_path, pool)
+        means = df[df.split == "train"].groupby("teacher")[FIXED_METRIC].mean().sort_values()
+        return {f: mid for f in fids}, {"fixed": mid, "train_means": means.round(4).to_dict()}
     if best_by == "family":
         # best fixed teacher per family, chosen on TRAIN functions only (never on val/test)
         tr = df[df.split == "train"]
-        means = tr.groupby(["family", "teacher"])["auc"].mean().unstack()
+        means = tr.groupby(["family", "teacher"])[FIXED_METRIC].mean().unstack()
         fam_best = means.idxmin(axis=1).to_dict()
         fam_of = df.groupby("fid").family.first()
         out = {}
@@ -255,7 +282,7 @@ def parse_args(argv=None):
     ap.add_argument("--tag_dropout", type=float, default=0.0)
     ap.add_argument("--teachers", default="all")
     ap.add_argument("--only_best", choices=["all", "nopriv"], default=None)
-    ap.add_argument("--best_by", choices=["auc", "auc_floor", "family"], default="family")
+    ap.add_argument("--best_by", choices=["auc", "auc_floor", "family", "fixed"], default="family")
     ap.add_argument("--ranks", default=None, help="teacher_ranks.parquet (needed for --only_best)")
     ap.add_argument("--boundary_margin", type=float, default=None)
     ap.add_argument("--drop_boundary", action="store_true", help="shorthand for --boundary_margin 0.02")

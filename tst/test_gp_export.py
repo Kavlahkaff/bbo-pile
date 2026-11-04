@@ -204,6 +204,20 @@ def test_only_best(corpus, tmp_path):
     # all seeds of the kept teacher
     n_train_fn = sum(1 for s in specs.values() if s["split"] == "train")
     assert len(lines["train"]) == 2 * n_train_fn
+    # one fixed teacher everywhere (nopriv: never the oracle), same rule as the rollout tag helper
+    lines, man = export(corpus, tmp_path, "--only_best", "nopriv", "--best_by", "fixed", "--ranks", str(ranks))
+    assert {tag_of(l) for l in lines["train"] + lines["valid"]} == {"GP-M32-MLE"}
+    assert man["only_best"]["fixed"] == cgd.fixed_best_mid(str(ranks)) == "mle|ucb4|m32"
+    assert len(lines["train"]) == 2 * n_train_fn
+    with pytest.raises(ValueError):
+        cgd.fixed_best_mid(str(ranks), "all")  # the oracle has no single mid
+
+
+def test_teachers_nopriv(corpus, tmp_path):
+    lines, man = export(corpus, tmp_path, "--teachers", "nopriv")
+    tags = {tag_of(l) for l in lines["train"]}
+    assert tags == {f"GP-{k.upper()}-MLE" for k in KINDS} | {"RS"}
+    assert not any(k.startswith("train_mid=true") for k in man["counts"])
 
 
 def test_prefix_modes(corpus, tmp_path):

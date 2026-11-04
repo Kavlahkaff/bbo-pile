@@ -39,6 +39,12 @@ if __name__ == "__main__":
         default=534,
         help="block size of the TokensLoader used when writing the chunks",
     )
+    parser.add_argument(
+        "--num_workers",
+        type=int,
+        default=4,
+        help="litdata workers (the line list is shared with them; memory grows with the number of workers)",
+    )
     args, _ = parser.parse_known_args()
 
     os.makedirs(args.output_path, exist_ok=True)
@@ -61,7 +67,7 @@ if __name__ == "__main__":
             fn=tokenize,                   # the function applied to each input
             inputs=data,           # the inputs to the function (here it's a list of numbers)
             output_dir= Path(args.output_path) / split,             # optimized data is stored here
-            num_workers=4,                      # The number of workers on the same machine
+            num_workers=args.num_workers,       # The number of workers on the same machine
             chunk_bytes="64MB",                  # size of each chunk
             item_loader = ld.TokensLoader(block_size=args.block_size),
             mode='overwrite',

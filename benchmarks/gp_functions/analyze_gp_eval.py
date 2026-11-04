@@ -19,11 +19,22 @@ Sections
     2. tag-likelihood confusion matrix: rows = teacher of the trace, columns = prompt tag (relative to the function
        family), entry = mean per-step NLL of the teacher's next x over the BO steps; plus next-x distance views
        (mean, median) and hit rates (greedy next x within 0.02 / 0.05 of the teacher's)
-    3. go/no-go verdict
+    3. go/no-go verdict (+ Q2 selection verdict when the model was prompted with BEST)
+
+Selection baselines (Q2), built from the stored test traces of the non-privileged pool (4 MLE teachers + RS):
+    sel_fixed     the best fixed teacher, chosen on the TRAIN functions (--ranks teacher_ranks.parquet; without it
+                  chosen on these test runs, which flatters it slightly)
+    sel_loso      per function the best teacher by mean auc_floor over the OTHER seeds of that function, run on this
+                  seed (leave-one-seed-out: realistic per-function selection, the target of BEST)
+    sel_mixture   a uniformly random teacher of the pool (mean over the pool)
+    sel_hindsight the best teacher on this very seed (optimistic upper bound, winner's curse)
+A student prompted BEST is compared with all four; "closed" for BEST is the share of the sel_fixed -> sel_loso gap.
+Literal tags (e.g. GP-M12-MLE, the fixed teacher's tag) are compared with that teacher on every function.
 """
 import argparse
 import json
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -40,8 +51,75 @@ LF = math.log10(FLOOR)
 TAG_TEACHER = {"GP-{K}-ORACLE": "oracle", "GP-{K}-MLE": "mle_matched", "RS": "rs", "RS-baseline": "rs"}
 # fixed colours: a student and the teacher it imitates share the hue (student solid, teacher dashed)
 TAG_COLOR = {"GP-{K}-ORACLE": "#d62728", "GP-{K}-MLE": "#1f77b4", "RS": "#7f7f7f", "UNK": "#9467bd",
-             "RS-baseline": "#bcbd22"}
-TEACHER_COLOR = {"oracle": "#d62728", "mle_matched": "#1f77b4", "rs": "#7f7f7f"}
+             "RS-baseline": "#bcbd22", "BEST": "#2ca02c", "fixed": "#e08a00"}
+TEACHER_COLOR = {"oracle": "#d62728", "mle_matched": "#1f77b4", "rs": "#7f7f7f", "sel_loso": "#2ca02c",
+                 "sel_fixed": "#e08a00", "sel_mixture": "#9467bd", "sel_hindsight": "#555555"}
+SELECTION = ["sel_fixed", "sel_loso", "sel_mixture", "sel_hindsight"]
+LITERAL_MLE = re.compile(r"^GP-([A-Z0-9]+)-MLE$")
+
+
+def tag_reference(tag):
+    """The teacher a prompt tag should be compared with: a teacher label, 'mid=<mid>' for a literal kernel tag, or a
+    selection baseline."""
+    if tag in TAG_TEACHER:
+        return TAG_TEACHER[tag]
+    if tag in ("BEST", "chosen"):  # chosen: an arm's selected prompt (compare_gp_arms label@TAG)
+        return "sel_loso"
+    m = LITERAL_MLE.match(tag)
+    if m:
+        return f"mid=mle|ucb4|{m.group(1).lower()}"
+    return "oracle" if tag == "UNK" else None
+
+
+def tag_base(tag):
+    """Lower anchor of the 'closed' share: RS, or the best fixed teacher for BEST (share of the selection gap)."""
+    return "sel_fixed" if tag in ("BEST", "chosen") else "rs"
+
+
+def teacher_rows(T, ref):
+    if ref.startswith("mid="):
+        return T[T.mid == ref[4:]]
+    return T[T.teacher == ref]
+
+
+def fixed_choice(T, ranks):
+    """Mid of the best fixed non-privileged teacher: from the train ranking if given, else on these runs."""
+    if ranks:
+        sys.path.insert(0, str(ROOT / "generate_training_data"))
+        from compile_gp_data import fixed_best_mid
+        return fixed_best_mid(ranks, "nopriv"), "train functions (teacher_ranks.parquet)"
+    pool = T[T.mid.str.startswith("mle|") | (T.mid == "rs")]
+    return pool.groupby("mid").auc_floor.mean().idxmin(), "these test runs (no --ranks; flatters sel_fixed)"
+
+
+def add_selection_baselines(T, ranks=None):
+    """T plus rows for sel_fixed / sel_loso / sel_mixture / sel_hindsight (see module doc). Returns (T, info)."""
+    pool = T[T.mid.str.startswith("mle|") | (T.mid == "rs")]
+    if pool.empty:
+        return T, {}
+    fixed, where = fixed_choice(T, ranks)
+    A = pool.pivot_table(index=["fid", "seed"], columns="mid", values="auc_floor")
+    by_key = {(r.fid, r.seed, r.mid): r for r in pool.itertuples(index=False)}
+    rows = []
+    for fid, g in A.groupby(level="fid"):
+        for (_, seed), row in g.iterrows():
+            others = g.drop(index=(fid, seed))
+            picks = {"sel_fixed": fixed, "sel_hindsight": row.idxmin()}
+            if len(others):
+                picks["sel_loso"] = others.mean().idxmin()
+            for name, mid in picks.items():
+                r = by_key.get((fid, seed, mid))
+                if r is not None:
+                    rows.append(r._asdict() | {"teacher": name, "picked": mid})
+            members = [by_key[(fid, seed, m)] for m in row.dropna().index if (fid, seed, m) in by_key]
+            mix = members[0]._asdict() | {"teacher": "sel_mixture", "mid": "mixture", "picked": "mixture"}
+            mix["lr"] = np.mean([np.maximum(m.lr, LF) for m in members], axis=0)  # curves are shown floored
+            for k in ("auc", "auc_floor", "final", "final_floor", "repeat"):
+                mix[k] = float(np.mean([getattr(m, k) for m in members]))
+            rows.append(mix)
+    S = pd.DataFrame(rows)
+    loso = S[S.teacher == "sel_loso"].picked.value_counts(normalize=True).round(3).to_dict()
+    return pd.concat([T, S], ignore_index=True), {"fixed": fixed, "fixed_chosen_on": where, "loso_picks": loso}
 
 
 def boot_ci(x, n=2000, seed=0):
@@ -99,12 +177,13 @@ def load_rollouts(paths):
 def load_teachers(corpus, fids, seeds):
     specs = load_specs(corpus)
     rows = []
-    for t in iter_trajectories(corpus, fields=("fid", "seed", "mid", "log_regret"), split="test"):
+    for t in iter_trajectories(corpus, fields=("fid", "seed", "mid", "log_regret", "X", "n_init"), split="test"):
         if t["fid"] in fids and t["seed"] in seeds:
             s = specs[t["fid"]]
             rows.append({"fid": t["fid"], "family": s["kind"], "seed": t["seed"], "mid": t["mid"],
                          "teacher": teacher_label(t["mid"], s["kind"]), "boundary": s["boundary"],
-                         "edge_dist": edge_distance(s["argmin"]), "lr": np.asarray(t["log_regret"], float)}
+                         "edge_dist": edge_distance(s["argmin"]), "lr": np.asarray(t["log_regret"], float),
+                         "repeat": repeat_rate(t["X"], t["n_init"])}
                         | run_metrics(t["log_regret"]))
     return pd.DataFrame(rows)
 
@@ -128,7 +207,7 @@ def groups(per_fn):
     return out + [("boundary", per_fn[per_fn.boundary]), ("interior", per_fn[~per_fn.boundary])]
 
 
-def summarize(per_fn):
+def summarize(per_fn, base_name="rs"):
     rows = []
     for name, g in groups(per_fn):
         if len(g) == 0:
@@ -138,7 +217,7 @@ def summarize(per_fn):
                "ci_lo": lo, "ci_hi": hi}
         if "r" in g:
             den = g.t.mean() - g.r.mean()
-            row["rs"] = g.r.mean()
+            row[base_name] = g.r.mean()
             row["closed"] = (g.s.mean() - g.r.mean()) / den if abs(den) > 1e-9 else np.nan
         rows.append(row)
     if not rows:  # no shared (function, seed) pairs, e.g. incomplete rollouts
@@ -148,32 +227,44 @@ def summarize(per_fn):
 
 def rollout_tables(R, T):
     """{(tag, teacher, metric): table}. Every student tag vs the teacher it should imitate, plus oracle-tag vs the
-    matched MLE teacher (the go/no-go comparison)."""
+    matched MLE teacher (the go/no-go comparison) and, for BEST / UNK / literal tags, the selection baselines."""
     R0 = R[R.symmetry == 0]
-    rs = T[T.teacher == "rs"]
+    have_sel = (T.teacher == "sel_loso").any()
     out = {}
     tags = set(R0.tag)
-    comps = [(tag, TAG_TEACHER[tag]) for tag in sorted(tags) if tag in TAG_TEACHER]
+    comps = [(tag, tag_reference(tag)) for tag in sorted(tags) if tag_reference(tag) and tag != "UNK"]
     if "GP-{K}-ORACLE" in tags:
         comps.append(("GP-{K}-ORACLE", "mle_matched"))
     if "UNK" in tags:
         comps += [("UNK", "oracle"), ("UNK", "mle_matched")]
+    if have_sel:
+        for tag in sorted(tags):
+            if tag in ("BEST", "UNK") or LITERAL_MLE.match(tag) or tag == "GP-{K}-MLE":
+                comps += [(tag, b) for b in SELECTION if (tag, b) not in comps]
     for tag, teacher in comps:
         s = R0[R0.tag == tag]
-        t = T[T.teacher == teacher]
+        t = teacher_rows(T, teacher)
+        if t.empty:
+            continue
+        # closed share against real teachers (anchor RS) and for BEST against sel_loso (anchor sel_fixed)
+        main = teacher not in SELECTION or teacher == tag_reference(tag)
+        base = tag_base(tag) if main and teacher != tag_base(tag) else None
         for metric in ("auc", "auc_floor"):
-            out[(tag, teacher, metric)] = summarize(paired(s, t, metric, rs if teacher != "rs" else None))
+            b = T[T.teacher == base] if base else None
+            out[(tag, teacher, metric)] = summarize(paired(s, t, metric, b), base_name=base or "rs")
     return out
 
 
-STUDENT_PAIRS = [("GP-{K}-ORACLE", "GP-{K}-MLE"), ("GP-{K}-ORACLE", "UNK"), ("GP-{K}-MLE", "UNK")]
+STUDENT_PAIRS = [("GP-{K}-ORACLE", "GP-{K}-MLE"), ("GP-{K}-ORACLE", "UNK"), ("GP-{K}-MLE", "UNK"),
+                 ("BEST", "GP-{K}-MLE"), ("BEST", "UNK")]
 
 
 def student_tables(R):
     """{(tag_a, tag_b, metric): table}: two prompts of the same model, paired per (function, seed)."""
     R0 = R[R.symmetry == 0]
     out = {}
-    for a, b in STUDENT_PAIRS:
+    literal = sorted(t for t in set(R0.tag) if LITERAL_MLE.match(t))
+    for a, b in STUDENT_PAIRS + [("BEST", t) for t in literal]:
         if a in set(R0.tag) and b in set(R0.tag):
             for metric in ("auc", "auc_floor"):
                 out[(a, b, metric)] = summarize(paired(R0[R0.tag == a], R0[R0.tag == b], metric))
@@ -199,7 +290,7 @@ def regret_curves(R, T):
         if len(rg) == 0:
             continue
         series = {f"student {tag}": rg[rg.tag == tag] for tag in sorted(set(rg.tag))}
-        series |= {f"teacher {t}": tg[tg.teacher == t] for t in ("oracle", "mle_matched", "rs")}
+        series |= {f"teacher {t}": tg[tg.teacher == t] for t in ("oracle", "mle_matched", "rs", *SELECTION)}
         for who, df in series.items():
             if len(df):
                 c = mean_curve(df)
@@ -216,7 +307,10 @@ def plot_regret_curves(C, path, title=""):
     for ax, g in zip(axes[0], gs):
         for who, d in C[C.group == g].groupby("who", sort=False):
             kind, name = who.split(" ", 1)
-            color = TAG_COLOR.get(name, "#333333") if kind == "student" else TEACHER_COLOR.get(name, "#333333")
+            if kind == "student":
+                color = TAG_COLOR["fixed"] if LITERAL_MLE.match(name) else TAG_COLOR.get(name, "#333333")
+            else:
+                color = TEACHER_COLOR.get(name, "#333333")
             ax.plot(d.trial, d.log_regret_floor, color=color, lw=2 if kind == "student" else 1.5,
                     ls="-" if kind == "student" else "--", label=who)
         ax.axhline(LF, color="0.5", ls=":", lw=1)
@@ -254,7 +348,7 @@ def confusion(S, value="nll_x", stat="mean"):
     M = per_trace.pivot_table(index="row", columns="col", values=value, aggfunc=stat)
     order_r = [r for r in ["oracle", "mle_matched", "mle|rbf", "mle|m12", "mle|m32", "mle|m52", "rs"] if r in M.index]
     order_c = [c for c in ["ORACLE(matched)", "ORACLE(other)", "MLE-matched", "MLE-rbf", "MLE-m12", "MLE-m32",
-                           "MLE-m52", "RS", "UNK"] if c in M.columns]
+                           "MLE-m52", "RS", "UNK", "BEST"] if c in M.columns]
     return M.loc[order_r, order_c]
 
 
@@ -263,7 +357,8 @@ def separation(M):
     MLE rows -> any MLE column, rs -> RS. Also the exact (kernel-level) diagonal for the MLE rows."""
     mle_cols = [c for c in M.columns if c.startswith("MLE-")]
     res = {}
-    if "oracle" in M.index:
+    M = M.drop(columns=[c for c in ("BEST",) if c in M.columns])  # not a teacher's own tag
+    if "oracle" in M.index and "ORACLE(matched)" in M.columns:
         others = [c for c in M.columns if c not in ("ORACLE(matched)", "UNK")]
         res["oracle"] = bool(M.at["oracle", "ORACLE(matched)"] < M.loc["oracle", others].min())
     for r in [r for r in M.index if r.startswith("mle")]:
@@ -283,6 +378,7 @@ def main():
     ap.add_argument("--corpus", nargs="+", required=True)
     ap.add_argument("--rollouts", nargs="*", default=[])
     ap.add_argument("--scores", nargs="*", default=[])
+    ap.add_argument("--ranks", default=None, help="teacher_ranks.parquet: choose the best fixed teacher on train")
     ap.add_argument("--output_path", required=True)
     args = ap.parse_args()
     out = Path(args.output_path)
@@ -293,6 +389,7 @@ def main():
     if args.rollouts:
         R = load_rollouts(args.rollouts)
         T = load_teachers(args.corpus, set(R.fid), set(R.seed))
+        T, sel_info = add_selection_baselines(T, args.ranks)
         R.drop(columns="lr").to_csv(out / "rollout_runs.csv", index=False)
         say += [f"== 1. ROLLOUTS: {R.fid.nunique()} functions, seeds {sorted(map(int, R.seed.unique()))}, tags "
                 f"{sorted(R.tag.unique())}; mean probability on non-number tokens at proposal positions (masked "
@@ -301,7 +398,10 @@ def main():
                 "repeated proposals per tag (share of BO steps re-proposing an earlier point): "
                 + ", ".join(f"{k} {v:.3f}" for k, v in R.groupby("tag").repeat.mean().items()),
                 "diff = student - teacher (negative = student better), per-function mean over seeds, 95% bootstrap "
-                "CI over functions; closed = share of the RS -> teacher gap the student closes"]
+                "CI over functions; closed = share of the RS -> teacher gap the student closes (for BEST: of the "
+                "sel_fixed -> sel_loso gap)",
+                f"selection baselines (pool 4 MLE + RS): best fixed teacher {sel_info.get('fixed')} chosen on "
+                f"{sel_info.get('fixed_chosen_on')}; sel_loso picks {sel_info.get('loso_picks')}"]
         for (tag, teacher, metric), tab in rollout_tables(R, T).items():
             if tab.empty:
                 say += ["", f"-- student[{tag}] vs teacher {teacher}, {metric}: no shared runs"]
@@ -314,8 +414,13 @@ def main():
                 verdict["oracle_tag_vs_matched_mle_floor_diff"] = [round(a["diff"], 4), round(a.ci_lo, 4),
                                                                    round(a.ci_hi, 4)]
                 verdict["oracle_tag_matches_mle_at_least"] = bool(a.ci_lo <= 0)
-            if metric == "auc_floor" and "closed" in a and teacher == TAG_TEACHER.get(tag):
+            if metric == "auc_floor" and "closed" in a and teacher == tag_reference(tag):
                 verdict[f"gap_closed_floor {tag} vs {teacher}"] = round(float(a.closed), 3)
+            if tag == "BEST" and metric == "auc_floor" and teacher in ("sel_fixed", "sel_loso"):
+                verdict[f"Q2 BEST vs {teacher} floor diff [ci]"] = [round(a["diff"], 4), round(a.ci_lo, 4),
+                                                                   round(a.ci_hi, 4)]
+                if teacher == "sel_fixed":
+                    verdict["Q2 BEST beats the best fixed teacher"] = bool(a.ci_hi < 0)
         say += ["", "== 1b. STUDENT vs STUDENT (same model, two prompts; diff = first - second)"]
         for (ta, tb, metric), tab in student_tables(R).items():
             if tab.empty:
@@ -331,8 +436,11 @@ def main():
         W = W.loc[[t for t in (5, 10, 20, 30, 40, 50) if t in W.index]]
         say += ["", "== 1c. REGRET vs TRIAL (all functions, mean floored log10 regret; full curves per family in "
                     "regret_curves.csv / .png)", W.round(3).to_string()]
-        means = T.groupby("teacher").auc_floor.mean().rename("teacher_auc_floor")
-        say += ["", "-- teacher means on these runs (auc_floor)", means.round(3).to_string()]
+        means = T[T.seed.isin(R.seed)].merge(R[["fid", "seed"]].drop_duplicates(), on=["fid", "seed"]).groupby(
+            "teacher").agg(auc_floor=("auc_floor", "mean"), repeat=("repeat", "mean"))
+        say += ["", "-- teacher means on these runs (auc_floor; repeat = share of BO steps re-proposing an earlier "
+                    "point on the 1000-level grid, the reference for the students' repeat rates)",
+                means.round(3).to_string()]
 
     if args.scores:
         S = pd.concat([pd.read_parquet(p) for p in args.scores], ignore_index=True)

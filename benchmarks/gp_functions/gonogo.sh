@@ -18,9 +18,14 @@
 #   analyze     per label: report + verdict.json -> $OUT/eval/<label>; with >= 2 labels the paired arm comparison
 #               (first label = reference) -> $OUT/compare/<name>; trajectory plots -> $OUT/plots/<name>
 #
-# Datasets: R, O, and the O ablations O_none / O_random / O_causal (prefix lines, y normalization; see ARGS below).
+# Datasets (see ARGS below):
+#   go/no-go     R, O, and the O ablations O_none / O_random / O_causal (prefix lines, y normalization)
+#   Q1 / Q2      ALL (4 MLE + RS, no oracle), BEST_fixed (only the best fixed teacher), BEST_only (per function only
+#                its best teacher, tag BEST), ALL_BEST (ALL + BEST_only lines), all with random prefixes, global y
+#   scale        ALL_sym8 (ALL with all 8 square symmetries per trajectory); vary MODEL / TOKENS
+# BEST_* need the step 0 ranking ($OUT/ranks/teacher_ranks.parquet).
 # Environment: CORPUS, BASE, OUT (see slurm/gp/env.sh), optionally TOKENS (300M), LR (5e-3), DATASETS ("R O"),
-# ROLLOUT_TAGS (space separated templates, default all five), SCORE_DATASETS ("R"), MODEL (qwen3_5M),
+# ROLLOUT_TAGS (space separated templates; default per dataset, see tags_of), SCORE_DATASETS ("R"), MODEL (qwen3_5M),
 # ROLLOUT_TEMPERATURE (1; 0 = greedy), LABELS / REPORT_NAME / PLOT_TAGS for analyze. Rollouts of a model are stored
 # under its label: dataset + model size / tokens / temperature where not the default (R, R_10M_1.2B, O_T0.5, ...).
 # SHARD (i/n; in a SLURM array: task id / task count), CKPT_R / CKPT_O (default: the gonogo checkpoints in $BASE).
@@ -43,9 +48,8 @@ if [[ -n "${SLURM_ARRAY_TASK_ID:-}" && -n "${SLURM_ARRAY_TASK_COUNT:-}" ]]; then
   SHARD=${SHARD:-$SLURM_ARRAY_TASK_ID/$SLURM_ARRAY_TASK_COUNT}
 fi
 SHARD=${SHARD:-0/1}
-if [[ -n "${ROLLOUT_TAGS:-}" ]]; then read -r -a TAGS <<< "$ROLLOUT_TAGS"
-else TAGS=('GP-{K}-ORACLE' 'GP-{K}-MLE' 'RS' 'UNK' 'RS-baseline'); fi
 EXPORT="python generate_training_data/compile_gp_data.py --corpus $CORPUS --workers $WORKERS"
+RANKS=$OUT/ranks/teacher_ranks.parquet
 # reference R: kernel_mode tags, all teachers, tag dropout 0.2, fixed prefixes, no symmetries (S1); O = oracle only.
 # O_* = prefix / y-normalization ablation of O (each changes one thing vs O; O_causal has no prefixes, which are
 # redundant under causal normalization)
@@ -55,13 +59,59 @@ declare -A ARGS=(
   [O_none]="--tag_scheme kernel_mode --teachers oracle --tag_dropout 0.2 --prefix_mode none"
   [O_random]="--tag_scheme kernel_mode --teachers oracle --tag_dropout 0.2 --prefix_mode random --n_prefixes 2"
   [O_causal]="--tag_scheme kernel_mode --teachers oracle --tag_dropout 0.2 --prefix_mode none --y_norm causal"
+  # Q1 (diverse vs best data) and Q2 (strategy selection): no oracle; random prefixes and global y (ablation winners)
+  [ALL]="--tag_scheme kernel_mode --teachers nopriv --tag_dropout 0.2 --prefix_mode random --n_prefixes 2"
+  [BEST_fixed]="--tag_scheme kernel_mode --only_best nopriv --best_by fixed --ranks $RANKS --tag_dropout 0.2 --prefix_mode random --n_prefixes 2"
+  [BEST_only]="--tag_scheme best --only_best nopriv --best_by auc_floor --ranks $RANKS --prefix_mode random --n_prefixes 2"
+  [ALL_BEST]="combined"
 )
+# ALL_BEST = the lines of ALL plus those of BEST_only (each best trajectory once with its own tag, once as BEST)
+declare -A COMBINE=([ALL_BEST]="ALL BEST_only")
+# scale: ALL with all 8 square symmetries of every trajectory (8x the unique data)
+ARGS[ALL_sym8]="${ARGS[ALL]} --symmetries 8"
+
+# the best fixed non-privileged teacher (train functions, mean auc_floor) as a kernel_mode tag, e.g. GP-M12-MLE;
+# same rule as the BEST_fixed export
+fixed_tag() {
+  [[ -f $RANKS ]] || { echo "[FATAL] $RANKS missing: run the rank stage first" >&2; exit 1; }
+  python -c "import sys; sys.path.insert(0, 'generate_training_data')
+from compile_gp_data import base_tag, fixed_best_mid
+print(base_tag(fixed_best_mid('$RANKS'), 'kernel_mode'))"
+}
+# rollout prompt tags of a dataset's model (ROLLOUT_TAGS overrides; @FIXED = fixed_tag)
+tags_of() {
+  local t
+  if [[ -n "${ROLLOUT_TAGS:-}" ]]; then t=$ROLLOUT_TAGS
+  else case $1 in
+    R|O|O_*)      t="GP-{K}-ORACLE GP-{K}-MLE RS UNK RS-baseline" ;;
+    ALL|ALL_sym8) t="GP-{K}-MLE @FIXED UNK" ;;
+    BEST_fixed)   t="@FIXED" ;;
+    BEST_only)    t="BEST" ;;
+    ALL_BEST)     t="BEST GP-{K}-MLE @FIXED UNK" ;;
+    *)            t="GP-{K}-MLE UNK" ;;
+  esac; fi
+  [[ $t == *@FIXED* ]] && t=${t//@FIXED/$(fixed_tag)}
+  echo "$t"
+}
 # y normalization a model was trained with (rollouts and scoring must prompt it the same way)
 ynorm_of() { [[ "${ARGS[$1]}" == *"--y_norm causal"* ]] && echo causal || echo global; }
 RUN_PREFIX=gonogo
 CONFIG_DIR=configs/gp_gonogo
 
-shuffle() { for s in train valid; do shuf "$1/$s.txt" -o "$1/$s.txt"; done; }
+# shuf holds the whole file in memory: files above 4 GB (ALL_sym8) are shuffled in two passes instead (lines spread
+# over 64 random buckets, each bucket shuffled, buckets concatenated)
+shuffle() {
+  local s f n
+  for s in train valid; do
+    f=$1/$s.txt
+    n=$(wc -c < "$f")
+    if (( n < 4000000000 )); then shuf "$f" -o "$f"; continue; fi
+    rm -rf "$f.buckets"; mkdir "$f.buckets"
+    awk -v d="$f.buckets" -v seed=$RANDOM 'BEGIN { srand(seed) } { print > (d "/b" int(rand() * 64)) }' "$f"
+    for b in "$f.buckets"/b*; do shuf "$b"; done > "$f"
+    rm -rf "$f.buckets"
+  done
+}
 config_of() { ls $CONFIG_DIR/${RUN_PREFIX}_$1_${MODEL}_token_${TOKENS}_lr_${LR}_bsz_16_*_seed_0.yaml 2>/dev/null | head -1; }
 # label of a model's rollouts / reports: the dataset, plus model size / tokens / temperature where not the default
 # (R, R_1.2B, R_10M_1.2B, R_T0.5, O_greedy, ...)
@@ -91,10 +141,24 @@ case "${1:-}" in
   rank)
     python generate_training_data/rank_gp_teachers.py --corpus $CORPUS --output_path $OUT/ranks --workers $WORKERS ;;
   export)
-    for d in $DATASETS; do
-      [[ -n "${ARGS[$d]:-}" ]] || { echo "[FATAL] unknown dataset $d (known: ${!ARGS[*]})" >&2; exit 1; }
-      $EXPORT --output_path $OUT/export/$d ${ARGS[$d]} && shuffle $OUT/export/$d
-    done ;;
+    export_one() {
+      [[ -n "${ARGS[$1]:-}" ]] || { echo "[FATAL] unknown dataset $1 (known: ${!ARGS[*]})" >&2; exit 1; }
+      if [[ -n "${COMBINE[$1]:-}" ]]; then
+        local parts=(${COMBINE[$1]}) p
+        for p in "${parts[@]}"; do
+          [[ -f $OUT/export/$p/manifest.json ]] || export_one $p   # reuse finished part exports
+        done
+        mkdir -p $OUT/export/$1
+        for s in train valid; do
+          cat $(printf "$OUT/export/%s/$s.txt " "${parts[@]}") > $OUT/export/$1/$s.txt
+        done
+        printf '{"combined": "%s"}\n' "${COMBINE[$1]}" > $OUT/export/$1/manifest.json
+      else
+        $EXPORT --output_path $OUT/export/$1 ${ARGS[$1]}
+      fi
+      shuffle $OUT/export/$1
+    }
+    for d in $DATASETS; do export_one $d; done ;;
   tokenizer)
     # one tokenizer for all GP experiments: a small function sample of every scheme (incl. hp suffix, symmetries,
     # shorter trajectories); the vocabulary is symbols + characters only (sentencepiece: min = max), 1062 on the pilot
@@ -116,7 +180,8 @@ case "${1:-}" in
       trap 'rm -rf "$SCRATCH"' EXIT
       export TMPDIR=$SCRATCH/tmp DATA_OPTIMIZER_CACHE_FOLDER=$SCRATCH/chunks DATA_OPTIMIZER_DATA_CACHE_FOLDER=$SCRATCH/data
       (cd generate_training_data && python preprocess_data.py --input_path $OUT/export/$d \
-          --output_path $BASE/tokenized_dataset/$VERSION/$d --tokenizer_dir $BASE/tokenizer/$VERSION --block_size 1025)
+          --output_path $BASE/tokenized_dataset/$VERSION/$d --tokenizer_dir $BASE/tokenizer/$VERSION --block_size 1025 \
+          --num_workers ${PREPROCESS_WORKERS:-4})
       for s in train valid; do
         [[ -f $BASE/tokenized_dataset/$VERSION/$d/$s/index.json ]] || { echo "[FATAL] preprocess $d/$s wrote no index.json" >&2; exit 1; }
       done
@@ -140,30 +205,42 @@ case "${1:-}" in
     done ;;
   rollouts)
     for d in $DATASETS; do
+      read -r -a TAGS <<< "$(tags_of $d)"
+      echo "[INFO] rollouts of $d ($(label_of $d)), tags: ${TAGS[*]}"
       python benchmarks/gp_functions/run_gp_benchmark.py --corpus $CORPUS --checkpoint_dir "$(ckpt_of $d)" \
           --tags "${TAGS[@]}" --subset test_core --seeds 0 1 2 3 4 --shard $SHARD --y_norm "$(ynorm_of $d)" \
           --temperature $TEMPERATURE --output $OUT/rollouts/$(label_of $d)_shard_${SHARD/\//of}.jsonl
     done ;;
   score)
+    KM_TAGS=(GP-{RBF,M12,M32,M52}-{ORACLE,MLE} RS UNK)
     for d in ${SCORE_DATASETS:-R}; do
+      extra=(); [[ $(tags_of $d) == *BEST* ]] && extra=(BEST)   # BEST column: which teacher does BEST resemble
       python benchmarks/gp_functions/score_teacher_traces.py --corpus $CORPUS --checkpoint_dir "$(ckpt_of $d)" \
-          --subset test_core --seeds 0 1 2 3 4 --y_norm "$(ynorm_of $d)" --output $OUT/scores_$(TEMPERATURE=1 label_of $d).parquet
+          --tags "${KM_TAGS[@]}" "${extra[@]}" --subset test_core --seeds 0 1 2 3 4 --y_norm "$(ynorm_of $d)" --output $OUT/scores_$(TEMPERATURE=1 label_of $d).parquet
     done ;;
   analyze)
-    # LABELS: rollout labels to report on (default: $DATASETS); the first is the reference of the arm comparison
+    # LABELS: rollout labels to report on (default: $DATASETS); the first is the reference of the arm comparison.
+    # label@TAG compares only that label's runs prompted with TAG, paired across arms with different tags
+    # (@FIXED = the best fixed teacher's tag), e.g. LABELS="ALL@UNK BEST_fixed@FIXED BEST_only@BEST"
     LABELS=${LABELS:-$DATASETS}
-    arms=()
-    for l in $LABELS; do
+    RK=(); [[ -f $RANKS ]] && RK=(--ranks $RANKS)   # selection baselines: best fixed teacher chosen on train
+    arms=(); done_eval=" "
+    for entry in $LABELS; do
+      l=${entry%%@*}
+      [[ $entry == *@FIXED ]] && entry="$l@$(fixed_tag)"
       shopt -s nullglob; ro=($OUT/rollouts/${l}_shard_*.jsonl); shopt -u nullglob
       [[ ${#ro[@]} -gt 0 ]] || { echo "[WARN] no rollouts for $l, skipped"; continue; }
-      sc=(); [[ -f $OUT/scores_$l.parquet ]] && sc=(--scores $OUT/scores_$l.parquet)
-      python benchmarks/gp_functions/analyze_gp_eval.py --corpus $CORPUS --rollouts "${ro[@]}" "${sc[@]}" \
-          --output_path $OUT/eval/$l
-      arms+=("$l=$OUT/rollouts/${l}_shard_*.jsonl")
+      if [[ $done_eval != *" $l "* && -z "${SKIP_EVAL:-}" ]]; then
+        sc=(); [[ -f $OUT/scores_$l.parquet ]] && sc=(--scores $OUT/scores_$l.parquet)
+        python benchmarks/gp_functions/analyze_gp_eval.py --corpus $CORPUS --rollouts "${ro[@]}" "${sc[@]}" "${RK[@]}" \
+            --output_path $OUT/eval/$l
+        done_eval+="$l "
+      fi
+      arms+=("$entry=$OUT/rollouts/${l}_shard_*.jsonl")
     done
-    name=${REPORT_NAME:-$(echo $LABELS | tr ' ' '_')}
+    name=${REPORT_NAME:-$(echo $LABELS | tr ' @' '_-')}
     if [[ ${#arms[@]} -ge 2 ]]; then
-      python benchmarks/gp_functions/compare_gp_arms.py --corpus $CORPUS --arms "${arms[@]}" \
+      python benchmarks/gp_functions/compare_gp_arms.py --corpus $CORPUS --arms "${arms[@]}" "${RK[@]}" \
           --output_path $OUT/compare/$name
     fi
     [[ ${#arms[@]} -ge 1 ]] && python benchmarks/gp_functions/plot_gp_rollouts.py --corpus $CORPUS --arms "${arms[@]}" \

@@ -148,7 +148,9 @@ def plot_function(fid, cat, spec, grid, panels, curves, seed, path_png, pdf):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--corpus", nargs="+", required=True)
-    ap.add_argument("--arms", nargs="+", required=True, help="label=glob of rollout files; the first selects functions")
+    ap.add_argument("--arms", nargs="+", required=True,
+                    help="label=glob or label@TAG=glob (only that prompt; overrides --tags for this arm); the first "
+                         "arm (and its first tag) selects the functions")
     ap.add_argument("--tags", nargs="+", default=["GP-{K}-ORACLE"])
     ap.add_argument("--per_family", type=int, default=1, help="functions per family and category")
     ap.add_argument("--fids", nargs="*", default=[])
@@ -159,10 +161,11 @@ def main():
     (out / "functions").mkdir(parents=True, exist_ok=True)
 
     arms = parse_arms(args.arms)
-    students = [(a, t) for a in arms for t in args.tags]
+    arm_tags = {a: [a.partition("@")[2]] if "@" in a else list(args.tags) for a in arms}
+    students = [(a, t) for a in arms for t in arm_tags[a]]
     if len(students) > len(ARM_COLORS):
         raise SystemExit(f"at most {len(ARM_COLORS)} students (arms x tags) per picture, got {len(students)}")
-    runs = {a: load_runs(f, set(args.tags)) for a, f in arms.items()}
+    runs = {a: load_runs(f, set(arm_tags[a])) for a, f in arms.items()}
     specs = load_specs(args.corpus)
     fids = {k[0] for r in runs.values() for k in r}
     teachers = {}
@@ -170,7 +173,7 @@ def main():
         if t["fid"] in fids:
             teachers[(t["fid"], t["seed"], teacher_label(t["mid"], specs[t["fid"]]["kind"]))] = t
     first = next(iter(runs))
-    chosen, G = select(runs[first], teachers, specs, args.tags[0], args.per_family, args.fids)
+    chosen, G = select(runs[first], teachers, specs, arm_tags[first][0], args.per_family, args.fids)
     G.to_csv(out / "student_gap_per_function.csv", index=False)
     rows = []
     with PdfPages(out / "all_plots.pdf") as pdf:
@@ -193,7 +196,7 @@ def main():
                 curves[f"teacher {name}"] = (color, ls, d and d["log_regret"], allseeds)
             for (a, tag), color in zip(students, ARM_COLORS):
                 d, note = pick(runs[a], tag)
-                label = f"{a} [{tag.replace('{K}', spec['kind'].upper())}]"
+                label = f"{a.partition('@')[0]} [{tag.replace('{K}', spec['kind'].upper())}]"
                 if d is not None:
                     panels.append((label + note, d))
                 allseeds = [v["log_regret"] for (f, s, t), v in runs[a].items() if f == fid and t == tag]

@@ -5,8 +5,10 @@
 #SBATCH --mem=32G
 #SBATCH --time=01:00:00
 #SBATCH --output=logs/gp/%x-%j.out
-# Barnard. Report + verdict -> $OUT/eval/{R,O}/report.txt, verdict.json. Needs gp-rollouts and gp-score.
+# Barnard. Per label report + verdict -> $OUT/eval/<label>; arm comparison -> $OUT/compare/<REPORT_NAME>;
+# plots -> $OUT/plots/<REPORT_NAME>. Needs gp-rollouts (and gp-score for the tag-likelihood part).
 source slurm/gp/common.sh cpu
 bash benchmarks/gp_functions/gonogo.sh analyze
-echo "=== verdict R"; cat "$OUT/eval/R/verdict.json"
-echo "=== verdict O"; cat "$OUT/eval/O/verdict.json"
+for e in ${LABELS:-${DATASETS:-R O}}; do
+  l=${e%%@*}; [[ -f "$OUT/eval/$l/verdict.json" ]] && { echo "=== verdict $l"; cat "$OUT/eval/$l/verdict.json"; echo; }
+done
