@@ -1,6 +1,6 @@
 """
 Teacher-forced scoring of test traces (no rollouts): for every test trajectory of every teacher and every prompt tag,
-the model's per-step NLL of the teacher's next x (x0, x1) and y, plus the model's greedy next x0 / x1 (restricted to
+the model's per-step NLL of the teacher's next x (x0, x1) and y (renormalised over the 1000 number tokens), plus the model's greedy next x0 / x1 (restricted to
 the 1000 number tokens, each conditioned on the teacher's prefix) and its distance to the teacher's point.
 
 Tags are literal or templates with {K} = function family (see run_gp_benchmark.py). Default: all 9 kernel_mode tags +
@@ -77,8 +77,11 @@ def score_batch(model, batch, number_ids, device):
     for b, (ids, _) in enumerate(batch):
         inp[b, : len(ids)] = torch.tensor(ids)
     logits = model(inp.to(device)).float()
-    logp = torch.log_softmax(logits, -1)
     num = torch.tensor(number_ids, device=device)
+    # distribution restricted to the number tokens (the only valid tokens at x0, x1, y). Unrestricted, the mass the
+    # model puts on ending the line after '|' (packed training, shortened trajectories) would inflate nll_x0.
+    logp = torch.full_like(logits, float("-inf"))
+    logp[..., num] = torch.log_softmax(logits[..., num], -1)
     out = []
     for b, (ids, start) in enumerate(batch):
         T = (len(ids) - start) // TOKENS_PER_TRIAL

@@ -11,8 +11,8 @@ search instead of the student (sanity baseline; the teacher RS traces are in the
     python benchmarks/gp_functions/run_gp_benchmark.py --corpus corpus_student_40k --checkpoint_dir ckpt/final \
         --tags 'GP-{K}-ORACLE' 'GP-{K}-MLE' RS UNK --subset test_core --seeds 0 1 2 3 4 --output rollouts.jsonl
 
-Output: one JSON line per run {fid, family, seed, tag, prompt_tag, symmetry, n_init, X, y, log_regret, n_invalid,
-boundary, edge_dist}. Existing (fid, seed, tag, symmetry) entries in --output are skipped, so runs can be resumed or
+Output: one JSON line per run {fid, family, seed, tag, prompt_tag, symmetry, n_init, X, y, log_regret, n_invalid
+(always 0: sampling is restricted to number tokens), p_nonnumber, boundary, edge_dist}. Existing (fid, seed, tag, symmetry) entries in --output are skipped, so runs can be resumed or
 split across jobs with --shard i/n.
 """
 import argparse
@@ -55,44 +55,61 @@ def initial_designs(corpus_dirs, fids, seeds):
 
 
 class Student:
-    """Wraps one loaded OptFormerSearcher and reuses it for many runs."""
+    """The trained model as an optimizer, loaded once and reused for many runs.
 
-    def __init__(self, checkpoint_dir, space_first=True, temperature=1.0):
-        from open_optformer.optformer_searcher import OptFormerSearcher
-        self.searcher = OptFormerSearcher(checkpoint_dir=Path(checkpoint_dir), config_space=dict(CONFIG_SPACE),
-                                          task_info={"algorithm": "UNK"}, use_vllm=False, remove_names=True,
-                                          space_first=space_first)
-        self.searcher.model.eval()
+    Each new point is sampled token by token (temperature 1) with the next-token distribution restricted to the 1000
+    number tokens: x0 ~ p(. | prompt), then x1 ~ p(. | prompt, x0, ','). The restriction conditions on "the
+    trajectory continues with a valid point". It is needed because training packs lines without a separator, and R
+    contains shortened trajectories (1/5/10/20 trials), so after '|' the model also puts mass on the start of a new
+    line ('▁search-space...'). That mass is recorded per run as p_nonnumber (mean over the proposed points)."""
+
+    def __init__(self, checkpoint_dir, space_first=True, device=None):
+        from score_teacher_traces import load_model
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.model, self.tok = load_model(checkpoint_dir, self.device)
+        self.number_ids = torch.tensor([self.tok.token_to_id(str(i)) for i in range(1000)], device=self.device)
+        self.comma_id = self.tok.token_to_id(",")
+        self.max_len = self.model.max_seq_length
         self.space_first = space_first
 
+    @torch.no_grad()
+    def _next_logits(self, ids):
+        x = torch.tensor(ids[-self.max_len:], device=self.device)[None]
+        return self.model(x)[0, -1].float()
+
+    def _sample_number(self, ids, gen):
+        logits = self._next_logits(ids)
+        p_all = torch.softmax(logits, -1)
+        p_num = p_all[self.number_ids]
+        mass = float(p_num.sum())
+        k = int(torch.multinomial(p_num / p_num.sum(), 1, generator=gen))
+        return k, 1.0 - mass
+
     def run(self, f: GPGridFunction, X0: np.ndarray, tag: str, n_trials: int, seed: int):
-        s = self.searcher
-        torch.manual_seed(seed)
-        s.random_state = np.random.RandomState(seed)
-        s.study = History(name="gp", algorithm=tag, config_space=dict(CONFIG_SPACE), remove_names=True,
-                          space_first=self.space_first)
-        X, y, n_invalid = [], [], 0
+        gen = torch.Generator(device=self.device).manual_seed(seed)
+        h = History(name="gp", algorithm=tag, config_space=dict(CONFIG_SPACE), remove_names=True,
+                    space_first=self.space_first)
+        X, y, nonnum = [], [], []
         for i in range(n_trials):
             if i < len(X0):
-                cfg = {"x0": float(X0[i, 0]), "x1": float(X0[i, 1])}
+                x = [float(X0[i, 0]), float(X0[i, 1])]
             else:
-                configs, _ = s._sample_n_configs()
-                if configs:
-                    cfg = configs[0]
-                else:
-                    n_invalid += 1
-                    cfg = {k: float(v) for k, v in zip(("x0", "x1"), s.random_state.uniform(size=2))}
-            v = f({"x0": cfg["x0"], "x1": cfg["x1"]})["y"]
-            s.study.add_trial(cfg, v)
-            X.append([cfg["x0"], cfg["x1"]])
+                ids = self.tok.encode(h.get_prompt(), bos=False).tolist()
+                k0, m0 = self._sample_number(ids, gen)
+                k1, m1 = self._sample_number(ids + [int(self.number_ids[k0]), self.comma_id], gen)
+                x = [k0 / 999, k1 / 999]  # = history.dequantize on [0, 1]
+                nonnum += [m0, m1]
+            v = float(f({"x0": x[0], "x1": x[1]})["y"])
+            h.add_trial({"x0": x[0], "x1": x[1]}, v)
+            X.append(x)
             y.append(v)
-        return np.asarray(X), np.asarray(y), n_invalid
+        return np.asarray(X), np.asarray(y), float(np.mean(nonnum)) if nonnum else 0.0
 
 
 def random_search(f, X0, n_trials, seed):
     r = np.random.default_rng(seed)
     X = np.vstack([X0, r.uniform(size=(n_trials - len(X0), 2))])
-    return X, f.evaluate(X), 0
+    return X, f.evaluate(X), 0.0
 
 
 def main():
@@ -160,17 +177,18 @@ def main():
             X0 = np.clip(apply_sym(inits[(fid, seed)], g), 0, 1)
             run_seed = seed_of("student", fid, seed, tmpl, g) % 2**31
             if tmpl == "RS-baseline":
-                X, y, n_inv = random_search(f, X0, args.n_trials, run_seed)
+                X, y, p_nn = random_search(f, X0, args.n_trials, run_seed)
                 prompt_tag = None
             else:
                 prompt_tag = resolve_tag(tmpl, spec, g, args.hp_suffix)
-                X, y, n_inv = student.run(f, X0, prompt_tag, args.n_trials, run_seed)
+                X, y, p_nn = student.run(f, X0, prompt_tag, args.n_trials, run_seed)
             lr = f.log_regret(y)
             fo.write(json.dumps({
                 "fid": fid, "family": spec["kind"], "seed": seed, "tag": tmpl, "prompt_tag": prompt_tag,
                 "symmetry": g, "n_init": len(X0), "boundary": spec["boundary"],
                 "edge_dist": edge_distance(spec["argmin"]), "X": np.round(X, 6).tolist(),
-                "y": np.round(y, 6).tolist(), "log_regret": np.round(lr, 4).tolist(), "n_invalid": n_inv}) + "\n")
+                "y": np.round(y, 6).tolist(), "log_regret": np.round(lr, 4).tolist(), "n_invalid": 0,
+                "p_nonnumber": round(p_nn, 5)}) + "\n")
             fo.flush()
             if (k + 1) % 10 == 0:
                 el = time.time() - t0

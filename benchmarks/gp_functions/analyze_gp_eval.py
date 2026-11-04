@@ -64,7 +64,7 @@ def load_rollouts(paths):
         for line in open(p):
             d = json.loads(line)
             rows.append({k: d[k] for k in ("fid", "family", "seed", "tag", "symmetry", "boundary", "n_invalid")}
-                        | run_metrics(d["log_regret"]))
+                        | {"p_nonnumber": d.get("p_nonnumber", np.nan)} | run_metrics(d["log_regret"]))
     return pd.DataFrame(rows)
 
 
@@ -182,7 +182,8 @@ def main():
         T = load_teachers(args.corpus, set(R.fid), set(R.seed))
         R.to_csv(out / "rollout_runs.csv", index=False)
         say += [f"== 1. ROLLOUTS: {R.fid.nunique()} functions, seeds {sorted(R.seed.unique())}, tags "
-                f"{sorted(R.tag.unique())}; invalid proposals per run: {R.n_invalid.mean():.2f}",
+                f"{sorted(R.tag.unique())}; mean probability on non-number tokens at proposal positions (masked out): "
+                f"{R.p_nonnumber.mean():.3f}",
                 "diff = student - teacher (negative = student better), per-function mean over seeds, 95% bootstrap "
                 "CI over functions"]
         for (tag, teacher, metric), tab in rollout_tables(R, T).items():
