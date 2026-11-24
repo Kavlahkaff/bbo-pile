@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
-#SBATCH --time=12:00:00
+#SBATCH --time=24:00:00
 #SBATCH --output=logs/%x-%j.out
 # Capella. Trains $MODEL on data set $NAME -> $WORK/checkpoints/selection_v1/${RUN}...
 source slurm/common.sh gpu

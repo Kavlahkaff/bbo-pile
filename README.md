@@ -16,7 +16,7 @@ right one by itself (tag BEST or UNK)? Based on [bbo-pile](https://github.com/sy
 
 ## Design
 - 50 trials including 5-10 shared random initial points. All points lie on the 1000-level token grid.
-- 500 test functions per family (5 seeds), 500 val, and 49,998 train functions for gp and 16,666 for each of the other
+- 500 test functions per family (5 seeds), 500 val, and 99,996 train functions for gp and 33,332 for each of the other
   trained families (2 seeds). Every optimizer runs on every function.
 - **y encoding** (`--y_norm causal_log`): signed log distance to the incumbent so far. It never changes once written, so a
   training prefix is exactly an inference prompt, and every improvement is visible. `log` (rescaled each step) is the
@@ -28,7 +28,7 @@ right one by itself (tag BEST or UNK)? Based on [bbo-pile](https://github.com/sy
 ## Run
 Adjust `slurm/env.sh`, then from the repo root:
 
-    bash slurm/submit_pilot.sh     # Barnard: do the winners hold? verdict in $WORK/pilot/report.txt
+    bash slurm/submit_pilot.sh     # Barnard: do the winners hold? verdict in $PILOT/report.txt
     bash slurm/submit_cpu.sh       # Barnard, after a GO: generate -> check (contrast must hold) -> prepare all variants
     bash slurm/submit_gpu.sh       # Capella, afterwards: train -> rollouts
     bash slurm/submit_analyze.sh   # Barnard: $WORK/reports/<run>.txt

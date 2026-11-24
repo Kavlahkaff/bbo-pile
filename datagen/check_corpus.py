@@ -23,7 +23,7 @@ def boot_ci(d, n=2000, seed=0):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("corpus")
-    ap.add_argument("--train", type=int, default=49_998)
+    ap.add_argument("--train", type=int, default=99_996)
     a = ap.parse_args(argv)
     n, seen, rows = Counter(), set(), []
     for t in read(a.corpus):

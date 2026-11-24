@@ -3,7 +3,7 @@
     python -m datagen.generate --out PILOT --pilot 1000 ...        # contrast pilot on its own functions, see datagen.pilot
 Function indices per family: BASE + [0, 500) test, [500, 1000) val, [1000, 1000 + n) train; seeds 5 / 2 / 2.
 n = --train for gp and --train / 3 for rosen, sector and powers, so each winner has equally many train functions.
-HELD_OUT families have test functions only. Indices are disjoint from every function used to choose the optimizers. Raising --train later only adds functions.
+HELD_OUT families have test functions only. Indices are disjoint from every function used to choose the optimizers. Raising --train adds functions but changes which task runs which function: use a new --out.
 Output CORPUS/traj_NNNNN.jsonl, one line per run: fid, family, group, i, split, seed, opt, n_init, k (x * 999), y, lr.
 A task is resumable at function level: an incomplete last function is dropped and recomputed."""
 import argparse
@@ -78,7 +78,7 @@ def repair(path):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--train", type=int, default=49_998, help="gp train functions (others: a third)")
+    ap.add_argument("--train", type=int, default=99_996, help="gp train functions (others: a third)")
     ap.add_argument("--pilot", type=int, default=None, help="pilot: this many functions per family, no corpus")
     ap.add_argument("--limit", type=int, default=None, help="debug: only the first N jobs of this task")
     ap.add_argument("--task", type=int, default=0)

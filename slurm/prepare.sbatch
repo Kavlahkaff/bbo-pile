@@ -3,7 +3,7 @@
 #SBATCH --account=p_neurasearch
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=96G
-#SBATCH --time=04:00:00
+#SBATCH --time=08:00:00
 #SBATCH --output=logs/%x-%j.out
 # Barnard. Export -> tokenizer + checks -> litdata chunks, all under $WORK.
 source slurm/common.sh cpu
