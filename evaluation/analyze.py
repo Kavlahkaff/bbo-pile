@@ -3,7 +3,9 @@
 mean_lr  mean over trials of log10 normalised regret (+ 1e-8), no floor; main metric with the final win rate
 lin      mean linear regret; final  log10 regret after 50 trials; auc_floor3  mean_lr floored at -3 (older results)
 Questions: 1 imitation: is the student with tag T as good as teacher T?  2 selection: does BEST / UNK reach the
-family's winner, and beat the best single tag, chosen over both families? All differences: negative = first is better."""
+family's winner, and beat the best single tag? The overall line weights gp 1/2 and the other
+trained families 1/2 together; the held-out family (never in training) is reported on its own.
+All differences: negative = first is better."""
 import argparse
 import glob
 import json
@@ -13,6 +15,7 @@ import pandas as pd
 
 from datagen.check_corpus import boot_ci
 from datagen.corpus import read
+from datagen.functions import HELD_OUT
 from datagen.optimizers import OPTIMIZERS, WINNER
 
 METRICS = ["mean_lr", "lin", "final", "auc_floor3"]
@@ -56,7 +59,7 @@ def main(argv=None):
     tags = sorted(S.who.unique())
     comps = [(f"student:{o}", f"teacher:{o}", "imitation") for o in OPTIMIZERS if f"student:{o}" in tags]
     for fam, Q in R.groupby("family"):
-        out.append(f"\n== {fam} (winner {WINNER[fam]})")
+        out.append(f"\n== {fam} (winner {WINNER[fam]}{", HELD OUT" if fam in HELD_OUT else ""})")
         cs = list(comps)
         for t in ("student:BEST", "student:UNK"):
             if t in tags:
@@ -67,13 +70,14 @@ def main(argv=None):
             l, _ = diff(Q, x, y, "lin")
             _, w = diff(Q, x, y, "final")
             out.append(f"  {what:29} {x} - {y}: mean_lr {d}  lin {l}  final win rate {w:.2f}")
-    M = R.groupby(["family", "who"]).mean_lr.mean().unstack("who").mean()
+    F = R[~R.family.isin(HELD_OUT)].groupby(["family", "who"]).mean_lr.mean().unstack("who")
+    M = (F.loc[["gp"]].mean() + F.drop(index="gp").mean()) / 2
     fixed = M[[f"student:{o}" for o in OPTIMIZERS if f"student:{o}" in tags]] if comps else M[[]]
     if len(fixed):
-        out.append(f"\nBoth families, equal weight (mean_lr): best single tag {fixed.idxmin()} {fixed.min():.3f}")
+        out.append(f"\nTrained families, gp 1/2 and the others 1/2 (mean_lr): best single tag {fixed.idxmin()} {fixed.min():.3f}")
         for t in ("student:BEST", "student:UNK"):
             if t in tags:
-                out.append(f"  {t}: {M[t]:.3f}, vs best single tag {diff(R, t, fixed.idxmin(), 'mean_lr')[0]}")
+                out.append(f"  {t}: {M[t]:.3f} (best single tag - this: {fixed.min() - M[t]:+.3f})")
     text = "\n".join(out)
     print(text)
     if a.output:

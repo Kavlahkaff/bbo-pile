@@ -2,7 +2,7 @@
     python generate_training_data/compile_traces.py --corpus CORPUS --output_path exp/ALL --dataset ALL
 One line per trajectory: search-space:{...}{...},algorithm:<tag>,history:x0,x1*y|...
 Datasets: ALL       every optimizer under its own tag (GP, NM, RS); --tag_dropout of the lines get UNK instead
-          BEST      only the family's winner (GP on gp, NM on rosen), tag BEST: the family must be inferred in context
+          BEST      only the family's winner (GP on gp, NM on the others), tag BEST: the family must be inferred in context
           ALL_BEST  the lines of both
 --y_norm: see open_optformer.history.History. With "log" / "global" tokens depend on later trials, so add prefix lines
 (--n_prefixes), the only lines that then look like inference prompts. "causal_log" needs none."""
@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from datagen.functions import seed_of  # noqa: E402
+from datagen.functions import HELD_OUT, seed_of  # noqa: E402
 from datagen.optimizers import WINNER  # noqa: E402
 from evaluation.prompt import make_history  # noqa: E402
 
@@ -51,6 +51,7 @@ def process(job):
             t = json.loads(line)
             if t["split"] not in FILES:
                 continue
+            assert t["family"] not in HELD_OUT, "held-out family in train / val"
             for l in lines_of(t, a):
                 (tr if t["split"] == "train" else va).write(l + "\n")
                 n[f"{t['split']}_{t['family']}_{l.split('algorithm:')[1].split(',')[0]}"] += 1

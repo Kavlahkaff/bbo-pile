@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from datagen.functions import Function, seed_of
+from datagen.functions import FAMILIES, Function, seed_of
 from datagen.generate import BASE, N_TEST, SEEDS
 from datagen.optimizers import TRIALS, initial_design
 from evaluation.prompt import make_history
@@ -84,7 +84,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     assert a.functions <= N_TEST
     s, n = map(int, a.shard.split("/"))
-    fns = [(fam, BASE + j) for j in range(a.functions) for fam in ("gp", "rosen")][s::n]
+    fns = [(fam, BASE + j) for j in range(a.functions) for fam in FAMILIES][s::n]
     out = Path(a.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     done = set()

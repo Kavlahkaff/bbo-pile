@@ -3,12 +3,12 @@ import json
 import numpy as np
 import pytest
 
-from datagen.functions import Function
-from datagen.generate import BASE, main, repair
+from datagen.functions import FAMILIES, HELD_OUT, Function
+from datagen.generate import BASE, main, n_functions, repair
 from datagen.optimizers import OPTIMIZERS, TRIALS, initial_design, run
 
 
-@pytest.mark.parametrize("family", ["gp", "rosen"])
+@pytest.mark.parametrize("family", FAMILIES)
 @pytest.mark.parametrize("opt", list(OPTIMIZERS))
 def test_runs(family, opt):
     f = Function(family, 3)
@@ -20,8 +20,9 @@ def test_runs(family, opt):
     assert np.isfinite(f.log_regret(f(X))).all()
 
 
-def test_rosenbrock_minimum():
-    f = Function("rosen", 7)
+@pytest.mark.parametrize("family", FAMILIES[1:])
+def test_minimum(family):
+    f = Function(family, 7)
     assert f(f.spec["c"])[0] < 1e-20
 
 
@@ -38,3 +39,8 @@ def test_generate_and_resume(tmp_path):
     main(args)
     assert sorted(p.read_text().splitlines()) == sorted(text.splitlines())
     assert len(repair(p)) == 2
+
+
+def test_split_sizes():
+    assert sum(n_functions(f, "train", 3000) for f in FAMILIES if f != "gp") == n_functions("gp", "train", 3000)
+    assert all(n_functions(f, s, 3000) == 0 for f in HELD_OUT for s in ("train", "val"))

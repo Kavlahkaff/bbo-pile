@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from datagen.corpus import read
-from datagen.generate import N_TEST, N_VAL, SEEDS
+from datagen.generate import SEEDS, n_functions
 from datagen.optimizers import OPTIMIZERS, WINNER
 
 
@@ -23,7 +23,7 @@ def boot_ci(d, n=2000, seed=0):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("corpus")
-    ap.add_argument("--train", type=int, default=50_000)
+    ap.add_argument("--train", type=int, default=49_998)
     a = ap.parse_args(argv)
     n, seen, rows = Counter(), set(), []
     for t in read(a.corpus):
@@ -38,7 +38,8 @@ def main(argv=None):
                          "mean_lr": lr.mean(), "final": lr[-1], "lin": (10 ** lr).mean(), "auc_floor3": np.maximum(lr, -3).mean()})
     ok = True
     for fam in WINNER:
-        for split, size in (("test", N_TEST), ("val", N_VAL), ("train", a.train)):
+        for split in ("test", "val", "train"):
+            size = n_functions(fam, split, a.train)
             for opt in OPTIMIZERS:
                 if n[fam, split, opt] != size * SEEDS[split]:
                     print(f"INCOMPLETE {fam} {split} {opt}: {n[fam, split, opt]} of {size * SEEDS[split]}")

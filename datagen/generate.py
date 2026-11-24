@@ -1,7 +1,9 @@
 """Generate the trajectory corpus.
     python -m datagen.generate --out CORPUS --train 50000 [--task k --n_tasks n] [--workers w]
-Function indices per family: BASE + [0, 500) test, [500, 1000) val, [1000, 1000 + train) train; seeds 5 / 2 / 2. Indices
-are disjoint from every function used while choosing the optimizers. Raising --train later only adds functions.
+    python -m datagen.generate --out PILOT --pilot 1000 ...        # contrast pilot on its own functions, see datagen.pilot
+Function indices per family: BASE + [0, 500) test, [500, 1000) val, [1000, 1000 + n) train; seeds 5 / 2 / 2.
+n = --train for gp and --train / 3 for rosen, sector and powers, so each winner has equally many train functions.
+HELD_OUT families have test functions only. Indices are disjoint from every function used to choose the optimizers. Raising --train later only adds functions.
 Output CORPUS/traj_NNNNN.jsonl, one line per run: fid, family, group, i, split, seed, opt, n_init, k (x * 999), y, lr.
 A task is resumable at function level: an incomplete last function is dropped and recomputed."""
 import argparse
@@ -13,8 +15,19 @@ from pathlib import Path
 
 import numpy as np
 
-BASE, N_TEST, N_VAL = 100_000, 500, 500
-SEEDS = {"test": 5, "val": 2, "train": 2}
+from datagen.functions import FAMILIES, HELD_OUT
+
+BASE, PILOT_BASE, N_TEST, N_VAL = 100_000, 400_000, 500, 500
+SEEDS = {"test": 5, "val": 2, "train": 2, "pilot": 5}
+
+
+def n_functions(family, split, train):
+    """Number of functions of a family in a split."""
+    if split == "test":
+        return N_TEST
+    if family in HELD_OUT:
+        return 0
+    return N_VAL if split == "val" else train if family == "gp" else train // 3
 
 
 def split_of(j):
@@ -24,8 +37,8 @@ def split_of(j):
 def run_function(job):
     from datagen.functions import Function
     from datagen.optimizers import OPTIMIZERS, Q, initial_design, run
-    family, j, opts = job
-    fn, split, lines = Function(family, BASE + j), split_of(j), []
+    family, i, split, opts = job
+    fn, lines = Function(family, i), []
     for seed in range(SEEDS[split]):
         n_init = len(initial_design(fn.i, seed))
         for opt in opts or OPTIMIZERS:
@@ -65,21 +78,24 @@ def repair(path):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--train", type=int, default=50_000, help="train functions per family")
-    ap.add_argument("--test_val_only", action="store_true")
+    ap.add_argument("--train", type=int, default=49_998, help="gp train functions (others: a third)")
+    ap.add_argument("--pilot", type=int, default=None, help="pilot: this many functions per family, no corpus")
     ap.add_argument("--limit", type=int, default=None, help="debug: only the first N jobs of this task")
     ap.add_argument("--task", type=int, default=0)
     ap.add_argument("--n_tasks", type=int, default=1)
     ap.add_argument("--workers", type=int, default=os.cpu_count())
     a = ap.parse_args(argv)
-    from datagen.functions import FAMILIES
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    n = N_TEST + N_VAL + (0 if a.test_val_only else a.train)
-    jobs = [(fam, j, None) for j in range(n) for fam in FAMILIES][a.task::a.n_tasks][:a.limit]
+    if a.pilot:
+        jobs = [(fam, PILOT_BASE + j, "pilot", None) for j in range(a.pilot) for fam in FAMILIES]
+    else:
+        jobs = [(fam, BASE + j, split_of(j), None) for j in range(N_TEST + N_VAL + a.train) for fam in FAMILIES
+                if j < N_TEST or j < N_TEST + sum(n_functions(fam, s, a.train) for s in ("val", "train"))]
+    jobs = jobs[a.task::a.n_tasks][:a.limit]
     path = out / f"traj_{a.task:05d}.jsonl"
     done = repair(path)
-    jobs = [x for x in jobs if f"{x[0]}-{BASE + x[1]}" not in done]
+    jobs = [x for x in jobs if f"{x[0]}-{x[1]}" not in done]
     print(f"task {a.task}/{a.n_tasks}: {len(jobs)} functions to run, {len(done)} done", flush=True)
     t0 = time.time()
     with get_context("spawn").Pool(a.workers) as pool, open(path, "a") as fh:

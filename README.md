@@ -1,7 +1,8 @@
 # Optimizer selection with a BBO-Pile-style model
 
-A small language model is trained on optimizer trajectories in 2D. Two function families have different winners:
-GP samples (GP-BO wins) and Rosenbrock (Nelder-Mead wins). Can the model imitate each optimizer by tag, and pick the
+A small language model is trained on optimizer trajectories in 2D. Different function families have different winners:
+GP-BO on GP samples, Nelder-Mead on Rosenbrock, attractive sector and different powers. An ill-conditioned ellipsoid is
+held out for testing. Can the model imitate each optimizer by tag, and pick the
 right one by itself (tag BEST or UNK)? Based on [bbo-pile](https://github.com/syne-tune/bbo-pile).
 
 | directory | contents |
@@ -15,7 +16,8 @@ right one by itself (tag BEST or UNK)? Based on [bbo-pile](https://github.com/sy
 
 ## Design
 - 50 trials including 5-10 shared random initial points. All points lie on the 1000-level token grid.
-- Per family: 500 test (5 seeds), 500 val, 50,000 train functions (2 seeds). Every optimizer runs on every function.
+- 500 test functions per family (5 seeds), 500 val, and 49,998 train functions for gp and 16,666 for each of the other
+  trained families (2 seeds). Every optimizer runs on every function.
 - **y encoding** (`--y_norm causal_log`): signed log distance to the incumbent so far. It never changes once written, so a
   training prefix is exactly an inference prompt, and every improvement is visible. `log` (rescaled each step) is the
   alternative; use it with `N_PREFIXES=2`. Export and rollouts must use the same value.
@@ -26,7 +28,8 @@ right one by itself (tag BEST or UNK)? Based on [bbo-pile](https://github.com/sy
 ## Run
 Adjust `slurm/env.sh`, then from the repo root:
 
-    bash slurm/submit_cpu.sh       # Barnard: generate -> check (contrast must hold) -> prepare
+    bash slurm/submit_pilot.sh     # Barnard: do the winners hold? verdict in $WORK/pilot/report.txt
+    bash slurm/submit_cpu.sh       # Barnard, after a GO: generate -> check (contrast must hold) -> prepare
     bash slurm/submit_gpu.sh       # Capella, afterwards: train -> rollouts
     sbatch slurm/analyze.sbatch    # Barnard: $WORK/reports/<run>.txt
 
