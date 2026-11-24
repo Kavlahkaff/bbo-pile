@@ -17,3 +17,4 @@ if [[ -f $WANDB_ENV_FILE ]]; then set -a; source "$WANDB_ENV_FILE"; set +a; fi
 export PYTHONPATH="$REPO${PYTHONPATH:+:$PYTHONPATH}" OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 mkdir -p "$WORK"
 RUN=${NAME}_${MODEL}_${TOKENS}
+if [[ $MODEL_SEED != 0 ]]; then RUN+=_s$MODEL_SEED; fi

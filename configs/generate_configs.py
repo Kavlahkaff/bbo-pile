@@ -97,6 +97,7 @@ def generate_configs(args):
                         new_config['log']['project'] = project
                         new_config['log']['group'] = model_name
                         new_config['seed'] = seed
+                        new_config['data']['init_args']['seed'] = 42 + seed      # data order
                         new_config['data']['init_args']['data_path'] = str(
                             base_path / 'tokenized_dataset' / args.version / args.dataset)
                         new_config['tokenizer_dir'] = str(base_path / 'tokenizer' / tok_version)

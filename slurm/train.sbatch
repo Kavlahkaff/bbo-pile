@@ -11,7 +11,7 @@ source slurm/common.sh gpu
 CFG_DIR=configs/generated/$RUN
 rm -rf "$CFG_DIR"
 python configs/generate_configs.py --base_path "$WORK" --version selection_v1 --dataset "$NAME" --models "$MODEL" --tokens "$TOKENS" \
-  --lrs "$LR" --bsz 16 --vocab_size "$(cat generate_training_data/vocab_size.txt)" --max_seq_length 1024 \
+  --lrs "$LR" --seeds "$MODEL_SEED" --bsz 16 --vocab_size "$(cat generate_training_data/vocab_size.txt)" --max_seq_length 1024 \
   --min_tokens_per_param 0 --run_prefix "${NAME}_" --out_dir "$CFG_DIR"
 CFG=$(ls "$CFG_DIR"/*.yaml)
 sed -i "s#^tokenizer_dir: .*#tokenizer_dir: $WORK/tokenizer#; s#^out_dir: .*#out_dir: $WORK/checkpoints/selection_v1/$RUN#" "$CFG"

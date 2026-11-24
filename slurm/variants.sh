@@ -14,3 +14,11 @@ variant() {
     *) echo "unknown variant $1" >&2; return 1 ;;
   esac
 }
+# Model seeds of a variant (SEEDS="..." overrides them for all).
+seeds_of() {
+  if [[ -n "${SEEDS:-}" ]]; then echo "$SEEDS"; return; fi
+  case "$1" in
+    base|noUNK|noBEST) echo 0 1 2 ;;
+    *) echo 0 ;;
+  esac
+}

@@ -16,6 +16,7 @@ N_PREFIXES=${N_PREFIXES:-0}            # 2 for the rescaled encodings (log, glob
 MODEL=${MODEL:-qwen3_5M}
 TOKENS=${TOKENS:-2.4B}
 LR=${LR:-5e-3}
+MODEL_SEED=${MODEL_SEED:-0}            # initialisation and data order of the training run
 TAG_DROPOUT=${TAG_DROPOUT:-0.2}        # share of the lines of ALL that get UNK instead of their tag; 0 = no UNK
 EXCLUDE=${EXCLUDE:-}                   # optimizers left out of the training data, e.g. RS
 if [[ -z "${TAGS:-}" ]]; then          # tags for the rollouts: what the model was trained on
