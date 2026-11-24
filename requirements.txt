@@ -1,13 +1,13 @@
-  numpy==1.26.3
-  coolname
-  pandas
-  huggingface-hub
-  scikit-learn
-  dill
-  litgpt>=0.5.12
-  litdata
-#  syne-tune[extra]
-  pyparfor
-  sentencepiece
-  wandb
-  matplotlib
+numpy==1.26.3 ; python_version < "3.13"
+numpy>=2 ; python_version >= "3.13"  # numpy 1.26 has no wheels for python 3.13 (Barnard)
+scipy
+pandas
+litgpt>=0.5.12
+litdata
+sentencepiece
+syne-tune  # without extras: [basic] pulls in boto3/sagemaker versions that conflict with litdata
+wandb
+pyarrow<17 ; python_version < "3.13"
+pyarrow>=18 ; python_version >= "3.13"
+boto3>=1.34  # old botocore pulled in by litdata breaks on python>=3.10
+pytest

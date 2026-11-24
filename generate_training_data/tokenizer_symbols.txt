@@ -1,0 +1,11 @@
+# extra user-defined symbols: every optimizer tag is exactly one token, plus the pieces of the fixed search-space header
+GP
+NM
+RS
+BEST
+UNK
+search-space
+min_value
+max_value
+0.0
+1.0

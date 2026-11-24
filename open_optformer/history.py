@@ -56,6 +56,42 @@ def encode(x, hp: Domain, q: int = 1000, hp_name: str = ""):
         raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
 
 
+Y_NORMS = ("global", "causal", "causal_log", "log")
+LOG_DECADES = 8  # dynamic range of the log y encodings: differences below 1e-8 of the observed range look equal
+
+
+def causal_log_tokens(ys, q: int = 1000, decades: int = LOG_DECADES) -> list[int]:
+    """Append-only y tokens (y is minimised). Trial t is coded by its signed log distance to the incumbent m (best
+    of trials 0..t-1), relative to the range of trials 0..t:
+        below c = q/2 - 1: improvement, smaller token = larger improvement
+        c                : first trial, or exactly equal to the incumbent
+        above c          : worse than the incumbent, larger token = worse
+    Uses trials 0..t only, so a token never changes and every prefix of a training line is an inference prompt.
+    Invariant to affine rescaling of y."""
+    c = q // 2 - 1
+    if not len(ys):
+        return []
+    out, m, hi = [c], ys[0], ys[0]
+    for v in ys[1:]:
+        hi = max(hi, v)
+        d, scale = v - m, hi - min(m, v)
+        if d == 0 or scale <= 0:
+            out.append(c)
+        else:
+            u = 1 + np.log10(max(abs(d) / scale, 10.0 ** -decades)) / decades       # 0 (tiny) .. 1 (full range)
+            out.append(c + 1 + int(round(u * (q - 2 - c))) if d > 0 else c - 1 - int(round(u * (c - 1))))
+        m = min(m, v)
+    return out
+
+
+def log_tokens(ys, q: int = 1000, decades: int = LOG_DECADES) -> list[int]:
+    """log10 distance to the best trial in the prompt, relative to the range of the prompt (best = 0, worst = q - 1).
+    Like "global", all tokens change when a new trial extends the range or becomes the best."""
+    lo, hi = min(ys), max(ys)
+    scale = hi - lo if hi > lo else 1.0
+    return [int(round((1 + np.log10(max((v - lo) / scale, 10.0 ** -decades)) / decades) * (q - 1))) for v in ys]
+
+
 @dataclass
 class Trial:
     config: dict
@@ -71,6 +107,17 @@ class History:
     metric_names: list = field(default_factory=list)
     trials: list = field(default_factory=list)
     remove_names: bool = False
+    # if True, the prompt is "search-space:...,algorithm:<tag>,history:..." (search space before the optimizer tag);
+    # the default keeps the original order "algorithm:<tag>,search-space:...,history:..."
+    space_first: bool = False
+    # how y is quantized to 0..999:
+    #   "global": with the min / max over all trials in the prompt (original; every y token changes when a new
+    #             trial extends the range, and in a full training line early y tokens depend on later trials)
+    #   "causal": trial t with the min / max over trials 0..t only, so a y token never changes once written and every
+    #             prefix of a training line is exactly what the model sees at inference
+    #   "causal_log": append-only signed log distance to the incumbent so far (see causal_log_tokens)
+    #   "log": log distance to the best trial in the prompt (see log_tokens); rescaled like "global"
+    y_norm: str = "global"
 
     def add_trial(self, config, result):
 
@@ -81,7 +128,8 @@ class History:
         string = ""
         if not self.remove_names:
             string += f"benchmark:{self.name},"
-        string += f"algorithm:{self.algorithm},"
+        if not self.space_first:
+            string += f"algorithm:{self.algorithm},"
         hypers = list(self.config_space.items())
         if shuffle:
             random.shuffle(hypers)
@@ -126,14 +174,24 @@ class History:
                 raise ValueError(f"Unsupported hyperparameter type: {type(hp)}")
             string += "}"
 
+        if self.space_first:
+            string += f",algorithm:{self.algorithm}"
         string += ',history:'
 
         if len(self.trials) > 0:
+            assert self.y_norm in Y_NORMS, f"unknown y_norm {self.y_norm}"
+            ys = [trial.metric for trial in self.trials]
+            log_codes = {"causal_log": causal_log_tokens, "log": log_tokens}.get(self.y_norm)
+            codes = log_codes(ys, self.num_numeric_tokens) if log_codes else None
             y_min = min(trial.metric for trial in self.trials)
             y_max = max(trial.metric for trial in self.trials)
             if y_min == y_max:
                 y_max += 1  # Avoid division by zero in quantization
-            for trial in self.trials:
+            run_min, run_max = float("inf"), float("-inf")
+            for t, trial in enumerate(self.trials):
+                if self.y_norm == "causal":
+                    run_min, run_max = min(run_min, trial.metric), max(run_max, trial.metric)
+                    y_min, y_max = run_min, (run_max if run_max > run_min else run_min + 1)
                 for i, (hp_name, hp) in enumerate(hypers):
                     if not isinstance(hp, Domain):
                         continue
@@ -144,7 +202,8 @@ class History:
                     string += str(hp_encoded)
                 string += f"*"
 
-                string += f"{quantize(trial.metric, y_min, y_max, q=self.num_numeric_tokens)}"
+                y_code = codes[t] if codes else quantize(trial.metric, y_min, y_max, q=self.num_numeric_tokens)
+                string += f"{y_code}"
                 string += f"|"
         return string
 

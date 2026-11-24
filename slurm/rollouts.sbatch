@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH --job-name=sel-rollouts
+#SBATCH --account=p_neurasearch
+#SBATCH --array=0-3
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16G
+#SBATCH --time=04:00:00
+#SBATCH --output=logs/%x-%A_%a.out
+# Capella. Closed-loop rollouts on the test functions. Resubmitting resumes.
+source slurm/common.sh gpu
+python -m evaluation.rollout --checkpoint_dir "$WORK/checkpoints/selection_v1/$RUN/final" --y_norm "$Y_NORM" --tags $TAGS \
+  --shard "$SLURM_ARRAY_TASK_ID/$SLURM_ARRAY_TASK_COUNT" --output "$WORK/rollouts/${RUN}_$SLURM_ARRAY_TASK_ID.jsonl"
