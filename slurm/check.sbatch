@@ -1,6 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=sel-check
 #SBATCH --account=p_neurasearch
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=32G
 #SBATCH --time=01:00:00

@@ -1,6 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=sel-pilot
 #SBATCH --account=p_neurasearch
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=8G
 #SBATCH --time=02:00:00

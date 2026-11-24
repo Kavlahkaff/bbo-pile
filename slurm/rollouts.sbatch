@@ -1,6 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=sel-rollouts
 #SBATCH --account=p_neurasearch
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
 #SBATCH --array=0-3
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4

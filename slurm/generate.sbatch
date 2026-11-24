@@ -1,6 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=sel-generate
 #SBATCH --account=p_neurasearch
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
 #SBATCH --array=0-39
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=16G
