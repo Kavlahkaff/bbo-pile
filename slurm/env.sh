@@ -16,13 +16,18 @@ N_PREFIXES=${N_PREFIXES:-0}            # 2 for the rescaled encodings (log, glob
 MODEL=${MODEL:-qwen3_5M}
 TOKENS=${TOKENS:-1.2B}
 LR=${LR:-5e-3}
+TAG_DROPOUT=${TAG_DROPOUT:-0.2}        # share of the lines of ALL that get UNK instead of their tag; 0 = no UNK
 EXCLUDE=${EXCLUDE:-}                   # optimizers left out of the training data, e.g. RS
 if [[ -z "${TAGS:-}" ]]; then          # tags for the rollouts: what the model was trained on
   TAGS=""
-  for o in GP NM RS; do [[ " $EXCLUDE " == *" $o "* ]] || TAGS+="$o "; done
-  TAGS+="BEST UNK"
+  if [[ $DATASET != BEST ]]; then
+    for o in GP NM RS; do [[ " $EXCLUDE " == *" $o "* ]] || TAGS+="$o "; done
+    if [[ $TAG_DROPOUT != 0 ]]; then TAGS+="UNK "; fi
+  fi
+  if [[ $DATASET != ALL ]]; then TAGS+="BEST "; fi
 fi
 if [[ -z "${NAME:-}" ]]; then          # data set name; the model is ${NAME}_${MODEL}_${TOKENS}
   NAME=${DATASET}${EXCLUDE:+_no${EXCLUDE// /-}}_${Y_NORM}
+  if [[ $TAG_DROPOUT == 0 && $DATASET != BEST ]]; then NAME+=_noUNK; fi
   if [[ $N_PREFIXES != 0 ]]; then NAME+=_p$N_PREFIXES; fi
 fi

@@ -34,7 +34,7 @@ Adjust `slurm/env.sh`, then from the repo root:
     bash slurm/submit_analyze.sh   # Barnard: $WORK/reports/<run>.txt
 
 The runs are defined in `slurm/variants.sh`: `base` (causal_log), `noRS` (no random search lines), `log` and `log_p2`
-(rescaled log without / with two prefixes per line). Use e.g. `VARIANTS="noRS log" bash slurm/submit_gpu.sh` for a
+(rescaled log without / with two prefixes per line), `noUNK`, `noBEST`, `noUNK_noBEST` (without these tags). Use e.g. `VARIANTS="noRS log" bash slurm/submit_gpu.sh` for a
 subset and `submit_prepare.sh` to prepare a new variant of a finished corpus.
 
 Tests: `python -m pytest -q tst`.
