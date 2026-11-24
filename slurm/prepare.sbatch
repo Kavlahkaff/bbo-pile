@@ -11,7 +11,7 @@ EXP=$WORK/export/$NAME
 TOK=$WORK/tokenizer
 DATA=$WORK/tokenized_dataset/selection_v1/$NAME
 python generate_training_data/compile_traces.py --corpus "$CORPUS" --output_path "$EXP" --dataset "$DATASET" \
-  --y_norm "$Y_NORM" --n_prefixes "$N_PREFIXES" --workers "$SLURM_CPUS_PER_TASK"
+  --y_norm "$Y_NORM" --n_prefixes "$N_PREFIXES" --exclude $EXCLUDE --workers "$SLURM_CPUS_PER_TASK"
 if [[ ! -f $TOK/tokenizer.model ]]; then
   # vocabulary = symbols + characters; the same for every data set
   head -n 50000 "$EXP/train.txt" > "$WORK/tok_sample.txt"

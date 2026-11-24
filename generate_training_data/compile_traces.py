@@ -51,6 +51,8 @@ def process(job):
             t = json.loads(line)
             if t["split"] not in FILES:
                 continue
+            if t["opt"] in a.exclude:
+                continue
             assert t["family"] not in HELD_OUT, "held-out family in train / val"
             for l in lines_of(t, a):
                 (tr if t["split"] == "train" else va).write(l + "\n")
@@ -67,11 +69,15 @@ def main(argv=None):
     ap.add_argument("--y_norm", choices=Y_NORMS, default="causal_log")
     ap.add_argument("--tag_dropout", type=float, default=0.2)
     ap.add_argument("--n_prefixes", type=int, default=0)
+    ap.add_argument("--exclude", nargs="*", default=[], help="optimizers without any line (also none under UNK)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--workers", type=int, default=mp.cpu_count())
     a = ap.parse_args(argv)
     out = Path(a.output_path)
     out.mkdir(parents=True, exist_ok=True)
+    excluded = set(a.exclude) & set(WINNER.values())
+    if excluded and a.dataset != "ALL":
+        sys.exit(f"--exclude {excluded}: these are the winners that BEST needs")
     files = sorted(Path(a.corpus).glob("traj_*.jsonl"))
     if not files:
         sys.exit(f"no traj_*.jsonl in {a.corpus}")

@@ -29,11 +29,12 @@ right one by itself (tag BEST or UNK)? Based on [bbo-pile](https://github.com/sy
 Adjust `slurm/env.sh`, then from the repo root:
 
     bash slurm/submit_pilot.sh     # Barnard: do the winners hold? verdict in $WORK/pilot/report.txt
-    bash slurm/submit_cpu.sh       # Barnard, after a GO: generate -> check (contrast must hold) -> prepare
+    bash slurm/submit_cpu.sh       # Barnard, after a GO: generate -> check (contrast must hold) -> prepare all variants
     bash slurm/submit_gpu.sh       # Capella, afterwards: train -> rollouts
-    sbatch slurm/analyze.sbatch    # Barnard: $WORK/reports/<run>.txt
+    bash slurm/submit_analyze.sh   # Barnard: $WORK/reports/<run>.txt
 
-Variants are set in the environment, e.g. `Y_NORM=log N_PREFIXES=2 bash slurm/submit_cpu.sh` (a finished corpus is
-resumed, not recomputed) and then the same variables for the GPU and analysis jobs.
+The runs are defined in `slurm/variants.sh`: `base` (causal_log), `noRS` (no random search lines), `log` and `log_p2`
+(rescaled log without / with two prefixes per line). Use e.g. `VARIANTS="noRS log" bash slurm/submit_gpu.sh` for a
+subset and `submit_prepare.sh` to prepare a new variant of a finished corpus.
 
 Tests: `python -m pytest -q tst`.
