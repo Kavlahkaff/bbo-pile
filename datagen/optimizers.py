@@ -27,10 +27,10 @@ def random_search(key, f, X):
     return snap(np.vstack([X, r.uniform(size=(TRIALS - len(X), 2))]))
 
 
-def gp_ucb(key, f, X):
-    """GP-UCB (Matern-3/2, beta 4), hyperparameters refitted by maximum likelihood at every step."""
+def gp_ucb(key, f, X, stop=TRIALS):
+    """GP-UCB (Matern-3/2, beta 4), hyperparameters refitted by maximum likelihood at every step, until `stop` points."""
     fallback = np.random.default_rng(seed_of("fallback", key))
-    while len(X) < TRIALS:
+    while len(X) < stop:
         z = -f(X)
         z = (z - z.mean()) / max(z.std(ddof=1), 1e-9)
         try:
@@ -47,9 +47,10 @@ class _Budget(Exception):
     pass
 
 
-def nelder_mead(key, f, X, size=0.1):
+def nelder_mead(key, f, X, size=0.1, signs=None):
     """Nelder-Mead from the best initial point (simplex edge `size`); on convergence restarted from the incumbent with
-    half the size (at least 1e-3) until the budget is spent."""
+    half the size (at least 1e-3) until the budget is spent. `signs(n)` replaces the random simplex directions (n = points
+    so far)."""
     r = np.random.default_rng(seed_of("nm", key.rsplit("|", 1)[0]))
     pts, ys = list(X), list(f(X))
 
@@ -64,7 +65,7 @@ def nelder_mead(key, f, X, size=0.1):
 
     while len(pts) < TRIALS:
         x0 = pts[int(np.argmin(ys))]
-        sgn = r.choice([-1.0, 1.0], 2)
+        sgn = r.choice([-1.0, 1.0], 2) if signs is None else signs(len(pts))
         sgn = np.where(x0 + sgn * size > 1, -1.0, np.where(x0 + sgn * size < 0, 1.0, sgn))   # stay inside [0,1]^2
         try:
             minimize(obj, x0, method="Nelder-Mead", bounds=[(0, 1), (0, 1)],

@@ -40,4 +40,11 @@ subset and `submit_prepare.sh` to prepare a new variant of a finished corpus.
 `base`, `noUNK` and `noBEST` are trained with three model seeds (`seeds_of` in `slurm/variants.sh`; `SEEDS="0"` overrides).
 `reports/compare.txt` shows every variant against `base`, paired by model seed.
 
+Does BEST sample like the better teacher (not only score like it)? `evaluation/match.py` compares the sampling distributions
+after k proposals with the teachers, over replicated runs and over next points given the same history:
+
+    bash slurm/submit_match.sh teachers   # Barnard, once
+    bash slurm/submit_match.sh student    # Capella, then
+    bash slurm/submit_match.sh report     # Barnard: $WORK/reports/match_<variant>.txt
+
 Tests: `python -m pytest -q tst`.

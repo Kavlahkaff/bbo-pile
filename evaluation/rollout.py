@@ -37,36 +37,49 @@ class Student:
         self.y_norm, self.temperature = y_norm, temperature
 
     @torch.no_grad()
-    def _sample(self, ids, gens):
-        """One number per sequence (sequences of different length are right-padded; attention is causal)."""
+    def _logits(self, ids):
+        """Logits of the 1000 numbers as next token (sequences of different length are right-padded; attention is causal)."""
         n = [len(s) for s in ids]
         x = torch.zeros((len(ids), max(n)), dtype=torch.long)
         for j, s in enumerate(ids):
             x[j, :n[j]] = torch.tensor(s)
         assert max(n) <= self.model.max_seq_length, "prompt longer than the model's context"
-        logits = self.model(x.to(self.device))[torch.arange(len(ids)), torch.tensor(n) - 1][:, self.numbers].float().cpu()
+        return self.model(x.to(self.device))[torch.arange(len(ids)), torch.tensor(n) - 1][:, self.numbers].float().cpu()
+
+    def _sample(self, ids, gens):
+        """One number per sequence."""
+        logits = self._logits(ids)
         if self.temperature == 0:
             return logits.argmax(-1).tolist()
         p = torch.softmax(logits / self.temperature, -1)
         return [int(torch.multinomial(p[j], 1, generator=gens[j])) for j in range(len(ids))]
 
-    def run_batch(self, jobs):
-        """jobs: (Function, seed, tag). Returns per job (k, y)."""
+    def next_points(self, contexts, gens):
+        """contexts: (tag, k, y). One sampled next point [k0, k1] per context."""
+        ids = [self.tok.encode(make_history(t, self.y_norm, k, y).get_prompt(), bos=False).tolist() for t, k, y in contexts]
+        k0 = self._sample(ids, gens)
+        ids = [s + [int(self.numbers[a]), self.comma] for s, a in zip(ids, k0)]
+        return [list(p) for p in zip(k0, self._sample(ids, gens))]
+
+    def number_probs(self, ids, batch):
+        """Probabilities (n x 1000) of the next number at the sampling temperature."""
+        return torch.cat([torch.softmax(self._logits(ids[b:b + batch]) / self.temperature, -1) for b in range(0, len(ids), batch)])
+
+    def run_batch(self, jobs, reps=None):
+        """jobs: (Function, seed, tag); reps: replicate label per job (default: the single run of the main rollouts).
+        Returns per job (k, y)."""
         K = [np.rint(initial_design(f.i, s) * 999).astype(int).tolist() for f, s, _ in jobs]
         Y = [f(np.array(k) / 999).tolist() for (f, _, _), k in zip(jobs, K)]
-        gens = [torch.Generator().manual_seed(seed_of("student", f.fid, s, t) % 2**31) for f, s, t in jobs]
+        labels = [()] * len(jobs) if reps is None else [("rep", r) for r in reps]
+        gens = [torch.Generator().manual_seed(seed_of("student", f.fid, s, t, *l) % 2**31) for (f, s, t), l in zip(jobs, labels)]
         for _ in range(TRIALS):
             live = [j for j in range(len(jobs)) if len(K[j]) < TRIALS]
             if not live:
                 break
-            ids = [self.tok.encode(make_history(jobs[j][2], self.y_norm, K[j], Y[j]).get_prompt(), bos=False).tolist()
-                   for j in live]
-            k0 = self._sample(ids, [gens[j] for j in live])
-            ids = [s + [int(self.numbers[a]), self.comma] for s, a in zip(ids, k0)]
-            k1 = self._sample(ids, [gens[j] for j in live])
-            for j, a, b in zip(live, k0, k1):
-                K[j].append([a, b])
-                Y[j].append(float(jobs[j][0](np.array([[a, b]]) / 999)[0]))
+            pts = self.next_points([(jobs[j][2], K[j], Y[j]) for j in live], [gens[j] for j in live])
+            for j, p in zip(live, pts):
+                K[j].append(p)
+                Y[j].append(float(jobs[j][0](np.array([p]) / 999)[0]))
         return list(zip(K, Y))
 
 
