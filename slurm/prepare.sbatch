@@ -10,19 +10,16 @@
 # Barnard. Export -> tokenizer + checks -> litdata chunks, all under $WORK.
 source slurm/common.sh cpu
 EXP=$WORK/export/$NAME
-TOK=$WORK/tokenizer
-DATA=$WORK/tokenized_dataset/selection_v1/$NAME
-python generate_training_data/compile_traces.py --corpus "$CORPUS" --output_path "$EXP" --dataset "$DATASET" \
-  --y_norm "$Y_NORM" --n_prefixes "$N_PREFIXES" --tag_dropout "$TAG_DROPOUT" --exclude $EXCLUDE --workers "$SLURM_CPUS_PER_TASK"
+python generate_training_data/compile_traces.py --corpus "$CORPUS" --output_path "$EXP" "${MARKER_ARG[@]}" --workers "$SLURM_CPUS_PER_TASK"
 if [[ ! -f $TOK/tokenizer.model ]]; then
-  # vocabulary = symbols + characters; the same for every data set
-  head -n 50000 "$EXP/train.txt" > "$WORK/tok_sample.txt"
-  python generate_training_data/train_tokenizer.py --input_files "$WORK/tok_sample.txt" --output_path "$TOK" \
-    --vocab_size "$(cat generate_training_data/vocab_size.txt)" --input_sentence_size 50000 \
-    --extra_symbols generate_training_data/tokenizer_symbols.txt
+  # vocabulary = symbols + characters
+  head -n 50000 "$EXP/train.txt" > "$WORK/tok_sample_$NAME.txt"
+  python generate_training_data/train_tokenizer.py --input_files "$WORK/tok_sample_$NAME.txt" --output_path "$TOK" \
+    --vocab_size "$(cat "$VOCAB_FILE")" --input_sentence_size 50000 \
+    --extra_symbols "$SYMBOLS"
 fi
 python generate_training_data/check_tokenizer.py --tokenizer_dir "$TOK" \
-  --symbols generate_training_data/tokenizer_symbols.txt --exports "$EXP"
+  --symbols "$SYMBOLS" --exports "$EXP"
 SCRATCH=$WORK/tmp/$SLURM_JOB_ID                     # node-local /tmp is too small
 mkdir -p "$SCRATCH"/{tmp,chunks,data}
 trap 'rm -rf "$SCRATCH"' EXIT

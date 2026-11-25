@@ -1,5 +1,5 @@
 """Variants against a baseline over several model seeds.
-    python -m evaluation.compare --run base=r_2.4B --run noUNK=... [--run base=r_2.4B_s1 ...] --output f
+    python -m evaluation.compare --base log --run log=r_2.4B --run log_marker=... [--run log=r_2.4B_s1 ...] --output f
 Each --run is variant=rollout-prefix (files prefix_<shard>.jsonl), one per model seed; seeds are matched by the order given.
 Score: mean_lr per family and tag. "spread" is the standard deviation between model seeds. Differences are paired by
 model seed (negative = variant better than base); variants with one seed get no spread, so treat those as single runs."""
@@ -31,7 +31,7 @@ def scores(prefix):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--run", action="append", required=True, help="variant=rollout prefix")
-    ap.add_argument("--base", default="base")
+    ap.add_argument("--base", default="log")
     ap.add_argument("--output", default=None)
     a = ap.parse_args(argv)
     by, out = defaultdict(dict), []

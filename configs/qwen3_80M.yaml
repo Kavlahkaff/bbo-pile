@@ -21,21 +21,21 @@ model_config:
   final_logit_softcapping: null
   gelu_approximate: none
   hf_config:
-    name: Qwen3-10M
+    name: Qwen3-80M
     org: Qwen
   latent_attention: null
   lm_head_bias: false
   mlp_class_name: LLaMAMLP
   moe_intermediate_size: null
-  n_embd: 128
+  n_embd: 512
   head_size: 128
-  intermediate_size: 384
+  intermediate_size: 1536
   n_expert: 0
   n_expert_per_token: 0
   n_head: 16
-  n_layer: 11
+  n_layer: 14
   n_query_groups: 8
-  name: Qwen3-10M
+  name: Qwen3-80M
   norm_1: true
   norm_2: true
   norm_class_name: RMSNorm

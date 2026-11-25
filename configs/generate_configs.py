@@ -1,5 +1,5 @@
 """Generate litgpt training configs (grid over model size x token budget x learning rate x batch size x seed).
-Used by slurm/pipeline.sh; see --help."""
+Used by slurm/train.sbatch; see --help."""
 import argparse
 import copy
 import math
@@ -9,10 +9,9 @@ from pathlib import Path
 import yaml
 
 MODEL_SIZES = {
-    'qwen3_2M': 2e6,
     'qwen3_5M': 5e6,
-    'qwen3_10M': 10e6,
     'qwen3_30M': 30e6,
+    'qwen3_80M': 80e6,
 }
 TOKEN_COUNTS = {
     "100M": 100_000_000, "200M": 200_000_000, "300M": 300_000_000, "400M": 400_000_000, "600M": 600_000_000,

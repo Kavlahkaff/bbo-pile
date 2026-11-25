@@ -2,7 +2,7 @@
     python -m evaluation.analyze --corpus CORPUS --rollouts r_*.jsonl --output report.txt
 mean_lr  mean over trials of log10 normalised regret (+ 1e-8), no floor; main metric with the final win rate
 lin      mean linear regret; final  log10 regret after 50 trials; auc_floor3  mean_lr floored at -3 (older results)
-Questions: 1 imitation: is the student with tag T as good as teacher T?  2 selection: does BEST / UNK reach the
+Questions: 1 imitation: is the student with tag T as good as teacher T?  2 selection: does BEST reach the
 family's winner, and beat the best single tag? The overall line weights gp 1/2 and the other
 trained families 1/2 together; the held-out family (never in training) is reported on its own.
 All differences: negative = first is better."""
@@ -61,10 +61,10 @@ def main(argv=None):
     for fam, Q in R.groupby("family"):
         out.append(f"\n== {fam} (winner {WINNER[fam]}{", HELD OUT" if fam in HELD_OUT else ""})")
         cs = list(comps)
-        for t in ("student:BEST", "student:UNK"):
-            if t in tags:
-                cs += [(t, f"teacher:{WINNER[fam]}", "selection vs winning teacher")]
-                cs += [(t, f"student:{o}", "same model, fixed tag") for o in OPTIMIZERS if f"student:{o}" in tags]
+        t = "student:BEST"
+        if t in tags:
+            cs += [(t, f"teacher:{WINNER[fam]}", "selection vs winning teacher")]
+            cs += [(t, f"student:{o}", "same model, fixed tag") for o in OPTIMIZERS if f"student:{o}" in tags]
         for x, y, what in cs:
             d, _ = diff(Q, x, y, "mean_lr")
             l, _ = diff(Q, x, y, "lin")
@@ -75,9 +75,9 @@ def main(argv=None):
     fixed = M[[f"student:{o}" for o in OPTIMIZERS if f"student:{o}" in tags]] if comps else M[[]]
     if len(fixed):
         out.append(f"\nTrained families, gp 1/2 and the others 1/2 (mean_lr): best single tag {fixed.idxmin()} {fixed.min():.3f}")
-        for t in ("student:BEST", "student:UNK"):
-            if t in tags:
-                out.append(f"  {t}: {M[t]:.3f} (best single tag - this: {fixed.min() - M[t]:+.3f})")
+        t = "student:BEST"
+        if t in tags:
+            out.append(f"  {t}: {M[t]:.3f} (best single tag - this: {fixed.min() - M[t]:+.3f})")
     text = "\n".join(out)
     print(text)
     if a.output:

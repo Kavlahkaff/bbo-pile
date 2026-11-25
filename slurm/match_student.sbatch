@@ -12,6 +12,6 @@
 # Capella. Replicated student runs and next-point draws -> $WORK/match/${RUN}_<shard>.jsonl. Resubmitting resumes.
 source slurm/common.sh gpu
 TAGS=$(for t in $TAGS; do [[ $t == RS ]] || echo -n "$t "; done)   # the RS tag is not evaluated here
-python -m evaluation.match student --checkpoint_dir "$WORK/checkpoints/selection_v1/$RUN/final" --y_norm "$Y_NORM" --tags $TAGS \
+python -m evaluation.match student --checkpoint_dir "$CKPT/final" "${MARKER_ARG[@]}" --tags $TAGS \
   --teachers "$WORK/match/teachers.jsonl" --shard "$SLURM_ARRAY_TASK_ID/$SLURM_ARRAY_TASK_COUNT" \
   --output "$WORK/match/${RUN}_$SLURM_ARRAY_TASK_ID.jsonl"

@@ -8,7 +8,7 @@ from datagen.functions import seed_of
 
 TRIALS, N_INIT, Q = 50, (5, 10), 1000
 OPTIMIZERS = {"GP": "m32", "NM": "nm", "RS": "rs"}                # tag -> label used in the random seeds
-WINNER = {"gp": "GP", "rosen": "NM", "sector": "NM", "powers": "NM", "ellipsoid": "NM"}   # checked by datagen.pilot
+WINNER = {"gp": "GP", "rosen": "NM", "sector": "NM", "powers": "NM", "ellipsoid": "NM"}   # checked by datagen.check_corpus
 BETA, LS_BOUNDS, OS_BOUNDS, RESTARTS, RAW = 4.0, (0.02, 2.0), (0.05, 20.0), 8, 256
 
 

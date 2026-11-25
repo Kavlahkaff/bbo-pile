@@ -149,12 +149,10 @@ def next_distribution(student, d, tag, draws, batch):
     p(k0) takes one pass per history and p(k1 | k0) one per distinct k0 that is drawn or near a teacher's draw."""
     import torch
 
-    from evaluation.prompt import make_history
     prompts = []
     for h, k in histories():
         o, L = "NM" if h == "init" else h, d["n_init"] + k - 1
-        prompts.append(student.tok.encode(make_history(tag, student.y_norm, d["k"][o][0][:L], d["y"][o][0][:L]).get_prompt(),
-                                          bos=False).tolist())
+        prompts.append(student.prompt(tag, d["k"][o][0][:L], d["y"][o][0][:L], d["n_init"]))
     P0 = student.number_probs(prompts, batch)
     pts, mass = {}, {}
     plan, ids = [], []
@@ -191,7 +189,7 @@ def cmd_student(a):
     T = T[s::n]
     out = Path(a.output)
     done = {(d["fid"], d["tag"], d["what"]) for d in lines(out)} if out.exists() else set()
-    student = Student(a.checkpoint_dir, a.y_norm, a.temperature)
+    student = Student(a.checkpoint_dir, a.marker, a.temperature)
     t0 = time.time()
     with open_resumed(out) as fh:
         for c, d in enumerate(T, 1):
@@ -455,7 +453,7 @@ def main(argv=None):
     p.add_argument("--checkpoint_dir", required=True)
     p.add_argument("--teachers", required=True)
     p.add_argument("--tags", nargs="+", default=["GP", "NM", "BEST"])
-    p.add_argument("--y_norm", default="causal_log", help="must match the export")
+    p.add_argument("--marker", action="store_true", help="model trained with the end of the initial design marked")
     p.add_argument("--temperature", type=float, default=1.0)
     p.add_argument("--batch", type=int, default=128)
     p.add_argument("--draws", type=int, default=128, help="student draws of the next point per history")
@@ -464,7 +462,7 @@ def main(argv=None):
     p = sub.add_parser("report")
     p.add_argument("--teachers", required=True)
     p.add_argument("--run", action="append", required=True, help="variant=prefix (files prefix_<shard>.jsonl), once per model seed")
-    p.add_argument("--tags", nargs="+", default=["BEST", "UNK", "GP", "NM"], help="tags to report")
+    p.add_argument("--tags", nargs="+", default=["BEST", "GP", "NM"], help="tags to report")
     p.add_argument("--workers", type=int, default=os.cpu_count())
     p.add_argument("--output", default=None)
     a = ap.parse_args(argv)

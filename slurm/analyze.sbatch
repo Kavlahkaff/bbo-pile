@@ -7,7 +7,7 @@
 #SBATCH --mem=16G
 #SBATCH --time=01:00:00
 #SBATCH --output=logs/%x-%j.out
-# Report -> $WORK/reports/$RUN.txt
+# Report -> $REPORTS/$RUN.txt
 source slurm/common.sh cpu
-mkdir -p "$WORK/reports"
-python -m evaluation.analyze --corpus "$CORPUS" --rollouts "$WORK/rollouts/${RUN}_[0-9]*.jsonl" --output "$WORK/reports/$RUN.txt"
+mkdir -p "$REPORTS"
+python -m evaluation.analyze --corpus "$CORPUS" --rollouts "$ROLLOUTS/${RUN}_[0-9]*.jsonl" --output "$REPORTS/$RUN.txt"

@@ -107,10 +107,11 @@ def test_shift_and_spread():
 
 class FakeStudent:
     """p(k0) and p(k1 | k0) from a known joint distribution; the prompt only carries k0."""
-    y_norm, comma, numbers = "causal_log", -1, list(range(1000))
+    comma, numbers = -1, list(range(1000))
 
-    class tok:
-        encode = staticmethod(lambda p, bos: np.array([0]))
+    @staticmethod
+    def prompt(tag, k, y, n_init):
+        return [0]
 
     def __init__(self, J):
         import torch

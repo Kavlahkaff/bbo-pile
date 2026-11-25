@@ -1,33 +1,30 @@
 #!/bin/bash
 # Sampling-distribution match of student and teachers (evaluation/match.py); from the repo root.
-#   bash slurm/submit_match.sh teachers   Barnard, once
-#   bash slurm/submit_match.sh student    Capella, when teachers is done: every variant and model seed
-#   bash slurm/submit_match.sh report     Barnard, when student is done: $WORK/reports/match_<variant>.txt
-# Variants: base and noUNK (both have BEST), VARIANTS="base log" for others; SEEDS="0" for one model seed.
+#   bash slurm/submit_match.sh teachers   Barnard, once (done: $WORK/match/teachers.jsonl)
+#   bash slurm/submit_match.sh student    Capella: every trained run (RUNS="..." selects)
+#   bash slurm/submit_match.sh report     Barnard, when student is done: $WORK/reports/match_<label>.txt
 set -euo pipefail
 [[ -f slurm/match_student.sbatch ]] || { echo "run from the repo root" >&2; exit 1; }
-unset NAME TAGS MODEL_SEED
-VARIANTS=${VARIANTS:-"base noUNK"}
 source slurm/variants.sh
+unset TEMP TAGS
 mkdir -p logs
-run_of() { (export MODEL_SEED=$1; REPO=$PWD; source slurm/env.sh; echo "${NAME}_${MODEL}_${TOKENS}$([[ $1 == 0 ]] || echo "_s$1")"); }
 case "${1:-}" in
 teachers) echo "teachers: $(sbatch --parsable --export=ALL slurm/match_teachers.sbatch)" ;;
 student)
-  for v in $VARIANTS; do
-    variant "$v"
-    [[ $DATASET != ALL ]] || echo "note: $v has no BEST tag" >&2
-    for s in $(seeds_of "$v"); do
-      export MODEL_SEED=$s
-      echo "$v seed $s: $(sbatch --parsable --export=ALL --job-name="sel-match-$v-s$s" slurm/match_student.sbatch)"
-    done
-  done ;;
+  while read -r -a r; do
+    use "${r[@]}"
+    if [[ ! -d $CKPT/final ]]; then echo "skipped $RUN: not trained"; continue; fi
+    echo "$RUN: $(sbatch --parsable --export=ALL --job-name="sel-match-$RUN" slurm/match_student.sbatch </dev/null)"
+  done < <(runs) ;;
 report)
-  for v in $VARIANTS; do
-    variant "$v"
-    export V=$v RUNS=""
-    for s in $(seeds_of "$v"); do RUNS+="$(run_of "$s") "; done
-    echo "$v: $(sbatch --parsable --export=ALL --job-name="sel-match-report-$v" slurm/match_report.sbatch)"
+  LIST=$(while read -r -a r; do
+    use "${r[@]}"
+    if [[ -e $WORK/match/${RUN}_0.jsonl ]]; then echo "$(label "${r[@]}") $RUN"; fi
+  done < <(runs))
+  [[ -n $LIST ]] || { echo "no match results found" >&2; exit 1; }
+  for v in $(awk '{print $1}' <<< "$LIST" | sort -u); do
+    export V=$v RUNS_OF; RUNS_OF=$(awk -v v="$v" '$1 == v {print $2}' <<< "$LIST" | tr '\n' ' ')
+    echo "$v: $(sbatch --parsable --export=ALL --job-name="sel-match-report-$v" slurm/match_report.sbatch </dev/null)"
   done ;;
 *) echo "usage: bash slurm/submit_match.sh teachers|student|report" >&2; exit 1 ;;
 esac

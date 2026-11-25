@@ -1,6 +1,5 @@
 """Generate the trajectory corpus.
     python -m datagen.generate --out CORPUS --train 50000 [--task k --n_tasks n] [--workers w]
-    python -m datagen.generate --out PILOT --pilot 1000 ...        # contrast pilot on its own functions, see datagen.pilot
 Function indices per family: BASE + [0, 500) test, [500, 1000) val, [1000, 1000 + n) train; seeds 5 / 2 / 2.
 n = --train for gp and --train / 3 for rosen, sector and powers, so each winner has equally many train functions.
 HELD_OUT families have test functions only. Indices are disjoint from every function used to choose the optimizers. Raising --train adds functions but changes which task runs which function: use a new --out.
@@ -17,8 +16,8 @@ import numpy as np
 
 from datagen.functions import FAMILIES, HELD_OUT
 
-BASE, PILOT_BASE, N_TEST, N_VAL = 100_000, 400_000, 500, 500
-SEEDS = {"test": 5, "val": 2, "train": 2, "pilot": 5}
+BASE, N_TEST, N_VAL = 100_000, 500, 500
+SEEDS = {"test": 5, "val": 2, "train": 2}
 
 
 def n_functions(family, split, train):
@@ -79,7 +78,6 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", required=True)
     ap.add_argument("--train", type=int, default=99_996, help="gp train functions (others: a third)")
-    ap.add_argument("--pilot", type=int, default=None, help="pilot: this many functions per family, no corpus")
     ap.add_argument("--limit", type=int, default=None, help="debug: only the first N jobs of this task")
     ap.add_argument("--task", type=int, default=0)
     ap.add_argument("--n_tasks", type=int, default=1)
@@ -87,11 +85,8 @@ def main(argv=None):
     a = ap.parse_args(argv)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    if a.pilot:
-        jobs = [(fam, PILOT_BASE + j, "pilot", None) for j in range(a.pilot) for fam in FAMILIES]
-    else:
-        jobs = [(fam, BASE + j, split_of(j), None) for j in range(N_TEST + N_VAL + a.train) for fam in FAMILIES
-                if j < N_TEST or j < N_TEST + sum(n_functions(fam, s, a.train) for s in ("val", "train"))]
+    jobs = [(fam, BASE + j, split_of(j), None) for j in range(N_TEST + N_VAL + a.train) for fam in FAMILIES
+            if j < N_TEST or j < N_TEST + sum(n_functions(fam, s, a.train) for s in ("val", "train"))]
     jobs = jobs[a.task::a.n_tasks][:a.limit]
     path = out / f"traj_{a.task:05d}.jsonl"
     done = repair(path)

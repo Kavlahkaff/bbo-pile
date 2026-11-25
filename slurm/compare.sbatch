@@ -7,15 +7,7 @@
 #SBATCH --mem=16G
 #SBATCH --time=01:00:00
 #SBATCH --output=logs/%x-%j.out
-# Variants against base over the model seeds -> $WORK/reports/compare.txt
+# Runs against $BASE -> $OUT; ARGS and BASE come from submit_analyze.sh
 source slurm/common.sh cpu
-source slurm/variants.sh
-mkdir -p "$WORK/reports"
-ARGS=()
-for v in $VARIANTS; do
-  for s in $(seeds_of "$v"); do
-    run=$(variant "$v"; export MODEL_SEED=$s; source slurm/env.sh; echo "${NAME}_${MODEL}_${TOKENS}$([[ $s == 0 ]] || echo "_s$s")")
-    ARGS+=(--run "$v=$WORK/rollouts/$run")
-  done
-done
-python -m evaluation.compare "${ARGS[@]}" --output "$WORK/reports/compare.txt"
+mkdir -p "$REPORTS"
+python -m evaluation.compare --base "$BASE" $ARGS --output "$OUT"

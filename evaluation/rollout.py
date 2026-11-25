@@ -1,5 +1,5 @@
 """Closed-loop rollouts of a trained model on the test functions, from the teachers' initial designs.
-    python -m evaluation.rollout --checkpoint_dir ckpt/final --tags GP NM RS BEST UNK --output r.jsonl
+    python -m evaluation.rollout --checkpoint_dir ckpt/final --tags GP NM RS BEST --output r.jsonl
 All runs of a batch advance together, one trial at a time. Points are sampled token by token over the 1000 number tokens
 (--temperature, 0 = greedy). Finished (fid, seed, tag) are skipped on resume; --shard i/n splits the work."""
 import argparse
@@ -14,7 +14,7 @@ from datagen.functions import FAMILIES, Function, seed_of
 from datagen.generate import BASE, N_TEST, SEEDS
 from datagen.optimizers import TRIALS, initial_design
 from evaluation.prompt import make_history
-from open_optformer.history import Y_NORMS
+from open_optformer.history import MARKER
 
 
 def load_model(checkpoint_dir, device):
@@ -29,12 +29,19 @@ def load_model(checkpoint_dir, device):
 
 
 class Student:
-    def __init__(self, checkpoint_dir, y_norm, temperature=1.0):
+    def __init__(self, checkpoint_dir, marker=False, temperature=1.0):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model, self.tok = load_model(checkpoint_dir, self.device)
         self.numbers = torch.tensor([self.tok.token_to_id(str(i)) for i in range(1000)], device=self.device)
         self.comma = self.tok.token_to_id(",")
-        self.y_norm, self.temperature = y_norm, temperature
+        self.marker, self.temperature = marker, temperature
+        pieces = [self.tok.processor.id_to_piece(i) for i in self.tok.encode(MARKER, bos=False).tolist()]
+        has = [x for x in pieces if x != "\u2581"] == [MARKER]          # sentencepiece may emit a word boundary first
+        assert has == marker, f"marker is {marker}, but the checkpoint's tokenizer {'has' if has else 'lacks'} {MARKER}"
+
+    def prompt(self, tag, k, y, n_init):
+        """Token ids of the history; n_init is the size of the initial design."""
+        return self.tok.encode(make_history(tag, k, y, n_init if self.marker else None).get_prompt(), bos=False).tolist()
 
     @torch.no_grad()
     def _logits(self, ids):
@@ -55,8 +62,8 @@ class Student:
         return [int(torch.multinomial(p[j], 1, generator=gens[j])) for j in range(len(ids))]
 
     def next_points(self, contexts, gens):
-        """contexts: (tag, k, y). One sampled next point [k0, k1] per context."""
-        ids = [self.tok.encode(make_history(t, self.y_norm, k, y).get_prompt(), bos=False).tolist() for t, k, y in contexts]
+        """contexts: (tag, k, y, n_init). One sampled next point [k0, k1] per context."""
+        ids = [self.prompt(*c) for c in contexts]
         k0 = self._sample(ids, gens)
         ids = [s + [int(self.numbers[a]), self.comma] for s, a in zip(ids, k0)]
         return [list(p) for p in zip(k0, self._sample(ids, gens))]
@@ -69,6 +76,7 @@ class Student:
         """jobs: (Function, seed, tag); reps: replicate label per job (default: the single run of the main rollouts).
         Returns per job (k, y)."""
         K = [np.rint(initial_design(f.i, s) * 999).astype(int).tolist() for f, s, _ in jobs]
+        n0 = [len(k) for k in K]
         Y = [f(np.array(k) / 999).tolist() for (f, _, _), k in zip(jobs, K)]
         labels = [()] * len(jobs) if reps is None else [("rep", r) for r in reps]
         gens = [torch.Generator().manual_seed(seed_of("student", f.fid, s, t, *l) % 2**31) for (f, s, t), l in zip(jobs, labels)]
@@ -76,7 +84,7 @@ class Student:
             live = [j for j in range(len(jobs)) if len(K[j]) < TRIALS]
             if not live:
                 break
-            pts = self.next_points([(jobs[j][2], K[j], Y[j]) for j in live], [gens[j] for j in live])
+            pts = self.next_points([(jobs[j][2], K[j], Y[j], n0[j]) for j in live], [gens[j] for j in live])
             for j, p in zip(live, pts):
                 K[j].append(p)
                 Y[j].append(float(jobs[j][0](np.array([p]) / 999)[0]))
@@ -86,8 +94,8 @@ class Student:
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--checkpoint_dir", required=True)
-    ap.add_argument("--tags", nargs="+", default=["GP", "NM", "RS", "UNK"])
-    ap.add_argument("--y_norm", choices=Y_NORMS, default="causal_log", help="must match the export")
+    ap.add_argument("--tags", nargs="+", default=["GP", "NM", "RS", "BEST"])
+    ap.add_argument("--marker", action="store_true", help="model trained with the end of the initial design marked")
     ap.add_argument("--functions", type=int, default=200, help="test functions per family")
     ap.add_argument("--seeds", type=int, default=SEEDS["test"])
     ap.add_argument("--temperature", type=float, default=1.0)
@@ -110,7 +118,7 @@ def main(argv=None):
                 pass
         if not open(out, "rb").read().endswith(b"\n"):
             open(out, "a").write("\n")                             # a line cut by a time limit
-    student, t0 = Student(a.checkpoint_dir, a.y_norm, a.temperature), time.time()
+    student, t0 = Student(a.checkpoint_dir, a.marker, a.temperature), time.time()
     jobs = [(fam, i, sd, tag) for fam, i in fns for sd in range(a.seeds) for tag in a.tags
             if (f"{fam}-{i}", sd, tag) not in done]
     print(f"{len(jobs)} runs ({len(done)} done)", flush=True)

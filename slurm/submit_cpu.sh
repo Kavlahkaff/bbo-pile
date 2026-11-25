@@ -1,5 +1,5 @@
 #!/bin/bash
-# Barnard login node, repo root: generate -> check -> prepare all variants (each only if the previous one succeeded).
+# Barnard login node, repo root: generate -> check -> prepare both variants (each only if the previous one succeeded).
 set -euo pipefail
 [[ -f slurm/generate.sbatch ]] || { echo "run from the repo root" >&2; exit 1; }
 mkdir -p logs

@@ -6,3 +6,4 @@ logs/
 wandb/
 *.tgz
 configs/generated/
+archive_*/

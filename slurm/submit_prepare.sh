@@ -1,14 +1,13 @@
 #!/bin/bash
-# Barnard login node, repo root: export + tokenize every variant. AFTER=<jobid> waits for that job.
-# The first variant makes the shared tokenizer, so the others wait for it.
+# Barnard login node, repo root: export + tokenize. VARIANTS="log_marker" selects; existing data is skipped. AFTER=<jobid> waits for that job.
 set -euo pipefail
 [[ -f slurm/prepare.sbatch ]] || { echo "run from the repo root" >&2; exit 1; }
 source slurm/variants.sh
+unset TEMP TAGS
 mkdir -p logs
-dep=${AFTER:-}; first=1
-for v in $VARIANTS; do
-  variant "$v"
-  j=$(sbatch --parsable --export=ALL ${dep:+--kill-on-invalid-dep=yes --dependency=afterok:$dep} slurm/prepare.sbatch); j=${j%%;*}
-  echo "prepare $v=$j"
-  if [[ $first == 1 ]]; then dep=$j; first=0; fi
+for v in ${VARIANTS:-log log_marker}; do
+  use "$v" qwen3_5M 2.4B 5e-3 0
+  if [[ -e $DATA || -e $WORK/export/$NAME ]]; then echo "exists, skipped: $NAME"; continue; fi
+  if [[ -n ${AFTER:-} ]]; then dep="--kill-on-invalid-dep=yes --dependency=afterok:$AFTER"; else dep=; fi
+  echo "prepare $v=$(sbatch --parsable --export=ALL --job-name="sel-prepare-$v" $dep slurm/prepare.sbatch)"
 done
