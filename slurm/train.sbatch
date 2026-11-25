@@ -10,6 +10,7 @@
 #SBATCH --output=logs/%x-%j.out
 # Capella. Trains $MODEL on data set $NAME -> $CKPT
 source slurm/common.sh gpu
+export LITDATA_POSIX_FAST=0 #should prevent dropping the workerwith the least data to avoid data loss
 CFG_DIR=configs/generated/$RUN
 rm -rf "$CFG_DIR"
 python configs/generate_configs.py --base_path "$WORK" --version selection_v1 --dataset "$NAME" --models "$MODEL" --tokens "$TOKENS" \
