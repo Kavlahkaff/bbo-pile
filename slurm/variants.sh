@@ -8,6 +8,7 @@ variant() {
     noRS) export EXCLUDE=RS ;;                       # no random search lines at all
     log) export Y_NORM=log ;;                        # rescaled log, full lines only
     log_p2) export Y_NORM=log N_PREFIXES=2 ;;        # rescaled log, two prefixes per line
+    log_noUNK) export Y_NORM=log TAG_DROPOUT=0 ;;    # log and noUNK together; not in the default list, see submit_log_noUNK.sh
     noUNK) export TAG_DROPOUT=0 ;;                   # every line keeps its tag
     noBEST) export DATASET=ALL ;;                    # no BEST lines; UNK is the only tag that names no optimizer
     noUNK_noBEST) export DATASET=ALL TAG_DROPOUT=0 ;;  # control: optimizer tags only
@@ -18,7 +19,7 @@ variant() {
 seeds_of() {
   if [[ -n "${SEEDS:-}" ]]; then echo "$SEEDS"; return; fi
   case "$1" in
-    base|noUNK|noBEST) echo 0 1 2 ;;
+    base|noUNK|noBEST|log_noUNK) echo 0 1 2 ;;
     *) echo 0 ;;
   esac
 }
